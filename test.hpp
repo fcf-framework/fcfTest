@@ -50,31 +50,52 @@ namespace fcf {
   } // Test namespace
 } // fcf namespace
 
-#define FCF_TEST_STR_ARGS_S2(a_arg) #a_arg
-#define FCF_TEST_STR_ARGS_S1(a_arg) FCF_TEST_STR_ARGS_S2(a_arg)
-#define FCF_TEST_STR_ARGS_S(a_arg)  FCF_TEST_STR_ARGS_S1(a_arg)
-#define FCF_TEST_STR_ARGS_P(a_list, a_value) if (FCF_TEST_STR_ARGS_S(a_value)[0]) { a_list.push_back(FCF_TEST_STR_ARGS_S(a_value)); };
-#define FCF_TEST_STR_ARGS_A10(a_list, a_arg, ...) FCF_TEST_STR_ARGS_P(a_list, a_arg);
-#define FCF_TEST_STR_ARGS_A9(a_list, a_arg, ...) FCF_TEST_STR_ARGS_P(a_list, a_arg); FCF_TEST_STR_ARGS_A10(a_list, __VA_ARGS__)
-#define FCF_TEST_STR_ARGS_A8(a_list, a_arg, ...) FCF_TEST_STR_ARGS_P(a_list, a_arg); FCF_TEST_STR_ARGS_A9(a_list, __VA_ARGS__)
-#define FCF_TEST_STR_ARGS_A7(a_list, a_arg, ...) FCF_TEST_STR_ARGS_P(a_list, a_arg); FCF_TEST_STR_ARGS_A8(a_list, __VA_ARGS__)
-#define FCF_TEST_STR_ARGS_A6(a_list, a_arg, ...) FCF_TEST_STR_ARGS_P(a_list, a_arg); FCF_TEST_STR_ARGS_A7(a_list, __VA_ARGS__)
-#define FCF_TEST_STR_ARGS_A5(a_list, a_arg, ...) FCF_TEST_STR_ARGS_P(a_list, a_arg); FCF_TEST_STR_ARGS_A6(a_list, __VA_ARGS__)
-#define FCF_TEST_STR_ARGS_A4(a_list, a_arg, ...) FCF_TEST_STR_ARGS_P(a_list, a_arg); FCF_TEST_STR_ARGS_A5(a_list, __VA_ARGS__)
-#define FCF_TEST_STR_ARGS_A3(a_list, a_arg, ...) FCF_TEST_STR_ARGS_P(a_list, a_arg); FCF_TEST_STR_ARGS_A4(a_list, __VA_ARGS__)
-#define FCF_TEST_STR_ARGS_A2(a_list, a_arg, ...) FCF_TEST_STR_ARGS_P(a_list, a_arg); FCF_TEST_STR_ARGS_A3(a_list, __VA_ARGS__)
-#define FCF_TEST_STR_ARGS_A1(a_list, a_arg, ...) FCF_TEST_STR_ARGS_P(a_list, a_arg); FCF_TEST_STR_ARGS_A2(a_list, __VA_ARGS__)
-#define FCF_TEST_STR_ARGS(a_list, ...)\
-  FCF_TEST_STR_ARGS_A1(a_list, __VA_ARGS__)
+#define FCF_TEST__STRINGIFY_2(a_arg) #a_arg
+#define FCF_TEST__STRINGIFY_1(a_arg) FCF_TEST__STRINGIFY_2(a_arg)
+#define FCF_TEST__STRINGIFY(a_arg)  FCF_TEST__STRINGIFY_1(a_arg)
+#define FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_value) a_list.push_back(a_value);
+#define FCF_TEST__APPEND_TO_LIST__EXPAND1(expand1, ...) #expand1
+#define FCF_TEST__APPEND_TO_LIST__EXPAND2(expand1, expand2, ...) #expand2
+#define FCF_TEST__APPEND_TO_LIST__EXPAND3(expand1, expand2, expand3, ...) #expand3
+#define FCF_TEST__APPEND_TO_LIST__EXPAND4(expand1, expand2, expand3, expand4, ...) #expand4
+#define FCF_TEST__APPEND_TO_LIST__EXPAND5(expand1, expand2, expand3, expand4, expand5, ...) #expand5
+#define FCF_TEST__APPEND_TO_LIST__EXPAND6(expand1, expand2, expand3, expand4, expand5, expand6, ...) #expand6
+#define FCF_TEST__APPEND_TO_LIST__EXPAND7(expand1, expand2, expand3, expand4, expand5, expand6, expand7, ...) #expand7
+#define FCF_TEST__APPEND_TO_LIST__EXPAND8(expand1, expand2, expand3, expand4, expand5, expand6, expand7, expand8, ...) #expand8
+#define FCF_TEST__APPEND_TO_LIST__EXPAND9(expand1, expand2, expand3, expand4, expand5, expand6, expand7, expand8, expand9, ...) #expand9
+#define FCF_TEST__APPEND_TO_LIST__EXPAND10(expand1, expand2, expand3, expand4, expand5, expand6, expand7, expand8, expand9, expand10, ...) #expand10
+#define FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, a_a1, a_a2, a_a3, a_a4, a_a5, a_a6, a_a7, a_a8, a_a9, a_a10, ...) \
+                      FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a1) \
+                      FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a2) \
+                      FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a3) \
+                      FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a4) \
+                      FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a5) \
+                      FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a6) \
+                      FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a7) \
+                      FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a8) \
+                      FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a9) \
+                      FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a10)
+#define FCF_TEST__APPEND_TO_LIST(a_list, ...)  FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, \
+                                                            FCF_TEST__APPEND_TO_LIST__EXPAND1(__VA_ARGS__, , , , , , , , , , , ),\
+                                                            FCF_TEST__APPEND_TO_LIST__EXPAND2(__VA_ARGS__, , , , , , , , , , , ),\
+                                                            FCF_TEST__APPEND_TO_LIST__EXPAND3(__VA_ARGS__, , , , , , , , , , , ),\
+                                                            FCF_TEST__APPEND_TO_LIST__EXPAND4(__VA_ARGS__, , , , , , , , , , , ),\
+                                                            FCF_TEST__APPEND_TO_LIST__EXPAND5(__VA_ARGS__, , , , , , , , , , , ),\
+                                                            FCF_TEST__APPEND_TO_LIST__EXPAND6(__VA_ARGS__, , , , , , , , , , , ),\
+                                                            FCF_TEST__APPEND_TO_LIST__EXPAND7(__VA_ARGS__, , , , , , , , , , , ),\
+                                                            FCF_TEST__APPEND_TO_LIST__EXPAND8(__VA_ARGS__, , , , , , , , , , , ),\
+                                                            FCF_TEST__APPEND_TO_LIST__EXPAND9(__VA_ARGS__, , , , , , , , , , , ),\
+                                                            FCF_TEST__APPEND_TO_LIST__EXPAND10(__VA_ARGS__, , , , , , , , , , , )\
+                                                            );
 #define FCF_TEST(exp, ...) \
   if (!(exp)){ \
     std::list<std::string> names;\
-    FCF_TEST_STR_ARGS(names, __VA_ARGS__);\
+    FCF_TEST__APPEND_TO_LIST(names, __VA_ARGS__)\
     fcf::Test::Details::PrintArgs<std::list<std::string>::iterator> p;\
     p.begin = names.begin();\
     p.end = names.end();\
     std::string messge = std::string() + \
-                         "Test error: " + #exp + "  [FILE: " + __FILE__ + ":" + FCF_TEST_STR_ARGS_S(__LINE__) + "]\n" + \
+                         "Test error: " + #exp + "  [FILE: " + __FILE__ + ":" + FCF_TEST__STRINGIFY(__LINE__) + "]\n" + \
                          p(__VA_ARGS__);\
     throw std::runtime_error(messge);\
   }
