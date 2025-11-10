@@ -27,7 +27,7 @@ namespace fcf {
       template <>
       struct PrintPack<> {
         template <typename TIterator>
-        std::string operator()(TIterator a_begName, TIterator a_endName){
+        std::string operator()(TIterator /*a_begName*/, TIterator /*a_endName*/){
           return std::string();
         }
       };
