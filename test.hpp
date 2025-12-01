@@ -39,7 +39,7 @@ namespace fcf {
         template <typename... TArgPack>
         std::string operator()(TArgPack... a_pack){
           std::string result;
-          if (begin != end){
+          if (sizeof...(TArgPack) && begin != end){
             result += "  Values:\n";
           }
           result += PrintPack<TArgPack...>()(begin, end, a_pack...);
