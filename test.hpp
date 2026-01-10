@@ -4,16 +4,70 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
+#include <chrono>
 #include <list>
 
+
 namespace fcf {
-  namespace Test {
+  namespace NTest {
+
+    class Duration {
+      public:
+        Duration(unsigned long long a_iterations)
+          : _iterations(a_iterations){
+        }
+
+        Duration()
+          : _iterations(1){
+        }
+
+        unsigned long long iterations(){
+          return _iterations;
+        }
+
+        void begin(){
+          _start = std::chrono::high_resolution_clock::now();
+        }
+
+        void end(){
+          _end = std::chrono::high_resolution_clock::now();
+        }
+
+        template <typename TFunctor>
+        void operator()(TFunctor&& a_functor){
+          begin();
+          for(unsigned long long i = 0; i < _iterations; ++i) {
+            a_functor();
+          }
+          end();
+        }
+
+        std::chrono::nanoseconds totalDuration(){
+          return std::chrono::duration_cast<std::chrono::nanoseconds>(_end - _start);
+        }
+
+        std::chrono::nanoseconds duration(){
+          return std::chrono::duration_cast<std::chrono::nanoseconds>(_end - _start) / _iterations;
+        }
+
+      private:
+        unsigned long long                              _iterations;
+        std::chrono::high_resolution_clock::time_point _start;
+        std::chrono::high_resolution_clock::time_point _end;
+    };
+
+  } // NTest namespace
+} // fcf namespace
+
+
+namespace fcf {
+  namespace NTest {
     namespace Details {
 
       template <typename... TPack>
       struct PrintPack {
         template <typename TIterator, typename TArg, typename... TPack2>
-        std::string operator()(TIterator a_begName, TIterator a_endName, const TArg& a_arg, TPack2... a_pack){
+        std::string operator()(TIterator a_begName, TIterator a_endName, const TArg& a_arg, const TPack2&... a_pack){
           std::stringstream ss;
           std::string name = a_begName != a_endName ? *a_begName : "arg";
           ss << "    " << name << ": " << a_arg << std::endl;
@@ -37,7 +91,7 @@ namespace fcf {
         TIterator begin;
         TIterator end;
         template <typename... TArgPack>
-        std::string operator()(TArgPack... a_pack){
+        std::string operator()(const TArgPack&... a_pack){
           std::string result;
           if (sizeof...(TArgPack) && begin != end){
             result += "  Values:\n";
@@ -47,7 +101,7 @@ namespace fcf {
         }
       };
     } // Details namespace
-  } // Test namespace
+  } // NTest namespace
 } // fcf namespace
 
 #define FCF_TEST__STRINGIFY_2(a_arg) #a_arg
@@ -91,7 +145,7 @@ namespace fcf {
   if (!(exp)){ \
     std::list<std::string> names;\
     FCF_TEST__APPEND_TO_LIST(names, __VA_ARGS__)\
-    fcf::Test::Details::PrintArgs<std::list<std::string>::iterator> p;\
+    fcf::NTest::Details::PrintArgs<std::list<std::string>::iterator> p;\
     p.begin = names.begin();\
     p.end = names.end();\
     std::string messge = std::string() + \
