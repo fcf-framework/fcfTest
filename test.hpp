@@ -6,10 +6,368 @@
 #include <sstream>
 #include <chrono>
 #include <list>
+#include <map>
+#include <vector>
+#include <set>
 
+#ifdef FCF_IMPLEMENTATION
+  #ifndef FCF_TEST_IMPLEMENTATION
+    #define FCF_TEST_IMPLEMENTATION
+    #endif // #ifndef FCF_TEST_IMPLEMENTATION
+#endif // #ifdef FCF_IMPLEMENTATION
+
+#ifdef FCF_EXPORT
+  #ifndef FCF_TEST_EXPORT
+    #define FCF_TEST_EXPORT
+  #endif // #ifndef FCF_TEST_EXPORT
+#endif // #ifdef FCF_EXPORT
+
+#ifdef FCF_IMPORT
+  #ifndef FCF_TEST_IMPORT
+    #define FCF_TEST_IMPORT
+  #endif // #ifndef FCF_TEST_IMPORT
+#endif // #ifdef FCF_IMPORT
+
+#ifndef FCF_TEST_DELC_EXTERN
+  #ifdef FCF_TEST_IMPLEMENTATION
+    #define FCF_TEST_DELC_EXTERN
+  #else
+    #define FCF_TEST_DELC_EXTERN extern
+  #endif // #ifdef FCF_TEST_IMPLEMENTATION
+#endif // #ifndef FCF_TEST_DELC_EXTERN
+
+#ifndef FCF_TEST_DECL_EXPORT
+  #ifdef WIN32
+    #if defined(FCF_TEST_EXPORT)
+      #define FCF_TEST_DECL_EXPORT __declspec(dllexport)
+    #elif defined(FCF_TEST_IMPORT)
+      #define FCF_TEST_DECL_EXPORT __declspec(dllimport)
+    #else
+      #define FCF_TEST_DECL_EXPORT
+    #endif // #if defined(FCF_TEST_EXPORT)
+  #else
+    #define FCF_TEST_DECL_EXPORT
+  #endif // #ifdef WIN32
+#endif // #ifndef FCF_TEST_DECL_EXPORT
+
+#define _FCF_TEST_DECLARE_CCC2(am_x, am_y, am_z)\
+            am_x##am_y##am_z
+#define _FCF_TEST_DECLARE_CCC(am_x, am_y, am_z)\
+            _FCF_TEST_DECLARE_CCC2(am_x, am_y, am_z)
+
+#define _FCF_TEST_DECLARE_CC2(am_x, am_y)\
+            am_x##am_y
+#define _FCF_TEST_DECLARE_CC(am_x, am_y)\
+            _FCF_TEST_DECLARE_CC2(am_x, am_y)\
+
+#define _FCF_TEST_DECLARE_IMPL(am_className, am_part, am_group, am_test)\
+  namespace {\
+  struct am_className { \
+    am_className(){\
+      ::fcf::NTest::getStorage().add(  ::fcf::NTest::Test{ 0, am_test, 0, am_group, 0, am_part, test } );\
+    }\
+    static void test();\
+  };\
+  am_className _FCF_TEST_DECLARE_CCC(am_className, _reg_, __COUNTER__);\
+  }\
+  void am_className::test()
+
+
+#define FCF_TEST_DECLARE(am_part, am_group, am_test)\
+  _FCF_TEST_DECLARE_IMPL(_FCF_TEST_DECLARE_CC(fcf_test_,__COUNTER__), am_part,  am_group, am_test)
+
+#define FCF_TEST_PART_ORDER(am_part, am_order)\
+  namespace {\
+    ::fcf::NTest::PartOrderRegisrator _FCF_TEST_DECLARE_CC(fcf_test_order_registrator_, __COUNTER__)(am_part, am_order);\
+  }
+
+#define FCF_TEST_GROUP_ORDER(am_group, am_order)\
+  namespace {\
+    ::fcf::NTest::GroupOrderRegisrator _FCF_TEST_DECLARE_CC(fcf_test_order_registrator_, __COUNTER__)(am_group, am_order);\
+  }
+
+#define FCF_TEST_TEST_ORDER(am_test, am_order)\
+  namespace {\
+    ::fcf::NTest::TestOrderRegisrator _FCF_TEST_DECLARE_CC(fcf_test_order_registrator_, __COUNTER__)(am_test, am_order);\
+  }
 
 namespace fcf {
   namespace NTest {
+
+    struct Test {
+      int         nameOrder;
+      std::string name;
+      int         groupOrder;
+      std::string group;
+      int         partOrder;
+      std::string part;
+      void (*testFunction)();
+
+      bool operator<(const Test& a_test) const{
+        return partOrder < a_test.partOrder ? true :
+               partOrder > a_test.partOrder ? false :
+               part < a_test.part ? true :
+               part > a_test.part ? false :
+               groupOrder < a_test.groupOrder ? true :
+               groupOrder > a_test.groupOrder ? false :
+               group < a_test.group ? true :
+               group > a_test.group ? false :
+               nameOrder < a_test.nameOrder ? true :
+               nameOrder > a_test.nameOrder ? false :
+               name < a_test.name ? true :
+               name > a_test.name ? false :
+                                    false;
+      }
+    };
+
+    struct Tests{
+      typedef std::map<std::string, Test> MapType;
+      MapType values;
+    };
+
+    struct Groups{
+      typedef std::map<std::string, Tests> MapType;
+      MapType values;
+    };
+
+    struct Parts{
+      typedef std::map<std::string, Groups> MapType;
+      MapType values;
+    };
+
+    struct Options{
+      std::vector<std::string> parts;
+      std::vector<std::string> groups;
+      std::vector<std::string> tests;
+    };
+
+
+    struct Storage {
+      typedef std::map<std::string, int> OrderMapType;
+
+      Parts        parts;
+      OrderMapType partOrders;
+      OrderMapType groupOrders;
+      OrderMapType testOrders;
+
+      void add(const Test& a_test) {
+        Parts::MapType::iterator partIterator = parts.values.insert( Parts::MapType::value_type(a_test.part, Groups() )  ).first;
+        Groups::MapType::iterator groupIterator = partIterator->second.values.insert( Groups::MapType::value_type(a_test.group, Tests() )  ).first;
+        Test test(a_test);
+
+        {
+          OrderMapType::const_iterator it = partOrders.find(a_test.part);
+          if (it != partOrders.end()){
+            test.partOrder = it->second;
+          }
+        }
+        {
+          OrderMapType::const_iterator it = groupOrders.find(a_test.group);
+          if (it != groupOrders.end()){
+            test.groupOrder = it->second;
+          }
+        }
+        {
+          OrderMapType::const_iterator it = testOrders.find(a_test.name);
+          if (it != testOrders.end()){
+            test.nameOrder = it->second;
+          }
+        }
+
+        groupIterator->second.values[a_test.name] = test;
+      }
+    };
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      FCF_TEST_DECL_EXPORT Storage& getStorage(){
+        static Storage* storage = 0;
+        if (!storage){
+          storage = new Storage();
+        }
+        return *storage;
+      }
+    #else
+      FCF_TEST_DECL_EXPORT Storage& getStorage();
+    #endif
+
+    struct Regisrator {
+      Regisrator(const Test& a_test){
+        getStorage().add(a_test);
+      }
+    };
+
+    struct PartOrderRegisrator {
+      PartOrderRegisrator(const char* a_name, int a_order){
+        getStorage().partOrders[a_name] = a_order;
+      }
+    };
+
+    struct GroupOrderRegisrator {
+      GroupOrderRegisrator(const char* a_name, int a_order){
+        getStorage().groupOrders[a_name] = a_order;
+      }
+    };
+
+    struct TestOrderRegisrator {
+      TestOrderRegisrator(const char* a_name, int a_order){
+        getStorage().testOrders[a_name] = a_order;
+      }
+    };
+
+    namespace NDetails {
+      inline void selectTests(std::set<Test>& a_dst, const Tests& a_tests, const Options& a_options){
+        if (a_options.tests.empty()){
+          for(const Tests::MapType::value_type& item : a_tests.values){
+            a_dst.insert(item.second);
+          }
+        } else {
+          for(const std::string& testName : a_options.groups){
+            Tests::MapType::const_iterator it = a_tests.values.find(testName);
+            Tests::MapType::const_iterator itEnd = a_tests.values.end();
+            if (it != itEnd){
+              a_dst.insert(it->second);
+            } else {
+              throw std::runtime_error(std::string() + "The test named '" + testName + "' cannot be found");
+            }
+          }
+        }
+      }
+
+      inline void selectGroups(std::set<Test>& a_dst, const Groups& a_groups, const Options& a_options){
+        if (a_options.groups.empty()){
+          for(const Groups::MapType::value_type& item : a_groups.values){
+            selectTests(a_dst, item.second, a_options);
+          }
+        } else {
+          for(const std::string& groupName : a_options.groups){
+            Groups::MapType::const_iterator it = a_groups.values.find(groupName);
+            Groups::MapType::const_iterator itEnd = a_groups.values.end();
+            if (it != itEnd){
+              selectTests(a_dst, it->second, a_options);
+            } else {
+              throw std::runtime_error(std::string() + "The test group named '" + groupName + "' cannot be found");
+            }
+          }
+        }
+      }
+
+      inline void selectParts(std::set<Test>& a_dst, const Options& a_options){
+        if (a_options.parts.empty()){
+          for(const Parts::MapType::value_type& item : ::fcf::NTest::getStorage().parts.values){
+            selectGroups(a_dst, item.second, a_options);
+          }
+        } else {
+          for(const std::string& partName : a_options.parts){
+            Parts::MapType::const_iterator it = ::fcf::NTest::getStorage().parts.values.find(partName);
+            Parts::MapType::const_iterator itEnd = ::fcf::NTest::getStorage().parts.values.end();
+            if (it != itEnd){
+              selectGroups(a_dst, it->second, a_options);
+            } else {
+              throw std::runtime_error(std::string() + "The test part named '" + partName + "' cannot be found");
+            }
+          }
+        }
+      }
+    }
+    
+    #ifdef FCF_TEST_IMPLEMENTATION
+      FCF_TEST_DECL_EXPORT void cmdHelp(){
+        std::cout << "Test options:" << std::endl;
+        std::cout << "  --test-run  - Run tests" << std::endl;
+        std::cout << "  --test-list - Displays a list of all tests" << std::endl;
+        std::cout << "  --test-part  PART_NAME - Run only tests from the part. The parameter can be used multiple times" << std::endl;
+        std::cout << "  --test-group GROUP_NAME - Run only tests from the group. The parameter can be used multiple times" << std::endl;
+        std::cout << "  --test-test  TEST_NAME - Run only this test. The parameter can be used multiple times" << std::endl;
+        std::cout << "  --test-help  - Help message" << std::endl;
+      }
+    #else
+      FCF_TEST_DECL_EXPORT void cmdHelp();
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      FCF_TEST_DECL_EXPORT void cmdList(){
+        Options options;
+        std::set<Test> tests;
+        NDetails::selectParts(tests, options);
+        std::cout << "List of tests:" << std::endl;
+        for(const Test& test : tests){
+          std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.name  << "\""<< std::endl;
+        }
+      }
+    #else
+      FCF_TEST_DECL_EXPORT void cmdList();
+    #endif
+
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      FCF_TEST_DECL_EXPORT void run(const Options& a_options){
+        std::set<Test> tests;
+        NDetails::selectParts(tests, a_options);
+
+        for(const Test& test : tests) {
+          std::cout << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+          test.testFunction();
+        }
+
+        std::cout << std::endl;
+        std::cout << "All tests were completed. Number of tests: " << tests.size() << std::endl;
+      }
+
+    #else
+      FCF_TEST_DECL_EXPORT void run(const Options& a_options);
+    #endif
+
+    enum CmdMode{
+      CM_NONE,
+      CM_RUN,
+      CM_LIST,
+      CM_HELP,
+    };
+
+    enum CmdRunMode {
+      CRM_PARSE,
+      CRM_EXECUTE,
+      CRM_RUN,
+    };
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode){
+        CmdMode mode = CM_NONE;
+        for(int i = 0; i < a_argc; ++i){
+          if (strcmp(a_argv[i], "--test-run") == 0){
+            mode = CM_RUN;
+          } else if (strcmp(a_argv[i], "--test-help") == 0){
+            mode = CM_HELP;
+            if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN){
+              cmdHelp();
+              return mode;
+            }
+          } else if (strcmp(a_argv[i], "--test-list") == 0){
+            mode = CM_LIST;
+            if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN){
+              cmdList();
+              return mode;
+            }
+          } else if (strcmp(a_argv[i], "--test-part") == 0 && (i+1) < a_argc){
+            a_dstOptions.parts.push_back(a_argv[i+1]);
+            ++i;
+          } else if (strcmp(a_argv[i], "--test-group") == 0 && (i+1) < a_argc){
+            a_dstOptions.groups.push_back(a_argv[i+1]);
+            ++i;
+          } else if (strcmp(a_argv[i], "--test-test") == 0 && (i+1) < a_argc){
+            a_dstOptions.tests.push_back(a_argv[i+1]);
+            ++i;
+          }
+        }
+        if ((mode == CM_RUN && a_runMode == CRM_EXECUTE) || a_runMode == CRM_RUN){
+          run(a_dstOptions);
+        }
+
+        return mode;
+      }
+    #else
+      FCF_TEST_DECL_EXPORT bool cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode);
+    #endif
 
     class Duration {
       public:
