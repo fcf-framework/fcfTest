@@ -3,7 +3,11 @@
 
 #include <stdexcept>
 #include <string>
+#include <iostream>
 #include <sstream>
+#include <cstring>
+#include <streambuf>
+#include <cctype>
 #include <chrono>
 #include <list>
 #include <map>
@@ -94,6 +98,149 @@
 namespace fcf {
   namespace NTest {
 
+    namespace NDetails {
+
+      class EmptyStreamBuffer: public std::streambuf {
+        protected:
+          int_type overflow(int_type a_char) override{
+            return a_char;
+          }
+      };
+
+      class EmptyStream : public std::ostream {
+        public:
+          EmptyStream() : std::ostream(&_buffer) {
+          }
+        private:
+          EmptyStreamBuffer _buffer;
+      };
+    }
+
+    enum LogLevel{
+      LL_OFF,
+      LL_FTL,
+      LL_ERR,
+      LL_WRN,
+      LL_ATT,
+      LL_LOG,
+      LL_INF,
+      LL_DBG,
+      LL_TRC,
+      LL_ALL,
+    };
+
+    struct Logger {
+      public:
+        Logger()
+          : _level(LL_LOG){
+        }
+
+        std::ostream& ftl(){
+          return _level >= LL_FTL ? (std::ostream&)std::cout : (std::ostream&)_empty;
+        }
+
+        std::ostream& err(){
+          return _level >= LL_ERR ? (std::ostream&)std::cout : (std::ostream&)_empty;
+        }
+
+        std::ostream& wrn(){
+          return _level >= LL_WRN ? (std::ostream&)std::cout : (std::ostream&)_empty;
+        }
+
+        std::ostream& att(){
+          return _level >= LL_ATT ? (std::ostream&)std::cout : (std::ostream&)_empty;
+        }
+
+        std::ostream& log(){
+          return _level >= LL_LOG ? (std::ostream&)std::cout : (std::ostream&)_empty;
+        }
+
+        std::ostream& inf(){
+          return _level >= LL_INF ? (std::ostream&)std::cout : (std::ostream&)_empty;
+        }
+
+        std::ostream& dbg(){
+          return _level >= LL_DBG ? (std::ostream&)std::cout : (std::ostream&)_empty;
+        }
+
+        std::ostream& trc(){
+          return _level >= LL_TRC ? (std::ostream&)std::cout : (std::ostream&)_empty;
+        }
+
+        const char* getStrLevel(){
+          const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc"};
+          int size = sizeof(levels) / sizeof(levels[0]);
+          int level = _level < 0     ? 0 :
+                      _level >= size ? size - 1 :
+                                      _level;
+          return levels[level];
+        }
+
+        void setStrLevel(const char* a_level){
+          const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc"};
+          int size = sizeof(levels) / sizeof(levels[0]);
+          _level = LL_LOG;
+          for(int i = 0; i < size; ++i){
+            if (std::strcmp(levels[i],a_level) == 0){
+              _level = i;
+              break;
+            }
+          }
+        }
+
+        int getLogger(){
+          return _level;
+        }
+
+      protected:
+        int                   _level;
+        NDetails::EmptyStream _empty;
+    };
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      FCF_TEST_DECL_EXPORT Logger& logger(){
+        static Logger* logger = 0;
+        if (!logger){
+          logger = new Logger();
+        }
+        return *logger;
+      }
+    #else
+      FCF_TEST_DECL_EXPORT Logger& logger();
+    #endif
+
+    inline std::ostream& ftl(){
+      return logger().ftl();
+    }
+
+    inline std::ostream& err(){
+      return logger().err();
+    }
+
+    inline std::ostream& wrn(){
+      return logger().wrn();
+    }
+
+    inline std::ostream& att(){
+      return logger().att();
+    }
+
+    inline std::ostream& log(){
+      return logger().log();
+    }
+
+    inline std::ostream& inf(){
+      return logger().inf();
+    }
+
+    inline std::ostream& dbg(){
+      return logger().dbg();
+    }
+
+    inline std::ostream& trc(){
+      return logger().trc();
+    }
+
     struct Test {
       int         nameOrder;
       std::string name;
@@ -139,6 +286,7 @@ namespace fcf {
       std::vector<std::string> parts;
       std::vector<std::string> groups;
       std::vector<std::string> tests;
+      std::string              logLevel;
     };
 
 
@@ -269,7 +417,7 @@ namespace fcf {
         }
       }
     }
-    
+
     #ifdef FCF_TEST_IMPLEMENTATION
       FCF_TEST_DECL_EXPORT void cmdHelp(){
         std::cout << "Test options:" << std::endl;
@@ -278,6 +426,7 @@ namespace fcf {
         std::cout << "  --test-part  PART_NAME - Run only tests from the part. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-group GROUP_NAME - Run only tests from the group. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-test  TEST_NAME - Run only this test. The parameter can be used multiple times" << std::endl;
+        std::cout << "  --test-log-level LEVEL - Logging level (VALUES: off, ftl, err, wrn, att, log, inf, dbg, trc)"<< std::endl;
         std::cout << "  --test-help  - Help message" << std::endl;
       }
     #else
@@ -301,16 +450,25 @@ namespace fcf {
 
     #ifdef FCF_TEST_IMPLEMENTATION
       FCF_TEST_DECL_EXPORT void run(const Options& a_options){
-        std::set<Test> tests;
-        NDetails::selectParts(tests, a_options);
+        const char* lastLevel = logger().getStrLevel();
+        logger().setStrLevel(a_options.logLevel.c_str());
 
-        for(const Test& test : tests) {
-          std::cout << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
-          test.testFunction();
+        try {
+          std::set<Test> tests;
+          NDetails::selectParts(tests, a_options);
+
+          for(const Test& test : tests) {
+            log() << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+            test.testFunction();
+          }
+
+          log() << std::endl;
+          log() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
+        } catch(...){
+          logger().setStrLevel(lastLevel);
+          throw;
         }
-
-        std::cout << std::endl;
-        std::cout << "All tests were completed. Number of tests: " << tests.size() << std::endl;
+        logger().setStrLevel(lastLevel);
       }
 
     #else
@@ -333,6 +491,7 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode){
         CmdMode mode = CM_NONE;
+
         for(int i = 0; i < a_argc; ++i){
           if (strcmp(a_argv[i], "--test-run") == 0){
             mode = CM_RUN;
@@ -342,6 +501,9 @@ namespace fcf {
               cmdHelp();
               return mode;
             }
+          } else if (strcmp(a_argv[i], "--test-log-level") == 0) {
+            a_dstOptions.logLevel = a_argv[i+1];
+            ++i;
           } else if (strcmp(a_argv[i], "--test-list") == 0){
             mode = CM_LIST;
             if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN){
