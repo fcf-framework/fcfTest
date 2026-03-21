@@ -769,9 +769,9 @@ namespace fcf {
      * @brief Enumerates modes for command line argument parsing and execution.
      */
     enum CmdRunMode {
-      CRM_PARSE, ///< Parsing arguments.
-      CRM_EXECUTE, ///< Executing logic after parsing.
-      CRM_RUN,    ///< Directly running tests.
+      CRM_PARSE,    ///< cmdRun() only parses the command line.
+      CRM_EXECUTE,  ///< cmdRun() parses the command line and runs tests if the --test-run flag was passed.
+      CRM_RUN,      ///< cmdRun() parses the command line and runs the tests unless the --test-help or --test-list run flags were specified on the command line.
     };
 
     #ifdef FCF_TEST_IMPLEMENTATION
