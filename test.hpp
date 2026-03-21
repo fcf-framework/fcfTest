@@ -723,10 +723,17 @@ namespace fcf {
        * @brief Executes the selected tests based on provided options.
        * 
        * @param a_options Configuration options specifying which tests to run and logging level.
+       * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information. 
+       *                                        If an error occurs, the value is set to true.
+       *                                        If a null pointer is passed, the function throws an exception.
        */
-      FCF_TEST_DECL_EXPORT void run(const Options& a_options){
+      FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0){
         const char* lastLevel = logger().getStrLevel();
         logger().setStrLevel(a_options.logLevel.c_str());
+
+        if (a_errorPtr){
+          *a_errorPtr = false;
+        }
 
         try {
           std::set<Test> tests;
@@ -739,9 +746,15 @@ namespace fcf {
 
           log() << std::endl;
           log() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
-        } catch(...){
-          logger().setStrLevel(lastLevel);
-          throw;
+        } catch(const std::exception& e){
+          if (a_errorPtr){
+            *a_errorPtr = true;
+            err() << e.what() << std::endl;
+            logger().setStrLevel(lastLevel);
+          } else {
+            logger().setStrLevel(lastLevel);
+            throw;
+          }
         }
         logger().setStrLevel(lastLevel);
       }
@@ -751,8 +764,11 @@ namespace fcf {
        * @brief Declaration for executing the selected tests.
        * 
        * @param a_options Configuration options specifying which tests to run and logging level.
+       * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information. 
+       *                                        If an error occurs, the value is set to true.
+       *                                        If a null pointer is passed, the function throws an exception.
        */
-      FCF_TEST_DECL_EXPORT void run(const Options& a_options);
+      FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0);
     #endif
 
     /**
@@ -782,9 +798,12 @@ namespace fcf {
        * @param a_argc Number of command line arguments.
        * @param a_argv Array of command line arguments.
        * @param a_runMode Current mode of execution (parse, execute, or run).
+       * @param a_errorPtr (default = (bool*)0) A pointer to a variable that receives information about a test error.
+       *                                        If an error occurs, the value is set to true.
+       *                                        If a null pointer is passed, the function throws an exception.
        * @return The determined command mode after processing.
        */
-      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode){
+      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0){
         CmdMode mode = CM_NONE;
 
         for(int i = 0; i < a_argc; ++i){
@@ -817,7 +836,7 @@ namespace fcf {
           }
         }
         if ((mode == CM_RUN && a_runMode == CRM_EXECUTE) || a_runMode == CRM_RUN){
-          run(a_dstOptions);
+          run(a_dstOptions, a_errorPtr);
         }
 
         return mode;
@@ -830,9 +849,12 @@ namespace fcf {
        * @param a_argc Number of command line arguments.
        * @param a_argv Array of command line arguments.
        * @param a_runMode Current mode of execution (parse, execute, or run).
+       * @param a_errorPtr (default = (bool*)0) A pointer to a variable that receives information about a test error.
+       *                                        If an error occurs, the value is set to true.
+       *                                        If a null pointer is passed, the function throws an exception.
        * @return The determined command mode after processing.
        */
-      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode);
+      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0);
     #endif
 
     /**
@@ -841,11 +863,14 @@ namespace fcf {
      * @param a_argc Number of command line arguments.
      * @param a_argv Array of command line arguments.
      * @param a_runMode Current mode of execution (parse, execute, or run).
+     * @param a_errorPtr (default = (bool*)0) A pointer to a variable that receives information about a test error.
+     *                                        If an error occurs, the value is set to true.
+     *                                        If a null pointer is passed, the function throws an exception.
      * @return The determined command mode after processing.
      */
-    inline CmdMode cmdRun(int a_argc, const char** a_argv, CmdRunMode a_runMode){
+    inline CmdMode cmdRun(int a_argc, const char** a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0){
       Options options;
-      return cmdRun(options, a_argc, a_argv, a_runMode);
+      return cmdRun(options, a_argc, a_argv, a_runMode, a_errorPtr);
     }
 
     /**

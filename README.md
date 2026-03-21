@@ -24,8 +24,9 @@ FCF_TEST_DECLARE("MyLibraryPartName", "ExamplesGroupName", "VectorSizeTestName")
 
 int main(int a_argc, char* a_argv[]){
   // Run the test suite via command line interface
-  fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_RUN);
-  return 0;
+  bool error;
+  fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_RUN, &error);
+  return error ? 1 : 0;
 }
 ```
 
@@ -237,8 +238,9 @@ int main(int a_argc, char* a_argv[]) {
         fcf::NTest::cmdList();
         return 0;
     } else if (mode == fcf::NTest::CM_RUN) {
-        fcf::NTest::run(options);
-        return 0;
+        bool error;
+        fcf::NTest::run(options, &error);
+        return error ? 1 : 0;
     }
     // ... default execution
 }
@@ -263,7 +265,7 @@ int main(int a_argc, char* a_argv[]) {
 
 - **`cmdHelp()`**: Displays help information and available command-line flags.
 - **`cmdList()`**: Displays a list of all registered tests with their hierarchy structure.
-- **`run(const Options&)`**: Executes the selected tests based on an `Options` object. Usually called internally by `cmdRun`.
+- **`run(const Options& a_options, bool* a_errorPtr = 0)`**: Executes the selected tests based on an `Options` object. Usually called internally by `cmdRun`. If a null pointer is passed, the function throws an exception when an error occurs.
 
 ## Full Usage Example
 
@@ -305,9 +307,9 @@ FCF_TEST_TEST_ORDER("Addition", 1);
 
 int main(int a_argc, char* a_argv[]) {
     // Use CRM_RUN for standard execution
-    fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_RUN);
-
-    return 0;
+    bool error;
+    fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_RUN, &error);
+    return error ? 1 : 0;
 }
 ```
 
