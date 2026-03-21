@@ -31,13 +31,12 @@ int main(int a_argc, char* a_argv[]){
 ```
 
 **Output:**
-The program will execute the registered tests. If an assertion fails, it throws a descriptive error including file, line number, and variable values. If successful, it prints a summary count of completed tests.
+The program will execute the registered tests. If an assertion fails, it prints a descriptive error including file, line number, and variable values. If successful, it prints a summary count of completed tests.
 
  ```stdout
 Performing the test: "MyLibraryPartName" -> "ExamplesGroupName" -> "VectorSizeTestName" ...
 Comparison started
-terminate called after throwing an instance of 'std::runtime_error'
-  what():  Test error: vec.size() == 2  [FILE: DIR_PATH/main.cpp:9]
+Test error: vec.size() == 2  [FILE: DIR_PATH/main.cpp:9]
   Values:
     vec.size(): 1
 ```
