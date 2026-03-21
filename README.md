@@ -218,7 +218,7 @@ This enum dictates how `cmdRun` behaves when parsing arguments:
 
 - **`CRM_PARSE`**: Parses arguments but **does not** execute tests or show help/list. Returns the determined mode (e.g., `CM_HELP`, `CM_LIST`) so the caller can decide what to do next. Useful for building a custom menu system.
 - **`CRM_EXECUTE`**: Parses arguments. If the flag `--test-run` was provided, it executes tests. If `--test-help` or `--test-list` were provided, it displays that information immediately and returns.
-- **`CRM_RUN`**: Parses arguments and **automatically executes** tests unless `--test-help` or `--test-list` is explicitly requested. This is the standard mode for running tests directly from the command line (e.g., `./my_tests --test-run`).
+- **`CRM_RUN`**: Parses arguments and **automatically executes** tests unless `--test-help` or `--test-list` is explicitly requested. This is the standard mode for running tests directly from the command line (e.g., `./my_tests --test-log-level inf`).
 
 #### Usage Example
 
