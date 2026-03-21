@@ -747,15 +747,15 @@ namespace fcf {
           log() << std::endl;
           log() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
         } catch(const std::exception& e){
+          err() << e.what() << std::endl;
+          logger().setStrLevel(lastLevel);
           if (a_errorPtr){
             *a_errorPtr = true;
-            err() << e.what() << std::endl;
-            logger().setStrLevel(lastLevel);
           } else {
-            logger().setStrLevel(lastLevel);
             throw;
           }
         }
+
         logger().setStrLevel(lastLevel);
       }
 
