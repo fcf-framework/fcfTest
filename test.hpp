@@ -836,6 +836,19 @@ namespace fcf {
     #endif
 
     /**
+     * @brief Parses command line arguments and executes the appropriate action.
+     *
+     * @param a_argc Number of command line arguments.
+     * @param a_argv Array of command line arguments.
+     * @param a_runMode Current mode of execution (parse, execute, or run).
+     * @return The determined command mode after processing.
+     */
+    inline bool cmdRun(int a_argc, const char** a_argv, CmdRunMode a_runMode){
+      Options options;
+      return cmdRun(options, a_argc, a_argv, a_runMode);
+    }
+
+    /**
      * @brief Represents a timing duration for benchmarking or performance testing.
      */
     class Duration {
