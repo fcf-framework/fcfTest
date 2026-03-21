@@ -323,7 +323,7 @@ namespace fcf {
          * @brief Returns the current integer value of the log level.
          * @return Integer representation of the log level.
          */
-        int getLogger(){
+        int getLevel(){
           return _level;
         }
 
