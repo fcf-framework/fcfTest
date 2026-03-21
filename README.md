@@ -1,3 +1,4 @@
+
 # fcfTest
 
 **fcfTest** is a lightweight C++ header-only testing framework designed for unit testing within the FCF library ecosystem. It provides a simple macro `FCF_TEST` for assertions and a robust command-line interface for managing, filtering, and executing test suites.
@@ -33,7 +34,25 @@ The program will execute the registered tests. If an assertion fails, it throws 
 
 ## Core Macros
 
-### `FCF_TEST(a_expression [, a_observedVariables ...])`
+### `FCF_TEST_IMPLEMENTATION`
+
+This macro is used to enable the implementation section within the header file `fcfTest/test.hpp`.
+- **Usage**: Must be defined (`#define FCF_TEST_IMPLEMENTATION`) before including the header if you want to use the library's functionality (e.g., running tests, using the logger).
+- **Purpose**: Prevents multiple definition errors by ensuring that global variables and function definitions are only generated once per compilation unit. When omitted, the header provides only declarations.
+
+### `FCF_TEST_EXPORT`
+
+This macro is used to export symbols from the test library when building it as a DLL or shared library.
+- **Usage**: Defined by the main FCF library macros (`FCF_EXPORT`) if applicable, otherwise empty.
+- **Purpose**: Ensures consistent symbol visibility for functions and variables defined in `fcfTest` when compiled with `/FD` (DLL) settings on Windows or similar export flags on Linux/macOS.
+
+### `FCF_TEST_IMPORT`
+
+This macro is used to import symbols from the test library when using it as a client application linking against a shared library.
+- **Usage**: Defined by the main FCF library macros (`FCF_IMPORT`) if applicable, otherwise empty.
+- **Purpose**: Ensures that functions and variables defined in external shared libraries are correctly imported into the client process without multiple definition errors.
+
+### `FCF_TEST`
 
 The primary macro for performing checks in unit tests.
 - **Behavior**: Evaluates `(a_expression)`. If the result is false (non-zero), it throws a `std::runtime_error`.
@@ -282,4 +301,5 @@ int main(int a_argc, char* a_argv[]) {
     return 0;
 }
 ```
+
 
