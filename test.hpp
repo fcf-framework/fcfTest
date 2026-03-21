@@ -832,7 +832,7 @@ namespace fcf {
        * @param a_runMode Current mode of execution (parse, execute, or run).
        * @return The determined command mode after processing.
        */
-      FCF_TEST_DECL_EXPORT bool cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode);
+      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode);
     #endif
 
     /**
@@ -843,7 +843,7 @@ namespace fcf {
      * @param a_runMode Current mode of execution (parse, execute, or run).
      * @return The determined command mode after processing.
      */
-    inline bool cmdRun(int a_argc, const char** a_argv, CmdRunMode a_runMode){
+    inline CmdMode cmdRun(int a_argc, const char** a_argv, CmdRunMode a_runMode){
       Options options;
       return cmdRun(options, a_argc, a_argv, a_runMode);
     }
