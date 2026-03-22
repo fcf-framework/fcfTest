@@ -241,7 +241,7 @@ int main(int a_argc, char* a_argv[]) {
         // An error occurred while running the test.
         return 1;
     }
-    if (mode != CM_NONE){
+    if (mode != fcf::NTest::CM_NONE){
         // The --test-run | --test-help | ---test-list flags were passed at startup.
         // And the function performed all the actions
         return 0;
