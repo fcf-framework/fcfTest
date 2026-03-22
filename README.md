@@ -249,7 +249,7 @@ int main(int a_argc, char* a_argv[]) {
 
     .... your application code ...
 
-    return0;
+    return 0;
 }
 ```
 
