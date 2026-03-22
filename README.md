@@ -221,13 +221,19 @@ This enum dictates how `cmdRun` behaves when parsing arguments:
 - **`CRM_EXECUTE`**: Parses arguments. If the flag `--test-run` was provided, it executes tests. If `--test-help` or `--test-list` were provided, it displays that information immediately and returns.
 - **`CRM_RUN`**: Parses arguments and **automatically executes** tests unless `--test-help` or `--test-list` is explicitly requested. This is the standard mode for running tests directly from the command line (equivalent: `./my_tests --test-run`).
 
-#### Usage Example
+#### Usage Examples
 
 ```c++
 int main(int a_argc, char* a_argv[]) {
     // Standard execution: Parse and run if requested via flags
-    fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_RUN);
+    bool error = false;
+    fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_RUN, &error);
+    return error ? 1 : 0;
+}
+```
 
+```c++
+int main(int a_argc, char* a_argv[]) {
     // Or custom menu mode: Just parse arguments to see what was asked
     fcf::NTest::Options options;
     int mode = fcf::NTest::cmdRun(options, a_argc, (const char**)a_argv, fcf::NTest::CRM_PARSE);
@@ -238,7 +244,7 @@ int main(int a_argc, char* a_argv[]) {
         fcf::NTest::cmdList();
         return 0;
     } else if (mode == fcf::NTest::CM_RUN) {
-        bool error;
+        bool error = false;
         fcf::NTest::run(options, &error);
         return error ? 1 : 0;
     }
