@@ -234,6 +234,28 @@ int main(int a_argc, char* a_argv[]) {
 
 ```c++
 int main(int a_argc, char* a_argv[]) {
+    // Standard execution: Parse and run by request.
+    bool error = false;
+    int mode = fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_EXECUTE, &error);
+    if (error) {
+        // An error occurred while running the test.
+        return 1;
+    }
+    if (mode != CM_NONE){
+        // The --test-run | --test-help | ---test-list flags were passed at startup.
+        // And the function performed all the actions
+        return 0;
+    }
+
+    .... your application code ...
+
+    return0;
+}
+```
+
+
+```c++
+int main(int a_argc, char* a_argv[]) {
     // Or custom menu mode: Just parse arguments to see what was asked
     fcf::NTest::Options options;
     int mode = fcf::NTest::cmdRun(options, a_argc, (const char**)a_argv, fcf::NTest::CRM_PARSE);
