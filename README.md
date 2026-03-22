@@ -225,7 +225,7 @@ This enum dictates how `cmdRun` behaves when parsing arguments:
 
 ```c++
 int main(int a_argc, char* a_argv[]) {
-    // Standard execution: Parse and run if requested via flags
+    // Standard execution: Parse and run.
     bool error = false;
     fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_RUN, &error);
     return error ? 1 : 0;
