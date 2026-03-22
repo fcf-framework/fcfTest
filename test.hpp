@@ -698,29 +698,21 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       /**
        * @brief  Displays a list of all registered tests.
-       * @return Returns true on success. Returns false if the section, group, or test is not found.
        */
-      FCF_TEST_DECL_EXPORT bool cmdList(){
+      FCF_TEST_DECL_EXPORT void cmdList(){
         Options options;
         std::set<Test> tests;
-        try {
-          NDetails::selectParts(tests, options);
-          std::cout << "List of tests:" << std::endl;
-          for(const Test& test : tests){
-            std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.name  << "\""<< std::endl;
-          }
-        } catch(const std::exception& e){
-          std::cout << e.what() << std::endl;
-          return false;
+        NDetails::selectParts(tests, options);
+        std::cout << "List of tests:" << std::endl;
+        for(const Test& test : tests){
+          std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.name  << "\""<< std::endl;
         }
-        return true;
       }
     #else
       /**
        * @brief Declaration for displaying a list of all registered tests.
-       * @return Returns true on success. Returns false if the section, group, or test is not found.
        */
-      FCF_TEST_DECL_EXPORT bool cmdList();
+      FCF_TEST_DECL_EXPORT void cmdList();
     #endif
 
 
