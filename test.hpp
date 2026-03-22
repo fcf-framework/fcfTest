@@ -114,7 +114,7 @@
   namespace {\
   struct am_className { \
     am_className(){\
-      ::fcf::NTest::getStorage().add(  ::fcf::NTest::Test{ 0, am_test, 0, am_group, 0, am_part, test } );\
+      ::fcf::NTest::getStorage().add( ::fcf::NTest::Test{ 0, am_test, 0, am_group, 0, am_part, test } );\
     }\
     static void test();\
   };\
@@ -507,28 +507,7 @@ namespace fcf {
       void add(const Test& a_test) {
         Parts::MapType::iterator partIterator = parts.values.insert( Parts::MapType::value_type(a_test.part, Groups() )  ).first;
         Groups::MapType::iterator groupIterator = partIterator->second.values.insert( Groups::MapType::value_type(a_test.group, Tests() )  ).first;
-        Test test(a_test);
-
-        {
-          OrderMapType::const_iterator it = partOrders.find(a_test.part);
-          if (it != partOrders.end()){
-            test.partOrder = it->second;
-          }
-        }
-        {
-          OrderMapType::const_iterator it = groupOrders.find(a_test.group);
-          if (it != groupOrders.end()){
-            test.groupOrder = it->second;
-          }
-        }
-        {
-          OrderMapType::const_iterator it = testOrders.find(a_test.name);
-          if (it != testOrders.end()){
-            test.nameOrder = it->second;
-          }
-        }
-
-        groupIterator->second.values[a_test.name] = test;
+        groupIterator->second.values[a_test.name] = a_test;
       }
     };
 
@@ -610,8 +589,27 @@ namespace fcf {
        */
       inline void selectTests(std::set<Test>& a_dst, const Tests& a_tests, const Options& a_options){
         if (a_options.tests.empty()){
-          for(const Tests::MapType::value_type& item : a_tests.values){
-            a_dst.insert(item.second);
+          for(const Tests::MapType::value_type& item : a_tests.values) {
+            Test test(item.second);
+            {
+              Storage::OrderMapType::const_iterator it = getStorage().partOrders.find(test.part);
+              if (it != getStorage().partOrders.end()){
+                test.partOrder = it->second;
+              }
+            }
+            {
+              Storage::OrderMapType::const_iterator it = getStorage().groupOrders.find(test.group);
+              if (it != getStorage().groupOrders.end()){
+                test.groupOrder = it->second;
+              }
+            }
+            {
+              Storage::OrderMapType::const_iterator it = getStorage().testOrders.find(test.name);
+              if (it != getStorage().testOrders.end()){
+                test.nameOrder = it->second;
+              }
+            }
+            a_dst.insert(test);
           }
         } else {
           for(const std::string& testName : a_options.groups){
@@ -699,22 +697,30 @@ namespace fcf {
 
     #ifdef FCF_TEST_IMPLEMENTATION
       /**
-       * @brief Displays a list of all registered tests.
+       * @brief  Displays a list of all registered tests.
+       * @return Returns true on success. Returns false if the section, group, or test is not found.
        */
-      FCF_TEST_DECL_EXPORT void cmdList(){
+      FCF_TEST_DECL_EXPORT bool cmdList(){
         Options options;
         std::set<Test> tests;
-        NDetails::selectParts(tests, options);
-        std::cout << "List of tests:" << std::endl;
-        for(const Test& test : tests){
-          std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.name  << "\""<< std::endl;
+        try {
+          NDetails::selectParts(tests, options);
+          std::cout << "List of tests:" << std::endl;
+          for(const Test& test : tests){
+            std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.name  << "\""<< std::endl;
+          }
+        } catch(const std::exception& e){
+          std::cout << e.what() << std::endl;
+          return false;
         }
+        return true;
       }
     #else
       /**
        * @brief Declaration for displaying a list of all registered tests.
+       * @return Returns true on success. Returns false if the section, group, or test is not found.
        */
-      FCF_TEST_DECL_EXPORT void cmdList();
+      FCF_TEST_DECL_EXPORT bool cmdList();
     #endif
 
 
