@@ -173,6 +173,7 @@ The `fcf::NTest::Duration` class provides a simple interface for measuring the e
 ### Members and Methods
 - **Constructor**: `Duration(unsigned long long a_iterations)` sets the number of iterations. Default is 1.
 - **Methods**:
+  - `unsigned long long iterations()`: Returns the number of iterations.
   - `void begin()`: Records start time.
   - `void end()`: Records end time.
   - `std::chrono::nanoseconds totalDuration()`: Returns elapsed time for all iterations.
