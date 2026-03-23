@@ -7,9 +7,9 @@
 // this macro should be defined in only one `.cpp` file.
 //
 // When working with DLLs, you must define both the `FCF_TEST_IMPLEMENTATION` 
-// and `FCF_EXPORT` macros within the main library that exports 
+// and `FCF_TEST_EXPORT` macros within the main library that exports 
 // the functions; conversely, in libraries that import these functions, 
-// you need to define only the `FCF_IMPORT` macro.
+// you need to define only the `FCF_TEST_IMPORT` macro.
 #define FCF_TEST_IMPLEMENTATION
 #include <fcfTest/test.hpp>
 
