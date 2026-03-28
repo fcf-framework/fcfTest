@@ -57,7 +57,7 @@ This macro is used to enable the implementation section within the header file `
 
 This macro is used to export symbols from the test library when building it as a DLL or shared library.
 - **Usage**: Defined by the main FCF library macros (`FCF_EXPORT`) if applicable, otherwise empty.
-- **Purpose**: Ensures consistent symbol visibility for functions and variables defined in `fcfTest` when compiled with `/FD` (DLL) settings on Windows or similar export flags on Linux/macOS.
+- **Purpose**: Ensures consistent symbol visibility for functions and variables defined in `fcfTest` when compiled as a DLL.
 
 ### `FCF_TEST_IMPORT`
 
