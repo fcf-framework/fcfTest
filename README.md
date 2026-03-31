@@ -10,7 +10,7 @@ To use the library, you must define the `FCF_TEST_IMPLEMENTATION` macro before i
 ### Liniks:
 Usage article on dev.to: https://dev.to/vladimirm/fcftest-unit-test-library-3cgg
 
-### This is all new
+### Friendly:
 If something doesn't work for you, please report it quickly in Issues and we'll fix it!
 
 ## Quick Start Example
