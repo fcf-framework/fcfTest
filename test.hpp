@@ -693,7 +693,6 @@ namespace fcf {
           }
         }
         for(const std::string& groupName : a_options.groups){
-          state.groups[groupName] = false;
           if (!state.groups[groupName]){
             throw std::runtime_error(std::string() + "The test group named '" + groupName + "' cannot be found");
           }
