@@ -580,6 +580,13 @@ namespace fcf {
     };
 
     namespace NDetails {
+      
+      struct State {
+        std::map<std::string, bool> tests;
+        std::map<std::string, bool> groups;
+        std::map<std::string, bool> parts;
+      };
+      
       /**
        * @brief Selects tests based on specific criteria and options.
        * 
@@ -587,7 +594,7 @@ namespace fcf {
        * @param a_tests Source map of tests to filter from.
        * @param a_options Configuration options (filters).
        */
-      inline void selectTests(std::set<Test>& a_dst, const Tests& a_tests, const Options& a_options){
+      inline void selectTests(std::set<Test>& a_dst, const Tests& a_tests, const Options& a_options, State& a_state){
         if (a_options.tests.empty()){
           for(const Tests::MapType::value_type& item : a_tests.values) {
             Test test(item.second);
@@ -612,14 +619,13 @@ namespace fcf {
             a_dst.insert(test);
           }
         } else {
-          for(const std::string& testName : a_options.groups){
+          for(const std::string& testName : a_options.tests){
             Tests::MapType::const_iterator it = a_tests.values.find(testName);
             Tests::MapType::const_iterator itEnd = a_tests.values.end();
             if (it != itEnd){
+              a_state.tests[testName] = true;
               a_dst.insert(it->second);
-            } else {
-              throw std::runtime_error(std::string() + "The test named '" + testName + "' cannot be found");
-            }
+            } 
           }
         }
       }
@@ -631,19 +637,18 @@ namespace fcf {
        * @param a_groups Source map of groups to filter from.
        * @param a_options Configuration options (filters).
        */
-      inline void selectGroups(std::set<Test>& a_dst, const Groups& a_groups, const Options& a_options){
+      inline void selectGroups(std::set<Test>& a_dst, const Groups& a_groups, const Options& a_options, State& a_state){
         if (a_options.groups.empty()){
           for(const Groups::MapType::value_type& item : a_groups.values){
-            selectTests(a_dst, item.second, a_options);
+            selectTests(a_dst, item.second, a_options, a_state);
           }
         } else {
           for(const std::string& groupName : a_options.groups){
             Groups::MapType::const_iterator it = a_groups.values.find(groupName);
             Groups::MapType::const_iterator itEnd = a_groups.values.end();
             if (it != itEnd){
-              selectTests(a_dst, it->second, a_options);
-            } else {
-              throw std::runtime_error(std::string() + "The test group named '" + groupName + "' cannot be found");
+              a_state.groups[groupName] = true;
+              selectTests(a_dst, it->second, a_options, a_state);
             }
           }
         }
@@ -656,19 +661,46 @@ namespace fcf {
        * @param a_options Configuration options (filters).
        */
       inline void selectParts(std::set<Test>& a_dst, const Options& a_options){
+        State state;
+        for(const std::string& partName : a_options.parts){
+          state.parts[partName] = false;
+        }
+        for(const std::string& groupName : a_options.groups){
+          state.groups[groupName] = false;
+        }
+        for(const std::string& testName : a_options.tests){
+          state.tests[testName] = false;
+        }
+
         if (a_options.parts.empty()){
           for(const Parts::MapType::value_type& item : ::fcf::NTest::getStorage().parts.values){
-            selectGroups(a_dst, item.second, a_options);
+            selectGroups(a_dst, item.second, a_options, state);
           }
         } else {
           for(const std::string& partName : a_options.parts){
             Parts::MapType::const_iterator it = ::fcf::NTest::getStorage().parts.values.find(partName);
             Parts::MapType::const_iterator itEnd = ::fcf::NTest::getStorage().parts.values.end();
             if (it != itEnd){
-              selectGroups(a_dst, it->second, a_options);
-            } else {
-              throw std::runtime_error(std::string() + "The test part named '" + partName + "' cannot be found");
+              state.parts[partName] = true;
+              selectGroups(a_dst, it->second, a_options, state);
             }
+          }
+        }
+
+        for(const std::string& partName : a_options.parts){
+          if (!state.parts[partName]) {
+            throw std::runtime_error(std::string() + "The test part named '" + partName + "' cannot be found");
+          }
+        }
+        for(const std::string& groupName : a_options.groups){
+          state.groups[groupName] = false;
+          if (!state.groups[groupName]){
+            throw std::runtime_error(std::string() + "The test group named '" + groupName + "' cannot be found");
+          }
+        }
+        for(const std::string& testName : a_options.tests){
+          if (!state.tests[testName]){
+            throw std::runtime_error(std::string() + "The test named '" + testName + "' cannot be found");
           }
         }
       }
