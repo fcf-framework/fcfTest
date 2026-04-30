@@ -844,7 +844,7 @@ namespace fcf {
               cmdHelp();
               return mode;
             }
-          } else if (strcmp(a_argv[i], "--test-log-level") == 0) {
+          } else if (strcmp(a_argv[i], "--test-log-level") == 0 && (i+1) < a_argc) {
             a_dstOptions.logLevel = a_argv[i+1];
             ++i;
           } else if (strcmp(a_argv[i], "--test-list") == 0){
