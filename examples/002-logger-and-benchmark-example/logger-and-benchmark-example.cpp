@@ -55,10 +55,32 @@ FCF_TEST_DECLARE("Benchmark", "Sorting", "VectorSortBenchmark") {
     FCF_TEST(std::is_sorted(sdata.begin(), sdata.end()));
 }
 
+// Test demonstrating manual control of Duration with a for loop
+FCF_TEST_DECLARE("Benchmark", "Manual", "ManualLoopBenchmark") {
+    const unsigned long long iterations = 5000;
+    fcf::NTest::Duration bench(iterations);
+
+    // Manual control using begin() and end()
+    bench.begin();
+    for (unsigned long long i = 0; i < bench.iterations(); ++i) {
+        // Perform some dummy work
+        int a = i;
+        int b = i * 2;
+        int c = a + b;
+        FCF_TEST(c == (i * 3));
+    }
+    bench.end();
+
+    fcf::NTest::inf() << "  Manual loop benchmark completed." << std::endl;
+    fcf::NTest::inf() << "    Iterations: " << bench.iterations() << std::endl;
+    fcf::NTest::inf() << "    Total time: " << bench.totalDuration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "    Avg time:   " << bench.duration().count() << " ns" << std::endl;
+}
+
 int main(int a_argc, char* a_argv[]) {
     bool error = false;
     // Run tests.
-    // To see debug and trace messages, run with the flag:
+    // To see debug and trace messages, run with the flag
     // ./logger-and-benchmark-example --test-run --test-log-level dbg
     fcf::NTest::cmdRun(a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
     return error ? 1 : 0;
