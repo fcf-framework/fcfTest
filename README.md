@@ -209,10 +209,13 @@ This structure holds the configuration for running tests. It is populated automa
 
 ```c++
 struct Options {
-  std::vector<std::string> parts;     ///< List of part names to run (empty = all).
-  std::vector<std::string> groups;    ///< List of group names to run (empty = all).
-  std::vector<std::string> tests;     ///< List of specific test names to run (empty = all).
-  std::string              logLevel;  ///< Desired logging level ("off", "err", "log", etc.).
+  std::vector<std::string> parts;         ///< List of part names to run (empty means all).
+  std::vector<std::string> groups;        ///< List of group names to run (empty means all).
+  std::vector<std::string> tests;         ///< List of specific test names to run (empty means all).
+  std::vector<std::string> ignoreParts;   ///< List of ignore part names.
+  std::vector<std::string> ignoreGroups;  ///< List of ignore group names to run.
+  std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
+  std::string              logLevel;      ///< Desired logging level.
 };
 ```
 
@@ -290,6 +293,10 @@ int main(int a_argc, char* a_argv[]) {
 - `--test-part PART_NAME`: Filters execution to only tests belonging to the specified part. Can be used multiple times.
 - `--test-group GROUP_NAME`: Filters execution to only tests belonging to the specified group. Can be used multiple times.
 - `--test-test TEST_NAME`: Filters execution to run only the specific test named. Can be used multiple times.
+- `--test-ignore-part PART_NAME`: Exclude tests in the specified part(s). Can be used multiple times.
+- `--test-ignore-group GROUP_NAME`: Exclude tests in the specified group(s). Can be used multiple times.
+- `--test-ignore-test TEST_NAME`: Exclude the specified test(s). Can be used multiple times.
+
 
 **Example Command:**
 ```bash
