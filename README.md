@@ -32,7 +32,7 @@ FCF_TEST_DECLARE("MyLibraryPartName", "ExamplesGroupName", "VectorSizeTestName")
 int main(int a_argc, char* a_argv[]){
   // Run the test suite via command line interface
   bool error;
-  fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_RUN, &error);
+  fcf::NTest::cmdRun(a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
   return error ? 1 : 0;
 }
 ```
@@ -237,7 +237,7 @@ This enum dictates how `cmdRun` behaves when parsing arguments:
 int main(int a_argc, char* a_argv[]) {
     // Standard execution: Parse and run.
     bool error = false;
-    fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_RUN, &error);
+    fcf::NTest::cmdRun(a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
     return error ? 1 : 0;
 }
 ```
@@ -246,7 +246,7 @@ int main(int a_argc, char* a_argv[]) {
 int main(int a_argc, char* a_argv[]) {
     // Standard execution: Parse and run by request.
     bool error = false;
-    int mode = fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_EXECUTE, &error);
+    int mode = fcf::NTest::cmdRun(a_argc, a_argv, fcf::NTest::CRM_EXECUTE, &error);
     if (error) {
         // An error occurred while running the test.
         return 1;
@@ -268,7 +268,7 @@ int main(int a_argc, char* a_argv[]) {
 int main(int a_argc, char* a_argv[]) {
     // Or custom menu mode: Just parse arguments to see what was asked
     fcf::NTest::Options options;
-    int mode = fcf::NTest::cmdRun(options, a_argc, (const char**)a_argv, fcf::NTest::CRM_PARSE);
+    int mode = fcf::NTest::cmdRun(options, a_argc, a_argv, fcf::NTest::CRM_PARSE);
     if (mode == fcf::NTest::CM_HELP) {
         fcf::NTest::cmdHelp();
         return 0;
@@ -350,7 +350,7 @@ FCF_TEST_TEST_ORDER("Addition", 1);
 int main(int a_argc, char* a_argv[]) {
     // Use CRM_RUN for standard execution
     bool error;
-    fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_RUN, &error);
+    fcf::NTest::cmdRun(a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
     return error ? 1 : 0;
 }
 ```

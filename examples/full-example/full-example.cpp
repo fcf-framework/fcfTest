@@ -75,6 +75,6 @@ FCF_TEST_TEST_ORDER("Addition", 1);
 int main(int a_argc, char* a_argv[]) {
   // Use CRM_RUN for standard execution
   bool error;
-  fcf::NTest::cmdRun(a_argc, (const char**)a_argv, fcf::NTest::CRM_RUN, &error);
+  fcf::NTest::cmdRun(a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
   return error ? 1 : 0;
 }

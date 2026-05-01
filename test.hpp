@@ -707,7 +707,7 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
 
       namespace NDetails {
-        inline std::vector<std::string> parseArgs(int a_argc, const char** a_argv);
+        inline std::vector<std::string> parseArgs(int a_argc, const char* const* a_argv);
       } // NDetails namespace
 
 
@@ -723,10 +723,10 @@ namespace fcf {
        *                                        If a null pointer is passed, the function throws an exception.
        * @return The determined command mode after processing.
        */
-      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0){
+      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0){
         CmdMode mode = CM_NONE;
 
-        std::vector<std::string> args = NDetails::parseArgs(a_argc, a_argv);
+        std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);
 
         for(int i = 0; i < args.size(); ++i){
           if (args[i] == "--test-run"){
@@ -785,8 +785,13 @@ namespace fcf {
        *                                        If a null pointer is passed, the function throws an exception.
        * @return The determined command mode after processing.
        */
-      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0);
+      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0);
     #endif
+
+    template <typename Ty>
+    CmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0){
+      return cmdRun(a_dstOptions, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
+    }
 
     /**
      * @brief Parses command line arguments and executes the appropriate action.
@@ -799,9 +804,10 @@ namespace fcf {
      *                                        If a null pointer is passed, the function throws an exception.
      * @return The determined command mode after processing.
      */
-    inline CmdMode cmdRun(int a_argc, const char** a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0){
+    template <typename Ty>
+    inline CmdMode cmdRun(int a_argc, Ty a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0){
       Options options;
-      return cmdRun(options, a_argc, a_argv, a_runMode, a_errorPtr);
+      return cmdRun(options, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
     }
 
     /**
@@ -1121,7 +1127,7 @@ namespace fcf {
         }
       }
 
-      inline std::vector<std::string> parseArgs(int a_argc, const char** a_argv) {
+      inline std::vector<std::string> parseArgs(int a_argc, const char* const* a_argv) {
         std::vector<std::string> result;
         for(int i = 0; i < a_argc; ++i) {
           parseArgs(result, (std::string)a_argv[i]);
