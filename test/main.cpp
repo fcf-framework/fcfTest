@@ -1,7 +1,7 @@
 #include <iostream>
 #include <sstream>
 #define FCF_TEST_IMPLEMENTATION
-#include "../test.hpp"
+#include <fcfTest/test.hpp>
 
 int main(int a_argc, char* a_argv[]){
   {
