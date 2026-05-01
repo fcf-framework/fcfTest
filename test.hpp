@@ -483,10 +483,13 @@ namespace fcf {
      * @brief Configuration options for running tests.
      */
     struct Options{
-      std::vector<std::string> parts;   ///< List of part names to run (empty means all).
-      std::vector<std::string> groups;  ///< List of group names to run (empty means all).
-      std::vector<std::string> tests;   ///< List of specific test names to run (empty means all).
-      std::string              logLevel; ///< Desired logging level.
+      std::vector<std::string> parts;         ///< List of part names to run (empty means all).
+      std::vector<std::string> groups;        ///< List of group names to run (empty means all).
+      std::vector<std::string> tests;         ///< List of specific test names to run (empty means all).
+      std::vector<std::string> ignoreParts;   ///< List of ignore part names.
+      std::vector<std::string> ignoreGroups;  ///< List of ignore group names to run.
+      std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
+      std::string              logLevel;      ///< Desired logging level.
     };
 
     /**
@@ -595,6 +598,9 @@ namespace fcf {
         std::cout << "  --test-part  PART_NAME - Run only tests from the part. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-group GROUP_NAME - Run only tests from the group. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-test  TEST_NAME - Run only this test. The parameter can be used multiple times" << std::endl;
+        std::cout << "  --test-ignore-part PART_NAME - Exclude tests in the specified part(s). The parameter can be used multiple times" << std::endl;
+        std::cout << "  --test-ignore-group GROUP_NAME - Exclude tests in the specified group(s). The parameter can be used multiple times" << std::endl;
+        std::cout << "  --test-ignore-test TEST_NAME - Exclude the specified test(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-log-level LEVEL - Logging level (VALUES: off, ftl, err, wrn, att, log, inf, dbg, trc)"<< std::endl;
         std::cout << "  --test-help  - Help message" << std::endl;
       }
@@ -748,6 +754,15 @@ namespace fcf {
             ++i;
           } else if (args[i] == "--test-test" && (i+1) < args.size()){
             a_dstOptions.tests.push_back(args[i+1]);
+            ++i;
+          } else if (args[i] == "--test-ignore-part" && (i+1) < args.size()){
+            a_dstOptions.ignoreParts.push_back(args[i+1]);
+            ++i;
+          } else if (args[i] == "--test-ignore-group" && (i+1) < args.size()){
+            a_dstOptions.ignoreGroups.push_back(args[i+1]);
+            ++i;
+          } else if (args[i] == "--test-ignore-test" && (i+1) < args.size()){
+            a_dstOptions.ignoreTests.push_back(args[i+1]);
             ++i;
           }
         }
@@ -1115,9 +1130,10 @@ namespace fcf {
       }
 
       enum EAllow {
-        NONE        = 0,
-        ALLOW       = 1,
-        FORCE_ALLOW =2
+        IGNORE,
+        NONE,
+        ALLOW,
+        FORCE_ALLOW
       };
 
       struct SearchState {
@@ -1143,11 +1159,11 @@ namespace fcf {
       };
 
       template <typename TAllowList>
-      EAllow checkAllow(EAllow a_allow, const TAllowList& a_allowList, const std::string& a_name){
+      EAllow checkAllow(EAllow a_allow, const TAllowList& a_allowList, const TAllowList& a_ignoreList, const std::string& a_name){
         if (a_allow == ALLOW) {
           if (!a_allowList.empty()) {
-            auto groupIt = std::find(a_allowList.begin(), a_allowList.end(), a_name);
-            if (groupIt != a_allowList.end()) {
+            auto it = std::find(a_allowList.begin(), a_allowList.end(), a_name);
+            if (it != a_allowList.end()) {
               a_allow = FORCE_ALLOW;
             } else {
               a_allow = NONE;
@@ -1155,11 +1171,15 @@ namespace fcf {
           }
         } else if (a_allow == NONE) {
           if (!a_allowList.empty()) {
-            auto groupIt = std::find(a_allowList.begin(), a_allowList.end(), a_name);
-            if (groupIt != a_allowList.end()) {
+            auto it = std::find(a_allowList.begin(), a_allowList.end(), a_name);
+            if (it != a_allowList.end()) {
               a_allow = FORCE_ALLOW;
             }
           }
+        }
+        auto it = std::find(a_ignoreList.begin(), a_ignoreList.end(), a_name);
+        if (it != a_ignoreList.end()) {
+          a_allow = IGNORE;
         }
         return a_allow;
       }
@@ -1188,18 +1208,18 @@ namespace fcf {
 
           checkExists(state.groups, partItem.second.values, a_options.groups);
 
-          EAllow allowPart = checkAllow(a_options.parts.empty() ? ALLOW : NONE, a_options.parts, partItem.first);
+          EAllow allowPart = checkAllow(a_options.parts.empty() ? ALLOW : NONE, a_options.parts, a_options.ignoreParts, partItem.first);
 
           for(const auto& groupItem : partItem.second.values) {
 
             checkExists(state.tests, groupItem.second.values, a_options.tests);
 
-            EAllow allowGroup = checkAllow(allowPart, a_options.groups, groupItem.first);
+            EAllow allowGroup = checkAllow(allowPart, a_options.groups, a_options.ignoreGroups, groupItem.first);
 
             for(const auto& testItem : groupItem.second.values) {
-              EAllow allowTest = checkAllow(allowGroup, a_options.tests, testItem.first);
+              EAllow allowTest = checkAllow(allowGroup, a_options.tests, a_options.ignoreTests, testItem.first);
 
-              if (allowTest == NONE){
+              if (allowTest == NONE || allowTest == IGNORE){
                 continue;
               }
 
