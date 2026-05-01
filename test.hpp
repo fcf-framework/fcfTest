@@ -489,7 +489,6 @@ namespace fcf {
       std::string              logLevel; ///< Desired logging level.
     };
 
-
     /**
      * @brief Central storage for registered tests, parts, and groups.
      */
@@ -512,6 +511,10 @@ namespace fcf {
         groupIterator->second.values[a_test.name] = a_test;
       }
     };
+
+    namespace NDetails {
+      inline void select(std::set<Test>& a_dst, const Options& a_options);
+    }
 
     #ifdef FCF_TEST_IMPLEMENTATION
       /**
@@ -580,10 +583,6 @@ namespace fcf {
         getStorage().testOrders[a_name] = a_order;
       }
     };
-
-    namespace NDetails {
-      inline void select(std::set<Test>& a_dst, const Options& a_options);
-    }
 
     #ifdef FCF_TEST_IMPLEMENTATION
       /**
@@ -702,47 +701,7 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
 
       namespace NDetails {
-        inline std::string parseArgsRemoveQ(std::string a_input) {
-          return (a_input.length()>=2 && a_input.front()=='"' && a_input.back()=='"')
-            ? std::regex_replace(a_input.substr(1, a_input.length()-2), std::regex(R"(\\")"), "\"")
-            : a_input;
-        }
-
-        inline void parseArgs(std::vector<std::string>& a_dstVector, std::string a_input) {
-          if (a_input == "="){
-            return;
-          }
-          std::vector<std::string> result;
-          std::regex re("(--[\\w_\\-]+)(?:\\s*=\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|(.+)))?");
-          auto words_begin = std::sregex_iterator(a_input.begin(), a_input.end(), re);
-          auto words_end = std::sregex_iterator();
-          if (words_begin == words_end) {
-            if (!a_input.empty() && a_input[0] == '=') {
-              a_input = a_input.substr(1, a_input.length()-1);
-              a_dstVector.push_back(parseArgsRemoveQ(a_input));
-            } else {
-              a_dstVector.push_back(a_input);
-            }
-          } else {
-            for (std::sregex_iterator i = words_begin; i != words_end; ++i) {
-                std::smatch match = *i;
-                a_dstVector.push_back(match[1].str());
-
-                if (match[2].matched)      a_dstVector.push_back(parseArgsRemoveQ(match[2].str()));
-                else if (match[3].matched) a_dstVector.push_back(parseArgsRemoveQ(match[3].str()));
-            }
-          }
-        }
-
-
-
-        inline std::vector<std::string> parseArgs(int a_argc, const char** a_argv) {
-          std::vector<std::string> result;
-          for(int i = 0; i < a_argc; ++i) {
-            parseArgs(result, (std::string)a_argv[i]);
-          }
-          return result;
-        }
+        inline std::vector<std::string> parseArgs(int a_argc, const char** a_argv);
       } // NDetails namespace
 
 
@@ -1115,6 +1074,46 @@ namespace fcf {
   namespace NTest {
     namespace NDetails {
 
+      inline std::string parseArgsRemoveQ(std::string a_input) {
+        return (a_input.length()>=2 && a_input.front()=='"' && a_input.back()=='"')
+          ? std::regex_replace(a_input.substr(1, a_input.length()-2), std::regex(R"(\\")"), "\"")
+          : a_input;
+      }
+
+      inline void parseArgs(std::vector<std::string>& a_dstVector, std::string a_input) {
+        if (a_input == "="){
+          return;
+        }
+        std::vector<std::string> result;
+        std::regex re("(--[\\w_\\-]+)(?:\\s*=\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|(.+)))?");
+        auto words_begin = std::sregex_iterator(a_input.begin(), a_input.end(), re);
+        auto words_end = std::sregex_iterator();
+        if (words_begin == words_end) {
+          if (!a_input.empty() && a_input[0] == '=') {
+            a_input = a_input.substr(1, a_input.length()-1);
+            a_dstVector.push_back(parseArgsRemoveQ(a_input));
+          } else {
+            a_dstVector.push_back(a_input);
+          }
+        } else {
+          for (std::sregex_iterator i = words_begin; i != words_end; ++i) {
+              std::smatch match = *i;
+              a_dstVector.push_back(match[1].str());
+
+              if (match[2].matched)      a_dstVector.push_back(parseArgsRemoveQ(match[2].str()));
+              else if (match[3].matched) a_dstVector.push_back(parseArgsRemoveQ(match[3].str()));
+          }
+        }
+      }
+
+      inline std::vector<std::string> parseArgs(int a_argc, const char** a_argv) {
+        std::vector<std::string> result;
+        for(int i = 0; i < a_argc; ++i) {
+          parseArgs(result, (std::string)a_argv[i]);
+        }
+        return result;
+      }
+
       enum EAllow {
         NONE        = 0,
         ALLOW       = 1,
@@ -1183,9 +1182,9 @@ namespace fcf {
        */
       inline void select(std::set<Test>& a_dst, const Options& a_options){
         SearchState state;
-        checkExists(state.parts, ::fcf::NTest::getStorage().parts.values, a_options.parts);
+        checkExists(state.parts, getStorage().parts.values, a_options.parts);
 
-        for(const auto& partItem : ::fcf::NTest::getStorage().parts.values) {
+        for(const auto& partItem : getStorage().parts.values) {
 
           checkExists(state.groups, partItem.second.values, a_options.groups);
 
