@@ -2,6 +2,7 @@
 #define ___FCF_TEST__TEST_HPP___
 
 #include <stdexcept>
+#include <algorithm>
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -13,6 +14,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <regex>
 
 /**
  * @brief Defines the implementation macro for FCF test functionality.
@@ -49,7 +51,7 @@
 
 /**
  * @brief Defines the external linkage macro for FCF test symbols.
- * Automatically set to empty when implementing the library (internal use) 
+ * Automatically set to empty when implementing the library (internal use)
  * and set to `extern` when only declaring it (header-only usage).
  */
 #ifndef FCF_TEST_DELC_EXTERN
@@ -62,7 +64,7 @@
 
 /**
  * @brief Defines the export/declaration macro for Windows environments.
- * Uses `__declspec(dllexport)` or `__declspec(dllimport)` based on 
+ * Uses `__declspec(dllexport)` or `__declspec(dllimport)` based on
  * whether symbols are being exported or imported, otherwise defaults to empty.
  */
 #ifndef FCF_TEST_DECL_EXPORT
@@ -104,7 +106,7 @@
 /**
  * @brief Internal implementation helper macro for test declarations.
  * Generates a namespace with a static anonymous class that registers the test upon instantiation.
- * 
+ *
  * @param am_className Unique identifier for the generated class.
  * @param am_part The part name of the test group.
  * @param am_group The group name of the test.
@@ -125,7 +127,7 @@
 /**
  * @brief Macro to declare a new test case.
  * Registers the test function with the storage system and assigns it to a group and part.
- * 
+ *
  * @param am_part The name of the part (logical grouping level).
  * @param am_group The name of the group (sub-grouping level).
  * @param am_test The name or identifier of the test function.
@@ -136,7 +138,7 @@
 /**
  * @brief Macro to register the order of a test part.
  * Ensures deterministic execution order for parts.
- * 
+ *
  * @param am_part The name of the part.
  * @param am_order The desired execution order (integer).
  */
@@ -148,7 +150,7 @@
 /**
  * @brief Macro to register the order of a test group.
  * Ensures deterministic execution order for groups within a part.
- * 
+ *
  * @param am_group The name of the group.
  * @param am_order The desired execution order (integer).
  */
@@ -160,7 +162,7 @@
 /**
  * @brief Macro to register the order of a specific test.
  * Ensures deterministic execution order for tests within a group.
- * 
+ *
  * @param am_test The name of the test.
  * @param am_order The desired execution order (integer).
  */
@@ -432,7 +434,7 @@ namespace fcf {
       /**
        * @brief Comparison operator for sorting tests by hierarchy and order.
        * Sorting priority: Part Order -> Part Name -> Group Order -> Group Name -> Test Order -> Test Name.
-       * 
+       *
        * @param a_test The test instance to compare against.
        * @return true if this test should precede the other in execution order.
        */
@@ -501,7 +503,7 @@ namespace fcf {
 
       /**
        * @brief Adds a new test to the storage, organizing it into parts and groups.
-       * 
+       *
        * @param a_test The Test object containing metadata and function pointer.
        */
       void add(const Test& a_test) {
@@ -534,7 +536,7 @@ namespace fcf {
 
     /**
      * @brief Base class for order registration objects.
-     * 
+     *
      * @param a_test The test object associated with the registration (used in constructor).
      */
     struct Regisrator {
@@ -545,7 +547,7 @@ namespace fcf {
 
     /**
      * @brief Registers an execution order for a specific part.
-     * 
+     *
      * @param a_name The name of the part.
      * @param a_order The desired execution order (integer).
      */
@@ -557,7 +559,7 @@ namespace fcf {
 
     /**
      * @brief Registers an execution order for a specific group.
-     * 
+     *
      * @param a_name The name of the group.
      * @param a_order The desired execution order (integer).
      */
@@ -569,7 +571,7 @@ namespace fcf {
 
     /**
      * @brief Registers an execution order for a specific test.
-     * 
+     *
      * @param a_name The name of the test.
      * @param a_order The desired execution order (integer).
      */
@@ -580,129 +582,7 @@ namespace fcf {
     };
 
     namespace NDetails {
-      
-      struct State {
-        std::map<std::string, bool> tests;
-        std::map<std::string, bool> groups;
-        std::map<std::string, bool> parts;
-      };
-      
-      /**
-       * @brief Selects tests based on specific criteria and options.
-       * 
-       * @param a_dst Destination set where selected tests will be inserted.
-       * @param a_tests Source map of tests to filter from.
-       * @param a_options Configuration options (filters).
-       */
-      inline void selectTests(std::set<Test>& a_dst, const Tests& a_tests, const Options& a_options, State& a_state){
-        if (a_options.tests.empty()){
-          for(const Tests::MapType::value_type& item : a_tests.values) {
-            Test test(item.second);
-            {
-              Storage::OrderMapType::const_iterator it = getStorage().partOrders.find(test.part);
-              if (it != getStorage().partOrders.end()){
-                test.partOrder = it->second;
-              }
-            }
-            {
-              Storage::OrderMapType::const_iterator it = getStorage().groupOrders.find(test.group);
-              if (it != getStorage().groupOrders.end()){
-                test.groupOrder = it->second;
-              }
-            }
-            {
-              Storage::OrderMapType::const_iterator it = getStorage().testOrders.find(test.name);
-              if (it != getStorage().testOrders.end()){
-                test.nameOrder = it->second;
-              }
-            }
-            a_dst.insert(test);
-          }
-        } else {
-          for(const std::string& testName : a_options.tests){
-            Tests::MapType::const_iterator it = a_tests.values.find(testName);
-            Tests::MapType::const_iterator itEnd = a_tests.values.end();
-            if (it != itEnd){
-              a_state.tests[testName] = true;
-              a_dst.insert(it->second);
-            } 
-          }
-        }
-      }
-
-      /**
-       * @brief Recursively selects tests based on groups.
-       * 
-       * @param a_dst Destination set where selected tests will be inserted.
-       * @param a_groups Source map of groups to filter from.
-       * @param a_options Configuration options (filters).
-       */
-      inline void selectGroups(std::set<Test>& a_dst, const Groups& a_groups, const Options& a_options, State& a_state){
-        if (a_options.groups.empty()){
-          for(const Groups::MapType::value_type& item : a_groups.values){
-            selectTests(a_dst, item.second, a_options, a_state);
-          }
-        } else {
-          for(const std::string& groupName : a_options.groups){
-            Groups::MapType::const_iterator it = a_groups.values.find(groupName);
-            Groups::MapType::const_iterator itEnd = a_groups.values.end();
-            if (it != itEnd){
-              a_state.groups[groupName] = true;
-              selectTests(a_dst, it->second, a_options, a_state);
-            }
-          }
-        }
-      }
-
-      /**
-       * @brief Recursively selects tests based on parts.
-       * 
-       * @param a_dst Destination set where selected tests will be inserted.
-       * @param a_options Configuration options (filters).
-       */
-      inline void selectParts(std::set<Test>& a_dst, const Options& a_options){
-        State state;
-        for(const std::string& partName : a_options.parts){
-          state.parts[partName] = false;
-        }
-        for(const std::string& groupName : a_options.groups){
-          state.groups[groupName] = false;
-        }
-        for(const std::string& testName : a_options.tests){
-          state.tests[testName] = false;
-        }
-
-        if (a_options.parts.empty()){
-          for(const Parts::MapType::value_type& item : ::fcf::NTest::getStorage().parts.values){
-            selectGroups(a_dst, item.second, a_options, state);
-          }
-        } else {
-          for(const std::string& partName : a_options.parts){
-            Parts::MapType::const_iterator it = ::fcf::NTest::getStorage().parts.values.find(partName);
-            Parts::MapType::const_iterator itEnd = ::fcf::NTest::getStorage().parts.values.end();
-            if (it != itEnd){
-              state.parts[partName] = true;
-              selectGroups(a_dst, it->second, a_options, state);
-            }
-          }
-        }
-
-        for(const std::string& partName : a_options.parts){
-          if (!state.parts[partName]) {
-            throw std::runtime_error(std::string() + "The test part named '" + partName + "' cannot be found");
-          }
-        }
-        for(const std::string& groupName : a_options.groups){
-          if (!state.groups[groupName]){
-            throw std::runtime_error(std::string() + "The test group named '" + groupName + "' cannot be found");
-          }
-        }
-        for(const std::string& testName : a_options.tests){
-          if (!state.tests[testName]){
-            throw std::runtime_error(std::string() + "The test named '" + testName + "' cannot be found");
-          }
-        }
-      }
+      inline void select(std::set<Test>& a_dst, const Options& a_options);
     }
 
     #ifdef FCF_TEST_IMPLEMENTATION
@@ -733,7 +613,7 @@ namespace fcf {
       FCF_TEST_DECL_EXPORT void cmdList(){
         Options options;
         std::set<Test> tests;
-        NDetails::selectParts(tests, options);
+        NDetails::select(tests, options);
         std::cout << "List of tests:" << std::endl;
         for(const Test& test : tests){
           std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.name  << "\""<< std::endl;
@@ -750,9 +630,9 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       /**
        * @brief Executes the selected tests based on provided options.
-       * 
+       *
        * @param a_options Configuration options specifying which tests to run and logging level.
-       * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information. 
+       * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information.
        *                                        If an error occurs, the value is set to true.
        *                                        If a null pointer is passed, the function throws an exception.
        */
@@ -766,7 +646,7 @@ namespace fcf {
 
         try {
           std::set<Test> tests;
-          NDetails::selectParts(tests, a_options);
+          NDetails::select(tests, a_options);
 
           for(const Test& test : tests) {
             log() << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
@@ -791,9 +671,9 @@ namespace fcf {
     #else
       /**
        * @brief Declaration for executing the selected tests.
-       * 
+       *
        * @param a_options Configuration options specifying which tests to run and logging level.
-       * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information. 
+       * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information.
        *                                        If an error occurs, the value is set to true.
        *                                        If a null pointer is passed, the function throws an exception.
        */
@@ -820,9 +700,55 @@ namespace fcf {
     };
 
     #ifdef FCF_TEST_IMPLEMENTATION
+
+      namespace NDetails {
+        inline std::string parseArgsRemoveQ(std::string a_input) {
+          return (a_input.length()>=2 && a_input.front()=='"' && a_input.back()=='"')
+            ? std::regex_replace(a_input.substr(1, a_input.length()-2), std::regex(R"(\\")"), "\"")
+            : a_input;
+        }
+
+        inline void parseArgs(std::vector<std::string>& a_dstVector, std::string a_input) {
+          if (a_input == "="){
+            return;
+          }
+          std::vector<std::string> result;
+          std::regex re("(--[\\w_\\-]+)(?:\\s*=\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|(.+)))?");
+          auto words_begin = std::sregex_iterator(a_input.begin(), a_input.end(), re);
+          auto words_end = std::sregex_iterator();
+          if (words_begin == words_end) {
+            if (!a_input.empty() && a_input[0] == '=') {
+              a_input = a_input.substr(1, a_input.length()-1);
+              a_dstVector.push_back(parseArgsRemoveQ(a_input));
+            } else {
+              a_dstVector.push_back(a_input);
+            }
+          } else {
+            for (std::sregex_iterator i = words_begin; i != words_end; ++i) {
+                std::smatch match = *i;
+                a_dstVector.push_back(match[1].str());
+
+                if (match[2].matched)      a_dstVector.push_back(parseArgsRemoveQ(match[2].str()));
+                else if (match[3].matched) a_dstVector.push_back(parseArgsRemoveQ(match[3].str()));
+            }
+          }
+        }
+
+
+
+        inline std::vector<std::string> parseArgs(int a_argc, const char** a_argv) {
+          std::vector<std::string> result;
+          for(int i = 0; i < a_argc; ++i) {
+            parseArgs(result, (std::string)a_argv[i]);
+          }
+          return result;
+        }
+      } // NDetails namespace
+
+
       /**
        * @brief Parses command line arguments and executes the appropriate action.
-       * 
+       *
        * @param a_dstOptions Reference to the options structure to populate with parsed arguments.
        * @param a_argc Number of command line arguments.
        * @param a_argv Array of command line arguments.
@@ -835,32 +761,34 @@ namespace fcf {
       FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char** a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0){
         CmdMode mode = CM_NONE;
 
-        for(int i = 0; i < a_argc; ++i){
-          if (strcmp(a_argv[i], "--test-run") == 0){
+        std::vector<std::string> args = NDetails::parseArgs(a_argc, a_argv);
+
+        for(int i = 0; i < args.size(); ++i){
+          if (args[i] == "--test-run"){
             mode = CM_RUN;
-          } else if (strcmp(a_argv[i], "--test-help") == 0){
+          } else if (args[i] == "--test-help"){
             mode = CM_HELP;
             if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN){
               cmdHelp();
               return mode;
             }
-          } else if (strcmp(a_argv[i], "--test-log-level") == 0 && (i+1) < a_argc) {
-            a_dstOptions.logLevel = a_argv[i+1];
+          } else if (args[i] == "--test-log-level" && (i+1) < args.size()) {
+            a_dstOptions.logLevel = args[i+1];
             ++i;
-          } else if (strcmp(a_argv[i], "--test-list") == 0){
+          } else if (args[i] == "--test-list"){
             mode = CM_LIST;
             if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN){
               cmdList();
               return mode;
             }
-          } else if (strcmp(a_argv[i], "--test-part") == 0 && (i+1) < a_argc){
-            a_dstOptions.parts.push_back(a_argv[i+1]);
+          } else if (args[i] == "--test-part" && (i+1) < args.size()){
+            a_dstOptions.parts.push_back(args[i+1]);
             ++i;
-          } else if (strcmp(a_argv[i], "--test-group") == 0 && (i+1) < a_argc){
-            a_dstOptions.groups.push_back(a_argv[i+1]);
+          } else if (args[i] == "--test-group" && (i+1) < args.size()){
+            a_dstOptions.groups.push_back(args[i+1]);
             ++i;
-          } else if (strcmp(a_argv[i], "--test-test") == 0 && (i+1) < a_argc){
-            a_dstOptions.tests.push_back(a_argv[i+1]);
+          } else if (args[i] == "--test-test" && (i+1) < args.size()){
+            a_dstOptions.tests.push_back(args[i+1]);
             ++i;
           }
         }
@@ -873,7 +801,7 @@ namespace fcf {
     #else
       /**
        * @brief Declaration for parsing command line arguments and executing the appropriate action.
-       * 
+       *
        * @param a_dstOptions Reference to the options structure to populate with parsed arguments.
        * @param a_argc Number of command line arguments.
        * @param a_argv Array of command line arguments.
@@ -909,7 +837,7 @@ namespace fcf {
       public:
         /**
          * @brief Constructs a duration object with a specified number of iterations.
-         * 
+         *
          * @param a_iterations The number of times the enclosed functor will be executed.
          */
         Duration(unsigned long long a_iterations)
@@ -947,7 +875,7 @@ namespace fcf {
 
         /**
          * @brief Executes a functor multiple times and measures the total duration.
-         * 
+         *
          * @tparam TFunctor The type of the callable object.
          * @param a_functor The callable to execute.
          */
@@ -992,14 +920,14 @@ namespace fcf {
 
       /**
        * @brief A template structure to recursively print a pack of arguments with their names.
-       * 
+       *
        * @tparam TPack The parameter pack to print.
        */
       template <typename... TPack>
       struct PrintPack {
         /**
          * @brief Recursive step to print arguments.
-         * 
+         *
          * @tparam TIterator Iterator type for the name list.
          * @tparam TArg Type of the current argument.
          * @tparam TPack2 The rest of the parameter pack.
@@ -1029,7 +957,7 @@ namespace fcf {
       struct PrintPack<> {
         /**
          * @brief Base case operator that returns an empty string.
-         * 
+         *
          * @tparam TIterator Iterator type (unused).
          * @param a_begName Unused iterator.
          * @param a_endName Unused iterator.
@@ -1043,7 +971,7 @@ namespace fcf {
 
       /**
        * @brief A helper structure to manage printing of arguments with names.
-       * 
+       *
        * @tparam TIterator Iterator type for the name list.
        */
       template <typename TIterator>
@@ -1053,7 +981,7 @@ namespace fcf {
 
         /**
          * @brief Executes the print operation for a pack of arguments.
-         * 
+         *
          * @tparam ...TArgPack Types of the arguments to print.
          * @param ...a_pack The arguments to print.
          * @return Formatted string with names and values.
@@ -1164,7 +1092,7 @@ namespace fcf {
 /**
  * @brief Macro to assert a condition and throw an error if it fails.
  * Generates a detailed error message including the failing expression and failed arguments.
- * 
+ *
  * @param exp The boolean condition to check.
  * @param ... Variable list of arguments whose values will be included in the error message if 'exp' is false.
  */
@@ -1181,4 +1109,128 @@ namespace fcf {
     throw std::runtime_error(messge);\
   }
 
+
+
+namespace fcf {
+  namespace NTest {
+    namespace NDetails {
+
+      enum EAllow {
+        NONE        = 0,
+        ALLOW       = 1,
+        FORCE_ALLOW =2
+      };
+
+      struct SearchState {
+        public:
+          std::map<std::string, bool> tests;
+          std::map<std::string, bool> groups;
+          std::map<std::string, bool> parts;
+
+          void check() {
+            _check(parts, "parts ");
+            _check(groups, "groups ");
+            _check(tests, "");
+          }
+
+        private:
+          void _check(std::map<std::string, bool>& elements, const char* a_typeName) {
+            for(const auto& item : elements){
+              if (!item.second) {
+                throw std::runtime_error(std::string() + "The test " + a_typeName + "named '" + item.first + "' cannot be found"); 
+              }
+            }
+          }
+      };
+
+      template <typename TAllowList>
+      EAllow checkAllow(EAllow a_allow, const TAllowList& a_allowList, const std::string& a_name){
+        if (a_allow == ALLOW) {
+          if (!a_allowList.empty()) {
+            auto groupIt = std::find(a_allowList.begin(), a_allowList.end(), a_name);
+            if (groupIt != a_allowList.end()) {
+              a_allow = FORCE_ALLOW;
+            } else {
+              a_allow = NONE;
+            }
+          }
+        } else if (a_allow == NONE) {
+          if (!a_allowList.empty()) {
+            auto groupIt = std::find(a_allowList.begin(), a_allowList.end(), a_name);
+            if (groupIt != a_allowList.end()) {
+              a_allow = FORCE_ALLOW;
+            }
+          }
+        }
+        return a_allow;
+      }
+
+      template <typename TMap, typename TAllowList>
+      void checkExists(std::map<std::string, bool>& a_state, const TMap& a_map, const TAllowList& a_allowList){
+        for (const auto& allowItem : a_allowList) {
+          auto stateIt = a_state.insert({allowItem, false}).first;
+          if (a_map.find(allowItem) != a_map.end()) {
+            stateIt->second = true;
+          }
+        }
+      }
+
+      /**
+       * @brief Recursively selects tests based on parts.
+       *
+       * @param a_dst Destination set where selected tests will be inserted.
+       * @param a_options Configuration options (filters).
+       */
+      inline void select(std::set<Test>& a_dst, const Options& a_options){
+        SearchState state;
+        checkExists(state.parts, ::fcf::NTest::getStorage().parts.values, a_options.parts);
+
+        for(const auto& partItem : ::fcf::NTest::getStorage().parts.values) {
+
+          checkExists(state.groups, partItem.second.values, a_options.groups);
+
+          EAllow allowPart = checkAllow(a_options.parts.empty() ? ALLOW : NONE, a_options.parts, partItem.first);
+
+          for(const auto& groupItem : partItem.second.values) {
+
+            checkExists(state.tests, groupItem.second.values, a_options.tests);
+
+            EAllow allowGroup = checkAllow(allowPart, a_options.groups, groupItem.first);
+
+            for(const auto& testItem : groupItem.second.values) {
+              EAllow allowTest = checkAllow(allowGroup, a_options.tests, testItem.first);
+
+              if (allowTest == NONE){
+                continue;
+              }
+
+              Test test(testItem.second);
+              {
+                Storage::OrderMapType::const_iterator it = getStorage().partOrders.find(test.part);
+                if (it != getStorage().partOrders.end()){
+                  test.partOrder = it->second;
+                }
+              }
+              {
+                Storage::OrderMapType::const_iterator it = getStorage().groupOrders.find(test.group);
+                if (it != getStorage().groupOrders.end()){
+                  test.groupOrder = it->second;
+                }
+              }
+              {
+                Storage::OrderMapType::const_iterator it = getStorage().testOrders.find(test.name);
+                if (it != getStorage().testOrders.end()){
+                  test.nameOrder = it->second;
+                }
+              }
+              a_dst.insert(test);
+            }
+          }
+        }
+
+        state.check();
+      }
+    } // NDetails namespace
+  } // NTest namespace
+} // fcf namespace
 #endif // #ifndef ___FCF_TEST__TEST_HPP___
