@@ -293,6 +293,14 @@ namespace fcf {
         }
 
         /**
+         * @brief The output stream returns for the test inner message. The log recording is always performed.
+         * @return Reference to the output stream.
+         */
+        std::ostream& tst(){
+          return (std::ostream&)std::cout;
+        }
+
+        /**
          * @brief Returns the current string representation of the log level.
          * @return Pointer to a static string representing the level name.
          */
@@ -417,6 +425,14 @@ namespace fcf {
      */
     inline std::ostream& trc(){
       return logger().trc();
+    }
+
+    /**
+     * @brief Returns the output stream for inner test messages (global shortcut). Logging is always done
+     * @return Reference to the output stream.
+     */
+    inline std::ostream& tst(){
+      return logger().tst();
     }
 
     /**
@@ -654,14 +670,14 @@ namespace fcf {
           NDetails::select(tests, a_options);
 
           for(const Test& test : tests) {
-            log() << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+            tst() << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
             test.testFunction();
           }
 
-          log() << std::endl;
-          log() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
+          tst() << std::endl;
+          tst() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
         } catch(const std::exception& e){
-          err() << e.what() << std::endl;
+          tst() << e.what() << std::endl;
           logger().setStrLevel(lastLevel);
           if (a_errorPtr){
             *a_errorPtr = true;
