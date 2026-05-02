@@ -41,7 +41,6 @@ The program will execute the registered tests. If an assertion fails, it prints 
 
  ```stdout
 Performing the test: "MyLibraryPartName" -> "ExamplesGroupName" -> "VectorSizeTestName" ...
-Comparison started
 Test error: vec.size() == 2  [FILE: DIR_PATH/main.cpp:9]
   Values:
     vec.size(): 1
