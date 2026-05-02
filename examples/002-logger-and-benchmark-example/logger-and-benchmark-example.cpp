@@ -104,7 +104,7 @@ int main(int a_argc, char* a_argv[]) {
 
     // Run tests.
     // To see debug and trace messages, run with the flag
-    // ./logger-and-benchmark-example --test-run --test-log-level dbg
+    // ./logger-and-benchmark-example --test-log-level dbg
     fcf::NTest::cmdRun(a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
     return error ? 1 : 0;
 }
