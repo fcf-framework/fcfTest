@@ -228,7 +228,8 @@ struct Options {
 
 The central function for executing the test suite. It parses command-line arguments and determines the action.
 
-#### `ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0)`
+**`ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0)`**
+
 Parses command line arguments and executes the appropriate action.
 
 - **Parameters**:
