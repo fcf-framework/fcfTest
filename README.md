@@ -1,4 +1,3 @@
-
 # fcfTest
 
 **fcfTest** is a lightweight, header-only unit testing framework for C++. It provides a simple macro, FCF_TEST, which implements all possible checks and displays the current values ​​of variables. The framework also includes test registration, command-line execution, a built-in simple logger, and tools for measuring execution time.
@@ -38,7 +37,7 @@ int main(int a_argc, char* a_argv[]){
 ```
 
 **Output:**
-The program will execute the registered tests. If an assertion fails, it prints a descriptive error including file, line number, and variable values. If successful, it prints a summary count of completed tests.
+The program will execute the registered tests. If an assertion fails, it prints a descriptive error including file, line number and variable values. If successful, it prints a summary count of completed tests.
 
  ```stdout
 Performing the test: "MyLibraryPartName" -> "ExamplesGroupName" -> "VectorSizeTestName" ...
@@ -66,7 +65,7 @@ This macro is used to export symbols from the test library when building it as a
 
 This macro is used to import symbols from the test library when using it as a client application linking against a shared library.
 - **Usage**: Defined by the main FCF library macros (`FCF_IMPORT`) if applicable, otherwise empty.
-- **Purpose**: Ensures that functions and variables defined in external shared libraries are correctly imported into the client process without multiple definition errors.
+- **Purpose**: Ensures consistent symbol visibility for functions and variables defined in external shared libraries when they are imported into the client process without multiple definition errors.
 
 ### `FCF_TEST`
 
@@ -94,9 +93,9 @@ Tests are organized hierarchically into Parts, Groups, and Tests. This allows fo
 
 Declares a new test case.
 - **Parameters**:
-  - `am_part`: The name of the logical part (highest level).
-  - `am_group`: The name of the sub-group within the part.
-  - `am_test`: The unique identifier for the test function.
+  - `am_part`: The name of the part (logical grouping level).
+  - `am_group`: The name of the group (sub-grouping level).
+  - `am_test`: The unique identifier of the test function.
 - **Usage**: This macro generates a static anonymous class that registers the test with the global storage upon instantiation.
 
 **Example:**
@@ -177,14 +176,20 @@ fcf::NTest::dbg() << "This appears only in debug mode" << std::endl;
 The `fcf::NTest::Duration` class provides a simple interface for measuring the execution time of code blocks. It uses `std::chrono::high_resolution_clock`.
 
 ### Members and Methods
-- **Constructor**: `Duration(unsigned long long a_iterations)` sets the number of iterations. Default is 1.
+- **Constructor**: `Duration(unsigned long long a_iterations)`
+  - **Parameters**:
+    - `a_iterations`: The number of times the enclosed functor will be executed.
+- **Default Constructor**: `Duration()`
+  - Sets the number of iterations to 1.
 - **Methods**:
-  - `unsigned long long iterations()`: Returns the number of iterations.
-  - `void begin()`: Records start time.
-  - `void end()`: Records end time.
-  - `std::chrono::nanoseconds totalDuration()`: Returns elapsed time for all iterations.
-  - `std::chrono::nanoseconds duration()`: Returns average time per iteration.
-- **Operator Call**: `operator()(TFunctor&& a_functor)` executes the functor `_iterations` times, timing the block automatically via `begin()` and `end()`.
+  - `unsigned long long iterations()`: Returns the number of iterations set for this duration.
+  - `void begin()`: Records the start time for timing.
+  - `void end()`: Records the end time for timing.
+  - `std::chrono::nanoseconds totalDuration()`: Returns the total duration of all iterations in nanoseconds.
+  - `std::chrono::nanoseconds duration()`: Returns the average duration of a single iteration in nanoseconds.
+  - `void operator()(TFunctor&& a_functor)`: Executes a functor multiple times and measures the total duration.
+    - **Parameters**:
+      - `a_functor`: The callable object to execute.
 
 **Example:**
 ```c++
@@ -225,11 +230,11 @@ The central function for executing the test suite. It parses command-line argume
 
 #### `CmdRunMode` Enum
 
-This enum dictates how `cmdRun` behaves when parsing arguments:
+This enum dictates how `cmdRun` behaves during parsing:
 
-- **`CRM_PARSE`**: Parses arguments but **does not** execute tests or show help/list. Returns the determined mode (e.g., `CM_HELP`, `CM_LIST`) so the caller can decide what to do next. Useful for building a custom menu system.
+- **`CRM_PARSE`**: Parses arguments but **does not** execute tests or show help/list. Returns the determined mode (e.g., `CM_HELP`, `CM_LIST`) so the caller can decide what to do next.
 - **`CRM_EXECUTE`**: Parses arguments. If the flag `--test-run` was provided, it executes tests. If `--test-help` or `--test-list` were provided, it displays that information immediately and returns.
-- **`CRM_RUN`**: Parses arguments and **automatically executes** tests unless `--test-help` or `--test-list` is explicitly requested. This is the standard mode for running tests directly from the command line (equivalent: `./my_tests --test-run`).
+- **`CRM_RUN`**: Parses arguments and **automatically executes** tests unless `--test-help` or `--test-list` was explicitly requested.
 
 #### Usage Examples
 
@@ -248,7 +253,7 @@ int main(int a_argc, char* a_argv[]) {
     bool error = false;
     int mode = fcf::NTest::cmdRun(a_argc, a_argv, fcf::NTest::CRM_EXECUTE, &error);
     if (error) {
-        // An error occurred while running the test.
+        // An error occurred while running a test.
         return 1;
     }
     if (mode != fcf::NTest::CM_NONE){
@@ -263,10 +268,9 @@ int main(int a_argc, char* a_argv[]) {
 }
 ```
 
-
 ```c++
 int main(int a_argc, char* a_argv[]) {
-    // Or custom menu mode: Just parse arguments to see what was asked
+    // Or custom menu mode: Just parse to see what was asked
     fcf::NTest::Options options;
     int mode = fcf::NTest::cmdRun(options, a_argc, a_argv, fcf::NTest::CRM_PARSE);
     if (mode == fcf::NTest::CM_HELP) {
@@ -307,7 +311,11 @@ int main(int a_argc, char* a_argv[]) {
 
 - **`cmdHelp()`**: Displays help information and available command-line flags.
 - **`cmdList()`**: Displays a list of all registered tests with their hierarchy structure.
-- **`run(const Options& a_options, bool* a_errorPtr = 0)`**: Executes the selected tests based on an `Options` object. Usually called internally by `cmdRun`. If a null pointer is passed, the function throws an exception when an error occurs.
+- **`run(const Options& a_options, bool* a_errorPtr = 0)`**: Executes the selected tests based on an `Options` object.
+  - **Parameters**:
+    - `a_options`: Configuration options specifying which tests to run and logging level.
+    - `a_errorPtr`: A pointer to a variable receiving error information. If an error occurs, the value is set to true. If a null pointer is passed, the function throws an exception.
+  - **Returns**: void.
 
 ## Full Usage Example
 
