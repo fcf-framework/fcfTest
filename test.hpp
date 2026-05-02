@@ -204,7 +204,7 @@ namespace fcf {
     /**
      * @brief Enumerates the available log levels.
      */
-    enum LogLevel{
+    enum ELogLevel{
       LL_OFF,   ///< No logging.
       LL_FTL,   ///< Fatal level.
       LL_ERR,   ///< Error level.
@@ -223,7 +223,7 @@ namespace fcf {
     struct Logger {
       public:
 
-        typedef std::function<std::string(Logger&, LogLevel)> PrefixFunctionType;
+        typedef std::function<std::string(Logger&, ELogLevel)> PrefixFunctionType;
 
       protected:
 
@@ -340,25 +340,25 @@ namespace fcf {
         /**
          * @brief Converts a string representation of a log level to its enum value.
          * @param a_level The string to convert.
-         * @return The corresponding LogLevel enum.
+         * @return The corresponding ELogLevel enum.
          */
-        static LogLevel toLevel(std::string a_level) {
+        static ELogLevel toLevel(std::string a_level) {
           const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
           int size = sizeof(levels) / sizeof(levels[0]);
           for(int i = 0; i < size; ++i){
             if (a_level == levels[i]){
-              return (LogLevel)i;
+              return (ELogLevel)i;
             }
           }
           return LL_LOG;
         }
 
         /**
-         * @brief Converts a LogLevel enum value to its string representation.
+         * @brief Converts a ELogLevel enum value to its string representation.
          * @param a_level The log level to convert.
          * @return A pointer to a static string representing the level name.
          */
-        static const char* toStrLevel(LogLevel a_level){
+        static const char* toStrLevel(ELogLevel a_level){
           const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
           int size = sizeof(levels) / sizeof(levels[0]);
           int level = a_level < 0     ? 0 :
@@ -397,7 +397,7 @@ namespace fcf {
           if (_level >= a_forLevel) {
             for(Prefix prefix : _prefixes){
               if (prefix.func){
-                std::cout << prefix.func(*this, (LogLevel)a_forLevel);
+                std::cout << prefix.func(*this, (ELogLevel)a_forLevel);
               } else {
                 std::cout << prefix.str;
               }
@@ -407,7 +407,7 @@ namespace fcf {
             return (std::ostream&)_empty;
           }
         }
-        LogLevel              _level; ///< Current log level.
+        ELogLevel              _level; ///< Current log level.
         NDetails::EmptyStream _empty; ///< Empty stream buffer for disabled levels.
         std::list<Prefix>     _prefixes;
     };
@@ -779,7 +779,7 @@ namespace fcf {
     /**
      * @brief Enumerates command modes for the test runner.
      */
-    enum CmdMode{
+    enum ECmdMode{
       CM_NONE,   ///< No specific mode set.
       CM_RUN,    ///< Run tests mode.
       CM_LIST,   ///< List tests mode.
@@ -789,7 +789,7 @@ namespace fcf {
     /**
      * @brief Enumerates modes for command line argument parsing and execution.
      */
-    enum CmdRunMode {
+    enum ECmdRunMode {
       CRM_PARSE,    ///< cmdRun() only parses the command line.
       CRM_EXECUTE,  ///< cmdRun() parses the command line and runs tests if the --test-run flag was passed.
       CRM_RUN,      ///< cmdRun() parses the command line and runs the tests unless the --test-help or --test-list run flags were specified on the command line.
@@ -820,8 +820,8 @@ namespace fcf {
        *                                        If a null pointer is passed, the function throws an exception.
        * @return The determined command mode after processing.
        */
-      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0){
-        CmdMode mode = CM_NONE;
+      FCF_TEST_DECL_EXPORT ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0){
+        ECmdMode mode = CM_NONE;
 
         std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);
 
@@ -882,11 +882,11 @@ namespace fcf {
        *                                        If a null pointer is passed, the function throws an exception.
        * @return The determined command mode after processing.
        */
-      FCF_TEST_DECL_EXPORT CmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0);
+      FCF_TEST_DECL_EXPORT ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0);
     #endif
 
     template <typename Ty>
-    CmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0){
+    ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0){
       return cmdRun(a_dstOptions, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
     }
 
@@ -903,7 +903,7 @@ namespace fcf {
      * @return The determined command mode after processing.
      */
     template <typename Ty>
-    inline CmdMode cmdRun(int a_argc, Ty a_argv, CmdRunMode a_runMode, bool* a_errorPtr = 0){
+    inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0){
       Options options;
       return cmdRun(options, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
     }

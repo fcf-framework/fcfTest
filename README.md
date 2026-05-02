@@ -228,7 +228,7 @@ struct Options {
 
 The central function for executing the test suite. It parses command-line arguments and determines the action.
 
-#### `CmdRunMode` Enum
+#### `ECmdRunMode` Enum
 
 This enum dictates how `cmdRun` behaves during parsing:
 
