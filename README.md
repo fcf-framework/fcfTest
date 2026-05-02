@@ -238,9 +238,9 @@ Parses command line arguments and executes the appropriate action.
   - `a_argv`: Array of argument strings.
   - `a_runMode`: Current mode of execution (`CRM_PARSE`, `CRM_EXECUTE`, or `CRM_RUN`).
   - `a_errorPtr`: A pointer to a variable that receives information about a test error. If an error occurs, the value is set to true. If a null pointer is passed, the function throws an exception.
-- **Returns**: `CmdMode` (the determined mode after processing).
+- **Returns**: `ECmdMode` returns the selected mode based on the parameters of the command line a_argv.
 
-#### `CmdRunMode` Enum
+#### `ECmdRunMode` Enum
 
 This enum dictates how `cmdRun` behaves during parsing:
 
