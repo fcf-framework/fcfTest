@@ -337,6 +337,11 @@ namespace fcf {
           return _level;
         }
 
+        /**
+         * @brief Converts a string representation of a log level to its enum value.
+         * @param a_level The string to convert.
+         * @return The corresponding LogLevel enum.
+         */
         static LogLevel toLevel(std::string a_level) {
           const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
           int size = sizeof(levels) / sizeof(levels[0]);
@@ -348,21 +353,34 @@ namespace fcf {
           return LL_LOG;
         }
 
+        /**
+         * @brief Converts a LogLevel enum value to its string representation.
+         * @param a_level The log level to convert.
+         * @return A pointer to a static string representing the level name.
+         */
         static const char* toStrLevel(LogLevel a_level){
           const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
           int size = sizeof(levels) / sizeof(levels[0]);
           int level = a_level < 0     ? 0 :
                       a_level >= size ? size - 1 :
-                                        a_level;
+                                       a_level;
           return levels[level];
         }
 
+        /**
+         * @brief Adds a static string prefix to all log messages.
+         * @param a_prefix The string to append as a prefix.
+         */
         void addedPrefixStr(const std::string& a_prefix){
           Prefix prefix;
           prefix.str = a_prefix;
           _prefixes.push_back(prefix);
         }
 
+        /**
+         * @brief Adds a functional prefix to all log messages.
+         * @param a_prefix A function that returns a string to be used as a prefix.
+         */
         void addedPrefixFunc(const PrefixFunctionType& a_prefix){
           Prefix prefix;
           prefix.func = a_prefix;
@@ -370,6 +388,11 @@ namespace fcf {
         }
 
       protected:
+        /**
+         * @brief Internal method to handle writing to the appropriate stream based on the log level.
+         * @param a_forLevel The level of the message being written.
+         * @return Reference to the output stream (either std::cout or an empty stream).
+         */
         std::ostream& _write(int a_forLevel){
           if (_level >= a_forLevel) {
             for(Prefix prefix : _prefixes){
@@ -475,7 +498,7 @@ namespace fcf {
     }
 
     /**
-     * @brief Returns the output stream for inner test messages (global shortcut). Logging is always done
+     * @brief The output stream returns for the test inner message. The log recording is always performed.
      * @return Reference to the output stream.
      */
     inline std::ostream& tst(){
@@ -514,7 +537,7 @@ namespace fcf {
                nameOrder > a_test.nameOrder ? false :
                name < a_test.name ? true :
                name > a_test.name ? false :
-                                    false;
+                                   false;
       }
     };
 
@@ -579,6 +602,11 @@ namespace fcf {
     };
 
     namespace NDetails {
+      /**
+       * @brief Selects tests based on the provided options.
+       * @param a_dst Destination set to store selected tests.
+       * @param a_options Configuration options for filtering.
+       */
       inline void select(std::set<Test>& a_dst, const Options& a_options);
     }
 
@@ -664,12 +692,12 @@ namespace fcf {
         std::cout << "  --test-ignore-part PART_NAME - Exclude tests in the specified part(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-group GROUP_NAME - Exclude tests in the specified group(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-test TEST_NAME - Exclude the specified test(s). The parameter can be used multiple times" << std::endl;
-        std::cout << "  --test-log-level LEVEL - Logging level (VALUES: off, ftl, err, wrn, att, log, inf, dbg, trc, all)"<< std::endl;
+        std::cout << "  --test-log-level LEVEL - Logging level (VALUES: off, ftl, err, wrn, att, log, inf, dbg, trc, all)" << std::endl;
         std::cout << "  --test-help  - Help message" << std::endl;
       }
     #else
       /**
-       * @brief Declaration for displaying help information.
+       * @brief Declaration for displaying a list of all registered tests.
        */
       FCF_TEST_DECL_EXPORT void cmdHelp();
     #endif
@@ -742,8 +770,8 @@ namespace fcf {
        *
        * @param a_options Configuration options specifying which tests to run and logging level.
        * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information.
-       *                                        If an error occurs, the value is set to true.
-       *                                        If a null pointer is passed, the function throws an exception.
+       *                                       If an error occurs, the value is set to true.
+       *                                       If a null pointer is passed, the function throws an exception.
        */
       FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0);
     #endif
@@ -770,6 +798,12 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
 
       namespace NDetails {
+        /**
+         * @brief Parses command line arguments into a vector of strings.
+         * @param a_argc Number of arguments.
+         * @param a_argv Array of argument strings.
+         * @return A vector containing parsed arguments.
+         */
         inline std::vector<std::string> parseArgs(int a_argc, const char* const* a_argv);
       } // NDetails namespace
 
@@ -865,6 +899,7 @@ namespace fcf {
      * @param a_errorPtr (default = (bool*)0) A pointer to a variable that receives information about a test error.
      *                                        If an error occurs, the value is set to true.
      *                                        If a null pointer is passed, the function throws an exception.
+     *                                       If an error occurs, the value is set to true.
      * @return The determined command mode after processing.
      */
     template <typename Ty>
@@ -995,16 +1030,18 @@ namespace fcf {
       /**
        * @brief Specialization of PrintPack for an empty pack.
        * Returns an empty string as the base case for recursion.
+       *
+       * @tparam TIterator Unused iterator type.
        */
       template <>
       struct PrintPack<> {
         /**
          * @brief Base case operator that returns an empty string.
          *
-         * @tparam TIterator Iterator type (unused).
+         * @tparam TIterator Unused iterator type.
          * @param a_begName Unused iterator.
          * @param a_endName Unused iterator.
-         * @return Empty string.
+         * @return An empty string.
          */
         template <typename TIterator>
         std::string operator()(TIterator /*a_begName*/, TIterator /*a_endName*/){
@@ -1158,12 +1195,22 @@ namespace fcf {
   namespace NTest {
     namespace NDetails {
 
+      /**
+       * @brief Removes surrounding quotes and handles escaped quotes in a string.
+       * @param a_input The input string.
+       * @return The processed string without outer quotes.
+       */
       inline std::string parseArgsRemoveQ(std::string a_input) {
         return (a_input.length()>=2 && a_input.front()=='"' && a_input.back()=='"')
           ? std::regex_replace(a_input.substr(1, a_input.length()-2), std::regex(R"(\\")"), "\"")
           : a_input;
       }
 
+      /**
+       * @brief Parses a single string into a vector of arguments (flags and values).
+       * @param a_dstVector The vector to populate with parsed arguments.
+       * @param a_input The input string to parse.
+       */
       inline void parseArgs(std::vector<std::string>& a_dstVector, std::string a_input) {
         if (a_input == "="){
           return;
@@ -1190,6 +1237,12 @@ namespace fcf {
         }
       }
 
+      /**
+       * @brief Parses an array of C-style strings into a vector of strings.
+       * @param a_argc Number of arguments.
+       * @param a_argv Array of argument strings.
+       * @return A vector containing all parsed arguments.
+       */
       inline std::vector<std::string> parseArgs(int a_argc, const char* const* a_argv) {
         std::vector<std::string> result;
         for(int i = 0; i < a_argc; ++i) {
@@ -1198,6 +1251,9 @@ namespace fcf {
         return result;
       }
 
+      /**
+       * @brief Enumerates permission states for allowing/ignoring tests.
+       */
       enum EAllow {
         IGNORE,
         NONE,
@@ -1205,12 +1261,19 @@ namespace fcf {
         FORCE_ALLOW
       };
 
+      /**
+       * @brief Internal state used to validate if all requested tests/groups/parts exist.
+       */
       struct SearchState {
         public:
           std::map<std::string, bool> tests;
           std::map<std::string, bool> groups;
           std::map<std::string, bool> parts;
 
+          /**
+           * @brief Validates that all elements in the state maps were actually found.
+           * @throws std::runtime_error if any requested element is missing.
+           */
           void check() {
             _check(parts, "parts ");
             _check(groups, "groups ");
@@ -1218,6 +1281,11 @@ namespace fcf {
           }
 
         private:
+          /**
+           * @brief Helper to iterate through a map and check for missing elements.
+           * @param a_elements The map to check.
+           * @param a_typeName Name of the type for error reporting.
+           */
           void _check(std::map<std::string, bool>& elements, const char* a_typeName) {
             for(const auto& item : elements){
               if (!item.second) {
@@ -1225,8 +1293,16 @@ namespace fcf {
               }
             }
           }
-      };
+        };
 
+      /**
+       * @brief Determines the allowance state of a specific name based on allow and ignore lists.
+       * @param a_allow Current allowance state.
+       * @param a_allowList List of names that are explicitly allowed.
+       * @param a_ignoreList List of names that are explicitly ignored.
+       * @param a_name The name to check.
+       * @return The updated EAllow state.
+       */
       template <typename TAllowList>
       EAllow checkAllow(EAllow a_allow, const TAllowList& a_allowList, const TAllowList& a_ignoreList, const std::string& a_name){
         if (a_allow == ALLOW) {
@@ -1253,6 +1329,12 @@ namespace fcf {
         return a_allow;
       }
 
+      /**
+       * @brief Populates the search state with requested items and marks them as found if they exist in the storage.
+       * @param a_state The search state to update.
+       * @param a_map The actual storage map to check against.
+       * @param a_allowList The list of items to look for.
+       */
       template <typename TMap, typename TAllowList>
       void checkExists(std::map<std::string, bool>& a_state, const TMap& a_map, const TAllowList& a_allowList){
         for (const auto& allowItem : a_allowList) {
