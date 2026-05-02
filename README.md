@@ -228,7 +228,18 @@ struct Options {
 
 The central function for executing the test suite. It parses command-line arguments and determines the action.
 
-#### `ECmdRunMode` Enum
+#### `ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0)`
+Parses command line arguments and executes the appropriate action.
+
+- **Parameters**:
+  - `a_dstOptions`: Reference to the `Options` structure to populate with parsed arguments.
+  - `a_argc`: Number of command line arguments.
+  - `a_argv`: Array of argument strings.
+  - `a_runMode`: Current mode of execution (`CRM_PARSE`, `CRM_EXECUTE`, or `CRM_RUN`).
+  - `a_errorPtr`: A pointer to a variable that receives information about a test error. If an error occurs, the value is set to true. If a null pointer is passed, the function throws an exception.
+- **Returns**: `CmdMode` (the determined mode after processing).
+
+#### `CmdRunMode` Enum
 
 This enum dictates how `cmdRun` behaves during parsing:
 
