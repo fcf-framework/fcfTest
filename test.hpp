@@ -1196,17 +1196,6 @@ namespace fcf {
     namespace NDetails {
 
       /**
-       * @brief Removes surrounding quotes and handles escaped quotes in a string.
-       * @param a_input The input string.
-       * @return The processed string without outer quotes.
-       */
-      inline std::string parseArgsRemoveQ(std::string a_input) {
-        return (a_input.length()>=2 && a_input.front()=='"' && a_input.back()=='"')
-          ? std::regex_replace(a_input.substr(1, a_input.length()-2), std::regex(R"(\\")"), "\"")
-          : a_input;
-      }
-
-      /**
        * @brief Parses a single string into a vector of arguments (flags and values).
        * @param a_dstVector The vector to populate with parsed arguments.
        * @param a_input The input string to parse.
@@ -1215,26 +1204,21 @@ namespace fcf {
         if (a_input == "="){
           return;
         }
-        std::vector<std::string> result;
-        std::regex re("(--[\\w_\\-]+)(?:\\s*=\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|(.+)))?");
-        auto words_begin = std::sregex_iterator(a_input.begin(), a_input.end(), re);
-        auto words_end = std::sregex_iterator();
-        if (words_begin == words_end) {
-          if (!a_input.empty() && a_input[0] == '=') {
-            a_input = a_input.substr(1, a_input.length()-1);
-            a_dstVector.push_back(parseArgsRemoveQ(a_input));
-          } else {
-            a_dstVector.push_back(a_input);
-          }
-        } else {
-          for (std::sregex_iterator i = words_begin; i != words_end; ++i) {
-              std::smatch match = *i;
-              a_dstVector.push_back(match[1].str());
-
-              if (match[2].matched)      a_dstVector.push_back(parseArgsRemoveQ(match[2].str()));
-              else if (match[3].matched) a_dstVector.push_back(parseArgsRemoveQ(match[3].str()));
+        if (!a_input.empty()){
+          size_t pos = a_input.find("=");
+          if (pos != std::string::npos){
+            size_t len = pos;
+            if (len) {
+              a_dstVector.push_back(a_input.substr(0, len));
+            }
+            len = a_input.length() - (pos+1);
+            if (len) {
+              a_dstVector.push_back(a_input.substr(pos+1, len));
+            }
+            return;
           }
         }
+        a_dstVector.push_back(a_input);
       }
 
       /**

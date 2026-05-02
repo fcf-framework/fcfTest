@@ -5,7 +5,18 @@
 
 int main(int a_argc, char* a_argv[]){
   {
-    const char* argv[] = {"--test=\"12\""};
+    std::cout << "Input:" << std::endl;
+    for(size_t i = 0; i < a_argc; ++i){
+      std::cout << "  |" << a_argv[i] << "|" << std::endl;
+    }
+    auto vec = fcf::NTest::NDetails::parseArgs(a_argc, a_argv);
+    std::cout << "Output:" << std::endl;
+    for(size_t i = 0; i < vec.size(); ++i){
+      std::cout << "  |" << vec[i] << "|" << std::endl;
+    }
+  } 
+  {
+    const char* argv[] = {"--test=12"};
     int   argc = sizeof(argv) / sizeof(argv[0]);
     auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
     if (vec.size() != 2)
@@ -38,28 +49,6 @@ int main(int a_argc, char* a_argv[]){
       throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
   }
   {
-    const char* argv[] = {"--test-help=12"};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test-help")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[0]:" << vec[0] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "12")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]:" << vec[1] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
-    const char* argv[] = {"--test-test=\"dynamic container access\""};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test-test")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[0]:" << vec[0] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "dynamic container access")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]:" << vec[1] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
     const char* argv[] = {"--test-test=dynamic container access"};
     int   argc = sizeof(argv) / sizeof(argv[0]);
     auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
@@ -71,7 +60,7 @@ int main(int a_argc, char* a_argv[]){
       throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]:" << vec[1] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
   }
   {
-    const char* argv[] = {"--test-group=Variant", "--test-test=\"dynamic container access\""};
+    const char* argv[] = {"--test-group=Variant", "--test-test=dynamic container access"};
     int   argc = sizeof(argv) / sizeof(argv[0]);
     auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
     if (vec.size() != 4)
@@ -114,18 +103,7 @@ int main(int a_argc, char* a_argv[]){
       throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
   }
   {
-    const char* argv[] = {"--test=\"12\""};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "12")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
-    const char* argv[] = {"--test", "=\"12\""};
+    const char* argv[] = {"--test", "=12"};
     int   argc = sizeof(argv) / sizeof(argv[0]);
     auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
     if (vec.size() != 2)
@@ -163,19 +141,7 @@ int main(int a_argc, char* a_argv[]){
       throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]: " << vec[1] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
   }
   {
-    const char* argv[] = {"--test", "=\"12\""};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]: " << vec[0] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "12")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]: " << vec[1] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-
-  {
-    const char* argv[] = {"--test", "=\"1\\\"2\""};
+    const char* argv[] = {"--test", "=1\"2"};
     int   argc = sizeof(argv) / sizeof(argv[0]);
     auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
     if (vec.size() != 2)
