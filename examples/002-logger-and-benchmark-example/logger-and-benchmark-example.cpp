@@ -85,6 +85,7 @@ FCF_TEST_DECLARE("Benchmark", "Manual", "ManualLoopBenchmark") {
 int main(int a_argc, char* a_argv[]) {
     bool error = false;
 
+    // Add a static string prefix to all log messages to indent them.
     fcf::NTest::logger().addedPrefixStr("  ");
 
     // Register a functional prefix that dynamically generates a timestamp and log level string.
