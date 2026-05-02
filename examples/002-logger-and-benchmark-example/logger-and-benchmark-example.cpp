@@ -4,6 +4,9 @@
  */
 #define FCF_TEST_IMPLEMENTATION
 #include <fcfTest/test.hpp>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 #include <vector>
 #include <algorithm>
 
@@ -11,17 +14,17 @@
 FCF_TEST_DECLARE("Logging", "Levels", "LogLevelsDemo") {
     // Demonstration of all logging levels.
     // By default, the logging level is LL_LOG.
-    // Messages with a level lower than the current one (e.g., dbg, trc) 
+    // Messages with a level lower than the current one (e.g., dbg, trc)
     // will not be displayed unless the log level is changed via command line arguments.
 
-    fcf::NTest::ftl() << "  Fatal message: Critical failure!" << std::endl;
-    fcf::NTest::err() << "  Error message: Something went wrong." << std::endl;
-    fcf::NTest::wrn() << "  Warning message: Be careful." << std::endl;
-    fcf::NTest::att() << "  Attention message: Check this." << std::endl;
-    fcf::NTest::log() << "  Log message: Standard operation." << std::endl;
-    fcf::NTest::inf() << "  Info message: Informational data." << std::endl;
-    fcf::NTest::dbg() << "  Debug message: Debugging info." << std::endl;
-    fcf::NTest::trc() << "  Trace message: Detailed trace." << std::endl;
+    fcf::NTest::ftl() << "Fatal message: Critical failure!" << std::endl;
+    fcf::NTest::err() << "Error message: Something went wrong." << std::endl;
+    fcf::NTest::wrn() << "Warning message: Be careful." << std::endl;
+    fcf::NTest::att() << "Attention message: Check this." << std::endl;
+    fcf::NTest::log() << "Log message: Standard operation." << std::endl;
+    fcf::NTest::inf() << "Info message: Informational data." << std::endl;
+    fcf::NTest::dbg() << "Debug message: Debugging info." << std::endl;
+    fcf::NTest::trc() << "Trace message: Detailed trace." << std::endl;
 
     // Successful execution check
     FCF_TEST(true);
@@ -46,10 +49,10 @@ FCF_TEST_DECLARE("Benchmark", "Sorting", "VectorSortBenchmark") {
     });
 
     // Output benchmark results
-    fcf::NTest::inf() << "  Benchmark completed." << std::endl;
-    fcf::NTest::inf() << "    Iterations: " << bench.iterations() << std::endl;
-    fcf::NTest::inf() << "    Total time: " << bench.totalDuration().count() << " ns" << std::endl;
-    fcf::NTest::inf() << "    Avg time:   " << bench.duration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "Benchmark completed." << std::endl;
+    fcf::NTest::inf() << "  Iterations: " << bench.iterations() << std::endl;
+    fcf::NTest::inf() << "  Total time: " << bench.totalDuration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "  Avg time:   " << bench.duration().count() << " ns" << std::endl;
 
     // We perform a check of the sorting
     FCF_TEST(std::is_sorted(sdata.begin(), sdata.end()));
@@ -71,14 +74,29 @@ FCF_TEST_DECLARE("Benchmark", "Manual", "ManualLoopBenchmark") {
     }
     bench.end();
 
-    fcf::NTest::inf() << "  Manual loop benchmark completed." << std::endl;
-    fcf::NTest::inf() << "    Iterations: " << bench.iterations() << std::endl;
-    fcf::NTest::inf() << "    Total time: " << bench.totalDuration().count() << " ns" << std::endl;
-    fcf::NTest::inf() << "    Avg time:   " << bench.duration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "Manual loop benchmark completed." << std::endl;
+    fcf::NTest::inf() << "  Iterations: " << bench.iterations() << std::endl;
+    fcf::NTest::inf() << "  Total time: " << bench.totalDuration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "  Avg time:   " << bench.duration().count() << " ns" << std::endl;
 }
+
+
 
 int main(int a_argc, char* a_argv[]) {
     bool error = false;
+
+    fcf::NTest::logger().addedPrefixStr("  ");
+
+    fcf::NTest::logger().addedPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::LogLevel a_level){
+        auto time = std::time(nullptr);
+        return (std::stringstream() 
+                  << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S") 
+                  << " [" 
+                  << a_logger.toStrLevel(a_level) 
+                  << "]: "
+                ).str();
+    });
+
     // Run tests.
     // To see debug and trace messages, run with the flag
     // ./logger-and-benchmark-example --test-run --test-log-level dbg

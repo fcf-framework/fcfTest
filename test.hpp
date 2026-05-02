@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <string>
+#include <functional>
 #include <iostream>
 #include <sstream>
 #include <cstring>
@@ -221,6 +222,18 @@ namespace fcf {
      */
     struct Logger {
       public:
+
+        typedef std::function<std::string(Logger&, LogLevel)> PrefixFunctionType;
+
+      protected:
+
+        struct Prefix{
+          std::string        str;
+          PrefixFunctionType func;
+        };
+
+      public:
+
         /**
          * @brief Constructs a logger with the default log level (LL_LOG).
          */
@@ -233,7 +246,7 @@ namespace fcf {
          * @return Reference to the output stream.
          */
         std::ostream& ftl(){
-          return _level >= LL_FTL ? (std::ostream&)std::cout : (std::ostream&)_empty;
+          return _write(LL_FTL);
         }
 
         /**
@@ -241,7 +254,7 @@ namespace fcf {
          * @return Reference to the output stream.
          */
         std::ostream& err(){
-          return _level >= LL_ERR ? (std::ostream&)std::cout : (std::ostream&)_empty;
+          return _write(LL_ERR);
         }
 
         /**
@@ -249,7 +262,7 @@ namespace fcf {
          * @return Reference to the output stream.
          */
         std::ostream& wrn(){
-          return _level >= LL_WRN ? (std::ostream&)std::cout : (std::ostream&)_empty;
+          return _write(LL_WRN);
         }
 
         /**
@@ -257,7 +270,7 @@ namespace fcf {
          * @return Reference to the output stream.
          */
         std::ostream& att(){
-          return _level >= LL_ATT ? (std::ostream&)std::cout : (std::ostream&)_empty;
+          return _write(LL_ATT);
         }
 
         /**
@@ -265,7 +278,7 @@ namespace fcf {
          * @return Reference to the output stream.
          */
         std::ostream& log(){
-          return _level >= LL_LOG ? (std::ostream&)std::cout : (std::ostream&)_empty;
+          return _write(LL_LOG);
         }
 
         /**
@@ -273,7 +286,7 @@ namespace fcf {
          * @return Reference to the output stream.
          */
         std::ostream& inf(){
-          return _level >= LL_INF ? (std::ostream&)std::cout : (std::ostream&)_empty;
+          return _write(LL_INF);
         }
 
         /**
@@ -281,7 +294,7 @@ namespace fcf {
          * @return Reference to the output stream.
          */
         std::ostream& dbg(){
-          return _level >= LL_DBG ? (std::ostream&)std::cout : (std::ostream&)_empty;
+          return _write(LL_DBG);
         }
 
         /**
@@ -289,7 +302,7 @@ namespace fcf {
          * @return Reference to the output stream.
          */
         std::ostream& trc(){
-          return _level >= LL_TRC ? (std::ostream&)std::cout : (std::ostream&)_empty;
+          return _write(LL_TRC);
         }
 
         /**
@@ -304,13 +317,8 @@ namespace fcf {
          * @brief Returns the current string representation of the log level.
          * @return Pointer to a static string representing the level name.
          */
-        const char* getStrLevel(){
-          const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc"};
-          int size = sizeof(levels) / sizeof(levels[0]);
-          int level = _level < 0     ? 0 :
-                      _level >= size ? size - 1 :
-                                      _level;
-          return levels[level];
+        const char* getStrLevel() const{
+          return toStrLevel(_level);
         }
 
         /**
@@ -318,28 +326,67 @@ namespace fcf {
          * @param a_level Pointer to a string representing the desired log level (e.g., "dbg", "err").
          */
         void setStrLevel(const char* a_level){
-          const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc"};
-          int size = sizeof(levels) / sizeof(levels[0]);
-          _level = LL_LOG;
-          for(int i = 0; i < size; ++i){
-            if (std::strcmp(levels[i],a_level) == 0){
-              _level = i;
-              break;
-            }
-          }
+          _level = toLevel(a_level);
         }
 
         /**
          * @brief Returns the current integer value of the log level.
          * @return Integer representation of the log level.
          */
-        int getLevel(){
+        int getLevel() const{
           return _level;
         }
 
+        static LogLevel toLevel(std::string a_level) {
+          const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
+          int size = sizeof(levels) / sizeof(levels[0]);
+          for(int i = 0; i < size; ++i){
+            if (a_level == levels[i]){
+              return (LogLevel)i;
+            }
+          }
+          return LL_LOG;
+        }
+
+        static const char* toStrLevel(LogLevel a_level){
+          const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
+          int size = sizeof(levels) / sizeof(levels[0]);
+          int level = a_level < 0     ? 0 :
+                      a_level >= size ? size - 1 :
+                                        a_level;
+          return levels[level];
+        }
+
+        void addedPrefixStr(const std::string& a_prefix){
+          Prefix prefix;
+          prefix.str = a_prefix;
+          _prefixes.push_back(prefix);
+        }
+
+        void addedPrefixFunc(const PrefixFunctionType& a_prefix){
+          Prefix prefix;
+          prefix.func = a_prefix;
+          _prefixes.push_back(prefix);
+        }
+
       protected:
-        int                   _level; ///< Current log level.
+        std::ostream& _write(int a_forLevel){
+          if (_level >= a_forLevel) {
+            for(Prefix prefix : _prefixes){
+              if (prefix.func){
+                std::cout << prefix.func(*this, (LogLevel)a_forLevel);
+              } else {
+                std::cout << prefix.str;
+              }
+            }
+            return (std::ostream&)std::cout;
+          } else {
+            return (std::ostream&)_empty;
+          }
+        }
+        LogLevel              _level; ///< Current log level.
         NDetails::EmptyStream _empty; ///< Empty stream buffer for disabled levels.
+        std::list<Prefix>     _prefixes;
     };
 
     #ifdef FCF_TEST_IMPLEMENTATION
@@ -617,7 +664,7 @@ namespace fcf {
         std::cout << "  --test-ignore-part PART_NAME - Exclude tests in the specified part(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-group GROUP_NAME - Exclude tests in the specified group(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-test TEST_NAME - Exclude the specified test(s). The parameter can be used multiple times" << std::endl;
-        std::cout << "  --test-log-level LEVEL - Logging level (VALUES: off, ftl, err, wrn, att, log, inf, dbg, trc)"<< std::endl;
+        std::cout << "  --test-log-level LEVEL - Logging level (VALUES: off, ftl, err, wrn, att, log, inf, dbg, trc, all)"<< std::endl;
         std::cout << "  --test-help  - Help message" << std::endl;
       }
     #else
@@ -1174,7 +1221,7 @@ namespace fcf {
           void _check(std::map<std::string, bool>& elements, const char* a_typeName) {
             for(const auto& item : elements){
               if (!item.second) {
-                throw std::runtime_error(std::string() + "The test " + a_typeName + "named '" + item.first + "' cannot be found"); 
+                throw std::runtime_error(std::string() + "The test " + a_typeName + "named '" + item.first + "' cannot be found");
               }
             }
           }
