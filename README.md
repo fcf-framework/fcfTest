@@ -239,6 +239,15 @@ Parses command line arguments and executes the appropriate action.
   - `a_errorPtr`: A pointer to a variable that receives information about a test error. If an error occurs, the value is set to true. If a null pointer is passed, the function throws an exception.
 - **Returns**: `ECmdMode` returns the selected mode based on the parameters of the command line a_argv.
 
+#### `ECmdMode` Enum
+
+Defines the mode of operation for the command line parser:
+- **`CM_NONE`**: No specific mode was set.
+- **`CM_RUN`**: The `--test-run` flag was detected.
+- **`CM_LIST`**: The `--test-list` flag was detected.
+- **`CM_HELP`**: The `--test-help` flag was detected.
+
+
 #### `ECmdRunMode` Enum
 
 This enum dictates how `cmdRun` behaves during parsing:
