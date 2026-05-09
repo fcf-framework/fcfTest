@@ -341,6 +341,7 @@ namespace fcf {
         /**
          * @brief Sets the log level.
          * @param a_level An ELogLevel value representing the desired logging level.
+         * @throw std::runtime_error throws if the value passed is LL__DEF
          */
         void setLevel(ELogLevel a_level){
           if (a_level == LL_DEF) {
