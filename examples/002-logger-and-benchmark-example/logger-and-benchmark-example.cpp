@@ -97,7 +97,7 @@ int main(int a_argc, char* a_argv[]) {
         return (std::stringstream() 
                   << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S") 
                   << " [" 
-                  << a_logger.toStrLevel(a_level) 
+                  << a_logger.toLevelStr(a_level) 
                   << "]: "
                 ).str();
     });

@@ -317,15 +317,15 @@ namespace fcf {
          * @brief Returns the current string representation of the log level.
          * @return Pointer to a static string representing the level name.
          */
-        const char* getStrLevel() const{
-          return toStrLevel(_level);
+        const char* getLevelStr() const{
+          return toLevelStr(_level);
         }
 
         /**
          * @brief Sets the log level by name.
          * @param a_level Pointer to a string representing the desired log level (e.g., "dbg", "err").
          */
-        void setStrLevel(const char* a_level){
+        void setLevelStr(const char* a_level){
           _level = toLevel(a_level);
         }
 
@@ -358,7 +358,7 @@ namespace fcf {
          * @param a_level The log level to convert.
          * @return A pointer to a static string representing the level name.
          */
-        static const char* toStrLevel(ELogLevel a_level){
+        static const char* toLevelStr(ELogLevel a_level){
           const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
           int size = sizeof(levels) / sizeof(levels[0]);
           int level = a_level < 0     ? 0 :
@@ -733,8 +733,8 @@ namespace fcf {
        *                                        If a null pointer is passed, the function throws an exception.
        */
       FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0){
-        const char* lastLevel = logger().getStrLevel();
-        logger().setStrLevel(a_options.logLevel.c_str());
+        const char* lastLevel = logger().getLevelStr();
+        logger().setLevelStr(a_options.logLevel.c_str());
 
         if (a_errorPtr){
           *a_errorPtr = false;
@@ -753,7 +753,7 @@ namespace fcf {
           tst() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
         } catch(const std::exception& e){
           tst() << e.what() << std::endl;
-          logger().setStrLevel(lastLevel);
+          logger().setLevelStr(lastLevel);
           if (a_errorPtr){
             *a_errorPtr = true;
           } else {
@@ -761,7 +761,7 @@ namespace fcf {
           }
         }
 
-        logger().setStrLevel(lastLevel);
+        logger().setLevelStr(lastLevel);
       }
 
     #else
