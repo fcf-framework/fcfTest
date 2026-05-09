@@ -754,7 +754,7 @@ namespace fcf {
        *                                        If a null pointer is passed, the function throws an exception.
        */
       FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0){
-        const char* lastLevel = logger().getLevelStr();
+        ELogLevel lastLevel = logger().getLevel();
         if (a_options.logLevel != LL_DEF) {
           logger().setLevel(a_options.logLevel);
         }
@@ -776,7 +776,7 @@ namespace fcf {
           tst() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
         } catch(const std::exception& e){
           tst() << e.what() << std::endl;
-          logger().setLevelStr(lastLevel);
+          logger().setLevel(lastLevel);
           if (a_errorPtr){
             *a_errorPtr = true;
           } else {
@@ -784,7 +784,7 @@ namespace fcf {
           }
         }
 
-        logger().setLevelStr(lastLevel);
+        logger().setLevel(lastLevel);
       }
 
     #else
