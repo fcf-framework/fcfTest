@@ -327,7 +327,7 @@ namespace fcf {
          * @param a_level Pointer to a string representing the desired log level (e.g., "dbg", "err").
          */
         void setLevelStr(const char* a_level){
-          _level = toLevel(a_level);
+          setLevel(toLevel(a_level));
         }
 
         /**
@@ -343,6 +343,9 @@ namespace fcf {
          * @param a_level An ELogLevel value representing the desired logging level.
          */
         void setLevel(ELogLevel a_level){
+          if (a_level == LL_DEF) {
+            throw std::runtime_error("LL_DEF value cannot be set as primary value");
+          }
           _level = a_level;
         }
 
