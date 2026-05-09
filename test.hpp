@@ -331,9 +331,9 @@ namespace fcf {
 
         /**
          * @brief Returns the current integer value of the log level.
-         * @return Integer representation of the log level.
+         * @return ELogLevel representation of the log level.
          */
-        int getLevel() const{
+        ELogLevel getLevel() const{
           return _level;
         }
 
