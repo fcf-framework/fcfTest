@@ -338,6 +338,14 @@ namespace fcf {
         }
 
         /**
+         * @brief Sets the log level.
+         * @param a_level An ELogLevel value representing the desired logging level.
+         */
+        void setLevel(ELogLevel a_level){
+          _level = a_level;
+        }
+
+        /**
          * @brief Converts a string representation of a log level to its enum value.
          * @param a_level The string to convert.
          * @return The corresponding ELogLevel enum.
@@ -575,7 +583,7 @@ namespace fcf {
       std::vector<std::string> ignoreParts;   ///< List of ignore part names.
       std::vector<std::string> ignoreGroups;  ///< List of ignore group names to run.
       std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
-      std::string              logLevel;      ///< Desired logging level.
+      ELogLevel                logLevel;      ///< Desired logging level.
     };
 
     /**
@@ -734,7 +742,7 @@ namespace fcf {
        */
       FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0){
         const char* lastLevel = logger().getLevelStr();
-        logger().setLevelStr(a_options.logLevel.c_str());
+        logger().setLevel(a_options.logLevel);
 
         if (a_errorPtr){
           *a_errorPtr = false;
@@ -835,7 +843,7 @@ namespace fcf {
               return mode;
             }
           } else if (args[i] == "--test-log-level" && (i+1) < args.size()) {
-            a_dstOptions.logLevel = args[i+1];
+            a_dstOptions.logLevel = Logger::toLevel(args[i+1]);
             ++i;
           } else if (args[i] == "--test-list"){
             mode = CM_LIST;

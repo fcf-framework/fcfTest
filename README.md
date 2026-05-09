@@ -219,7 +219,7 @@ struct Options {
   std::vector<std::string> ignoreParts;   ///< List of ignore part names.
   std::vector<std::string> ignoreGroups;  ///< List of ignore group names to run.
   std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
-  std::string              logLevel;      ///< Desired logging level.
+  ELogLevel                logLevel;      ///< Desired logging level.
 };
 ```
 
