@@ -205,6 +205,7 @@ namespace fcf {
      * @brief Enumerates the available log levels.
      */
     enum ELogLevel{
+      LL_DEF,  ///< is used to indicate the use of the meaning by default.
       LL_OFF,   ///< No logging.
       LL_FTL,   ///< Fatal level.
       LL_ERR,   ///< Error level.
@@ -347,18 +348,20 @@ namespace fcf {
 
         /**
          * @brief Converts a string representation of a log level to its enum value.
-         * @param a_level The string to convert.
+         * @param a_level   The string to convert.
+         * @param a_default This value is set if the unacceptable value or the value of "def" is introduced.
          * @return The corresponding ELogLevel enum.
          */
-        static ELogLevel toLevel(std::string a_level) {
-          const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
+        static ELogLevel toLevel(std::string a_level, ELogLevel a_default = LL_LOG) {
+          const char* levels[] = {"def", "off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
+          a_default = a_default == LL_DEF ? LL_LOG : a_default;
           int size = sizeof(levels) / sizeof(levels[0]);
           for(int i = 0; i < size; ++i){
             if (a_level == levels[i]){
-              return (ELogLevel)i;
+              return i == LL_DEF ? a_default : (ELogLevel)i;
             }
           }
-          return LL_LOG;
+          return a_default;
         }
 
         /**
@@ -367,7 +370,7 @@ namespace fcf {
          * @return A pointer to a static string representing the level name.
          */
         static const char* toLevelStr(ELogLevel a_level){
-          const char* levels[] = {"off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
+          const char* levels[] = {"def", "off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
           int size = sizeof(levels) / sizeof(levels[0]);
           int level = a_level < 0     ? 0 :
                       a_level >= size ? size - 1 :
@@ -584,6 +587,10 @@ namespace fcf {
       std::vector<std::string> ignoreGroups;  ///< List of ignore group names to run.
       std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
       ELogLevel                logLevel;      ///< Desired logging level.
+
+      Options() 
+        : logLevel(LL_DEF){
+      }
     };
 
     /**
@@ -700,7 +707,7 @@ namespace fcf {
         std::cout << "  --test-ignore-part PART_NAME - Exclude tests in the specified part(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-group GROUP_NAME - Exclude tests in the specified group(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-test TEST_NAME - Exclude the specified test(s). The parameter can be used multiple times" << std::endl;
-        std::cout << "  --test-log-level LEVEL - Logging level (VALUES: off, ftl, err, wrn, att, log, inf, dbg, trc, all)" << std::endl;
+        std::cout << "  --test-log-level LEVEL - Logging level (VALUES: def, off, ftl, err, wrn, att, log, inf, dbg, trc, all)" << std::endl;
         std::cout << "  --test-help  - Help message" << std::endl;
       }
     #else
@@ -843,7 +850,7 @@ namespace fcf {
               return mode;
             }
           } else if (args[i] == "--test-log-level" && (i+1) < args.size()) {
-            a_dstOptions.logLevel = Logger::toLevel(args[i+1]);
+            a_dstOptions.logLevel = Logger::toLevel(args[i+1], logger().getLevel());
             ++i;
           } else if (args[i] == "--test-list"){
             mode = CM_LIST;
