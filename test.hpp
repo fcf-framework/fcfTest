@@ -755,7 +755,9 @@ namespace fcf {
        */
       FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0){
         const char* lastLevel = logger().getLevelStr();
-        logger().setLevel(a_options.logLevel);
+        if (a_options.logLevel != LL_DEF) {
+          logger().setLevel(a_options.logLevel);
+        }
 
         if (a_errorPtr){
           *a_errorPtr = false;
