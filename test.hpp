@@ -205,17 +205,17 @@ namespace fcf {
      * @brief Enumerates the available log levels.
      */
     enum ELogLevel{
-      LL_DEF,  ///< is used to indicate the use of the meaning by default.
-      LL_OFF,   ///< No logging.
-      LL_FTL,   ///< Fatal level.
-      LL_ERR,   ///< Error level.
-      LL_WRN,   ///< Warning level.
-      LL_ATT,   ///< Attention level.
-      LL_LOG,   ///< Log level.
-      LL_INF,   ///< Information level.
-      LL_DBG,   ///< Debug level.
-      LL_TRC,   ///< Trace level.
-      LL_ALL,   ///< All levels.
+      LL_DEF = -1,  ///< is used to indicate the use of the meaning by default.
+      LL_OFF = 0,   ///< No logging.
+      LL_FTL = 1,   ///< Fatal level.
+      LL_ERR = 2,   ///< Error level.
+      LL_WRN = 3,   ///< Warning level.
+      LL_ATT = 4,   ///< Attention level.
+      LL_LOG = 5,   ///< Log level.
+      LL_INF = 6,   ///< Information level.
+      LL_DBG = 7,   ///< Debug level.
+      LL_TRC = 8,   ///< Trace level.
+      LL_ALL = 9,   ///< All levels.
     };
 
     /**
@@ -357,8 +357,9 @@ namespace fcf {
           a_default = a_default == LL_DEF ? LL_LOG : a_default;
           int size = sizeof(levels) / sizeof(levels[0]);
           for(int i = 0; i < size; ++i){
+            int l = i - 1;
             if (a_level == levels[i]){
-              return i == LL_DEF ? a_default : (ELogLevel)i;
+              return l == LL_DEF ? a_default : (ELogLevel)l;
             }
           }
           return a_default;
@@ -371,10 +372,11 @@ namespace fcf {
          */
         static const char* toLevelStr(ELogLevel a_level){
           const char* levels[] = {"def", "off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
-          int size = sizeof(levels) / sizeof(levels[0]);
-          int level = a_level < 0     ? 0 :
-                      a_level >= size ? size - 1 :
-                                       a_level;
+          int size  = sizeof(levels) / sizeof(levels[0]);
+          int level = (int)a_level + 1;
+          level = a_level < 0     ? 0 :
+                  a_level >= size ? size - 1 :
+                                    level;
           return levels[level];
         }
 
