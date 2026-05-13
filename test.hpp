@@ -56,32 +56,32 @@
  * Automatically set to empty when implementing the library (internal use)
  * and set to `extern` when only declaring it (header-only usage).
  */
-#ifndef FCF_TEST_DELC_EXTERN
+#ifndef _FCF_TEST_DELC_EXTERN
   #ifdef FCF_TEST_IMPLEMENTATION
-    #define FCF_TEST_DELC_EXTERN
+    #define _FCF_TEST_DELC_EXTERN
   #else
-    #define FCF_TEST_DELC_EXTERN extern
+    #define _FCF_TEST_DELC_EXTERN extern
   #endif // #ifdef FCF_TEST_IMPLEMENTATION
-#endif // #ifndef FCF_TEST_DELC_EXTERN
+#endif // #ifndef _FCF_TEST_DELC_EXTERN
 
 /**
  * @brief Defines the export/declaration macro for Windows environments.
  * Uses `__declspec(dllexport)` or `__declspec(dllimport)` based on
  * whether symbols are being exported or imported, otherwise defaults to empty.
  */
-#ifndef FCF_TEST_DECL_EXPORT
+#ifndef _FCF_TEST_DECL_EXPORT
   #ifdef WIN32
     #if defined(FCF_TEST_EXPORT)
-      #define FCF_TEST_DECL_EXPORT __declspec(dllexport)
+      #define _FCF_TEST_DECL_EXPORT __declspec(dllexport)
     #elif defined(FCF_TEST_IMPORT)
-      #define FCF_TEST_DECL_EXPORT __declspec(dllimport)
+      #define _FCF_TEST_DECL_EXPORT __declspec(dllimport)
     #else
-      #define FCF_TEST_DECL_EXPORT
+      #define _FCF_TEST_DECL_EXPORT
     #endif // #if defined(FCF_TEST_EXPORT)
   #else
-    #define FCF_TEST_DECL_EXPORT
+    #define _FCF_TEST_DECL_EXPORT
   #endif // #ifdef WIN32
-#endif // #ifndef FCF_TEST_DECL_EXPORT
+#endif // #ifndef _FCF_TEST_DECL_EXPORT
 
 /**
  * @brief Helper macro to generate unique names for internal structures using the COUNTER macro.
@@ -436,7 +436,7 @@ namespace fcf {
        * Initializes the static logger on first call if not present.
        * @return Reference to the Logger instance.
        */
-      FCF_TEST_DECL_EXPORT Logger& logger(){
+      _FCF_TEST_DECL_EXPORT Logger& logger(){
         static Logger* logger = 0;
         if (!logger){
           logger = new Logger();
@@ -448,7 +448,7 @@ namespace fcf {
        * @brief Declaration for the global logger instance.
        * @return Reference to the Logger instance.
        */
-      FCF_TEST_DECL_EXPORT Logger& logger();
+      _FCF_TEST_DECL_EXPORT Logger& logger();
     #endif
 
     /**
@@ -638,7 +638,7 @@ namespace fcf {
        * Initializes the static storage on first call if not present.
        * @return Reference to the Storage instance.
        */
-      FCF_TEST_DECL_EXPORT Storage& getStorage(){
+      _FCF_TEST_DECL_EXPORT Storage& getStorage(){
         static Storage* storage = 0;
         if (!storage){
           storage = new Storage();
@@ -650,7 +650,7 @@ namespace fcf {
        * @brief Declaration for the global storage instance.
        * @return Reference to the Storage instance.
        */
-      FCF_TEST_DECL_EXPORT Storage& getStorage();
+      _FCF_TEST_DECL_EXPORT Storage& getStorage();
     #endif
 
     /**
@@ -704,7 +704,7 @@ namespace fcf {
       /**
        * @brief Displays help information for the test runner.
        */
-      FCF_TEST_DECL_EXPORT void cmdHelp(){
+      _FCF_TEST_DECL_EXPORT void cmdHelp(){
         std::cout << "Test options:" << std::endl;
         std::cout << "  --test-run  - Run tests" << std::endl;
         std::cout << "  --test-list - Displays a list of all tests" << std::endl;
@@ -721,14 +721,14 @@ namespace fcf {
       /**
        * @brief Declaration for displaying a list of all registered tests.
        */
-      FCF_TEST_DECL_EXPORT void cmdHelp();
+      _FCF_TEST_DECL_EXPORT void cmdHelp();
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
       /**
        * @brief  Displays a list of all registered tests.
        */
-      FCF_TEST_DECL_EXPORT void cmdList(){
+      _FCF_TEST_DECL_EXPORT void cmdList(){
         Options options;
         std::set<Test> tests;
         NDetails::select(tests, options);
@@ -741,7 +741,7 @@ namespace fcf {
       /**
        * @brief Declaration for displaying a list of all registered tests.
        */
-      FCF_TEST_DECL_EXPORT void cmdList();
+      _FCF_TEST_DECL_EXPORT void cmdList();
     #endif
 
 
@@ -754,7 +754,7 @@ namespace fcf {
        *                                        If an error occurs, the value is set to true.
        *                                        If a null pointer is passed, the function throws an exception.
        */
-      FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0){
+      _FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0){
         ELogLevel lastLevel = logger().getLevel();
         if (a_options.logLevel != LL_DEF) {
           logger().setLevel(a_options.logLevel);
@@ -797,7 +797,7 @@ namespace fcf {
        *                                       If an error occurs, the value is set to true.
        *                                       If a null pointer is passed, the function throws an exception.
        */
-      FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0);
+      _FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0);
     #endif
 
     /**
@@ -844,7 +844,7 @@ namespace fcf {
        *                                        If a null pointer is passed, the function throws an exception.
        * @return The determined command mode after processing.
        */
-      FCF_TEST_DECL_EXPORT ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0){
+      _FCF_TEST_DECL_EXPORT ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0){
         ECmdMode mode = CM_NONE;
 
         std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);
@@ -906,7 +906,7 @@ namespace fcf {
        *                                        If a null pointer is passed, the function throws an exception.
        * @return The determined command mode after processing.
        */
-      FCF_TEST_DECL_EXPORT ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0);
+      _FCF_TEST_DECL_EXPORT ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0);
     #endif
 
     template <typename Ty>
