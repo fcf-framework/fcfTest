@@ -16,6 +16,7 @@
 #include <vector>
 #include <set>
 #include <regex>
+#include "VERSION"
 
 /**
  * @brief Defines the implementation macro for FCF test functionality.
