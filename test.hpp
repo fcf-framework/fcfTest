@@ -849,7 +849,7 @@ namespace fcf {
 
         std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);
 
-        for(int i = 0; i < args.size(); ++i){
+        for(size_t i = 0; i < args.size(); ++i){
           if (args[i] == "--test-run"){
             mode = CM_RUN;
           } else if (args[i] == "--test-help"){
