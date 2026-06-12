@@ -389,7 +389,7 @@ namespace fcf {
          * @brief Adds a static string prefix to all log messages.
          * @param a_prefix The string to append as a prefix.
          */
-        void addedPrefixStr(const std::string& a_prefix){
+        void addPrefixStr(const std::string& a_prefix){
           Prefix prefix;
           prefix.str = a_prefix;
           _prefixes.push_back(prefix);
@@ -399,7 +399,7 @@ namespace fcf {
          * @brief Adds a functional prefix to all log messages.
          * @param a_prefix A function that returns a string to be used as a prefix.
          */
-        void addedPrefixFunc(const PrefixFunctionType& a_prefix){
+        void addPrefixFunc(const PrefixFunctionType& a_prefix){
           Prefix prefix;
           prefix.func = a_prefix;
           _prefixes.push_back(prefix);
@@ -957,7 +957,7 @@ namespace fcf {
          * @brief Returns the number of iterations set for this duration.
          * @return The number of iterations.
          */
-        unsigned long long iterations(){
+        unsigned long long getIterationCount(){
           return _iterations;
         }
 
@@ -994,7 +994,7 @@ namespace fcf {
          * @brief Returns the total duration of all iterations in nanoseconds.
          * @return Total duration as nanoseconds.
          */
-        std::chrono::nanoseconds totalDuration(){
+        std::chrono::nanoseconds getTotalDuration(){
           return std::chrono::duration_cast<std::chrono::nanoseconds>(_end - _start);
         }
 
@@ -1002,7 +1002,7 @@ namespace fcf {
          * @brief Returns the average duration of a single iteration in nanoseconds.
          * @return Average duration as nanoseconds.
          */
-        std::chrono::nanoseconds duration(){
+        std::chrono::nanoseconds getDuration(){
           return std::chrono::duration_cast<std::chrono::nanoseconds>(_end - _start) / _iterations;
         }
 

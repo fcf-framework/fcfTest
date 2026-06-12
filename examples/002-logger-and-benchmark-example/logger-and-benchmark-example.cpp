@@ -50,9 +50,9 @@ FCF_TEST_DECLARE("Benchmark", "Sorting", "VectorSortBenchmark") {
 
     // Output benchmark results
     fcf::NTest::inf() << "Benchmark completed." << std::endl;
-    fcf::NTest::inf() << "  Iterations: " << bench.iterations() << std::endl;
-    fcf::NTest::inf() << "  Total time: " << bench.totalDuration().count() << " ns" << std::endl;
-    fcf::NTest::inf() << "  Avg time:   " << bench.duration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "  Iterations: " << bench.getIterationCount() << std::endl;
+    fcf::NTest::inf() << "  Total time: " << bench.getTotalDuration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "  Avg time:   " << bench.getDuration().count() << " ns" << std::endl;
 
     // We perform a check of the sorting
     FCF_TEST(std::is_sorted(sdata.begin(), sdata.end()));
@@ -65,7 +65,7 @@ FCF_TEST_DECLARE("Benchmark", "Manual", "ManualLoopBenchmark") {
 
     // Manual control using begin() and end()
     bench.begin();
-    for (unsigned long long i = 0; i < bench.iterations(); ++i) {
+    for (unsigned long long i = 0; i < bench.getIterationCount(); ++i) {
         // Perform some dummy work
         int a = i;
         int b = i * 2;
@@ -75,9 +75,9 @@ FCF_TEST_DECLARE("Benchmark", "Manual", "ManualLoopBenchmark") {
     bench.end();
 
     fcf::NTest::inf() << "Manual loop benchmark completed." << std::endl;
-    fcf::NTest::inf() << "  Iterations: " << bench.iterations() << std::endl;
-    fcf::NTest::inf() << "  Total time: " << bench.totalDuration().count() << " ns" << std::endl;
-    fcf::NTest::inf() << "  Avg time:   " << bench.duration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "  Iterations: " << bench.getIterationCount() << std::endl;
+    fcf::NTest::inf() << "  Total time: " << bench.getTotalDuration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "  Avg time:   " << bench.getDuration().count() << " ns" << std::endl;
 }
 
 
@@ -86,11 +86,11 @@ int main(int a_argc, char* a_argv[]) {
     bool error = false;
 
     // Add a static string prefix to all log messages to indent them.
-    fcf::NTest::logger().addedPrefixStr("  ");
+    fcf::NTest::logger().addPrefixStr("  ");
 
     // Register a functional prefix that dynamically generates a timestamp and log level string.
     // This function is called by the logger every time a message is written.
-    fcf::NTest::logger().addedPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::ELogLevel a_level){
+    fcf::NTest::logger().addPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::ELogLevel a_level){
         // Get current system time
         auto time = std::time(nullptr);
         // Format the output as: "YYYY-MM-DD HH:MM:SS [LEVEL]: "
