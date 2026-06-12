@@ -319,7 +319,7 @@ namespace fcf {
          * @brief Returns the current string representation of the log level.
          * @return Pointer to a static string representing the level name.
          */
-        const char* getLevelStr() const{
+        const char* levelStr() const{
           return toLevelStr(_level);
         }
 
@@ -327,15 +327,15 @@ namespace fcf {
          * @brief Sets the log level by name.
          * @param a_level Pointer to a string representing the desired log level (e.g., "dbg", "err").
          */
-        void setLevelStr(const char* a_level){
-          setLevel(toLevel(a_level));
+        void levelStr(const char* a_level){
+          level(toLevel(a_level));
         }
 
         /**
          * @brief Returns the current ELogLevel value of the log level.
          * @return ELogLevel representation of the log level.
          */
-        ELogLevel getLevel() const{
+        ELogLevel level() const{
           return _level;
         }
 
@@ -344,7 +344,7 @@ namespace fcf {
          * @param a_level An ELogLevel value representing the desired logging level.
          * @throw std::runtime_error throws if the value passed is LL__DEF
          */
-        void setLevel(ELogLevel a_level){
+        void level(ELogLevel a_level){
           if (a_level == LL_DEF) {
             throw std::runtime_error("LL_DEF value cannot be set as primary value");
           }
@@ -755,9 +755,9 @@ namespace fcf {
        *                                        If a null pointer is passed, the function throws an exception.
        */
       _FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0){
-        ELogLevel lastLevel = logger().getLevel();
+        ELogLevel lastLevel = logger().level();
         if (a_options.logLevel != LL_DEF) {
-          logger().setLevel(a_options.logLevel);
+          logger().level(a_options.logLevel);
         }
 
         if (a_errorPtr){
@@ -777,7 +777,7 @@ namespace fcf {
           tst() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
         } catch(const std::exception& e){
           tst() << e.what() << std::endl;
-          logger().setLevel(lastLevel);
+          logger().level(lastLevel);
           if (a_errorPtr){
             *a_errorPtr = true;
           } else {
@@ -785,7 +785,7 @@ namespace fcf {
           }
         }
 
-        logger().setLevel(lastLevel);
+        logger().level(lastLevel);
       }
 
     #else
@@ -859,7 +859,7 @@ namespace fcf {
               return mode;
             }
           } else if (args[i] == "--test-log-level" && (i+1) < args.size()) {
-            a_dstOptions.logLevel = Logger::toLevel(args[i+1], logger().getLevel());
+            a_dstOptions.logLevel = Logger::toLevel(args[i+1], logger().level());
             ++i;
           } else if (args[i] == "--test-list"){
             mode = CM_LIST;
@@ -957,7 +957,7 @@ namespace fcf {
          * @brief Returns the number of iterations set for this duration.
          * @return The number of iterations.
          */
-        unsigned long long getIterationCount(){
+        unsigned long long iterationCount(){
           return _iterations;
         }
 
@@ -994,7 +994,7 @@ namespace fcf {
          * @brief Returns the total duration of all iterations in nanoseconds.
          * @return Total duration as nanoseconds.
          */
-        std::chrono::nanoseconds getTotalDuration(){
+        std::chrono::nanoseconds totalDuration(){
           return std::chrono::duration_cast<std::chrono::nanoseconds>(_end - _start);
         }
 
@@ -1002,12 +1002,12 @@ namespace fcf {
          * @brief Returns the average duration of a single iteration in nanoseconds.
          * @return Average duration as nanoseconds.
          */
-        std::chrono::nanoseconds getDuration(){
+        std::chrono::nanoseconds duration(){
           return std::chrono::duration_cast<std::chrono::nanoseconds>(_end - _start) / _iterations;
         }
 
       private:
-        unsigned long long                              _iterations; ///< Number of iterations to perform.
+        unsigned long long                             _iterations; ///< Number of iterations to perform.
         std::chrono::high_resolution_clock::time_point _start;       ///< Start timestamp.
         std::chrono::high_resolution_clock::time_point _end;         ///< End timestamp.
     };
