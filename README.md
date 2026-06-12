@@ -185,11 +185,11 @@ The `fcf::NTest::Duration` class provides a simple interface for measuring the e
 - **Default Constructor**: `Duration()`
   - Sets the number of iterations to 1.
 - **Methods**:
-  - `unsigned long long getIterationCount()`: Returns the number of iterations set for this duration.
+  - `unsigned long long iterationCount()`: Returns the number of iterations set for this duration.
   - `void begin()`: Records the start time for timing.
   - `void end()`: Records the end time for timing.
-  - `std::chrono::nanoseconds getTotalDuration()`: Returns the total duration of all iterations in nanoseconds.
-  - `std::chrono::nanoseconds getDuration()`: Returns the average duration of a single iteration in nanoseconds.
+  - `std::chrono::nanoseconds totalDuration()`: Returns the total duration of all iterations in nanoseconds.
+  - `std::chrono::nanoseconds duration()`: Returns the average duration of a single iteration in nanoseconds.
   - `void operator()(TFunctor&& a_functor)`: Executes a functor multiple times and measures the total duration.
     - **Parameters**:
       - `a_functor`: The callable object to execute.
