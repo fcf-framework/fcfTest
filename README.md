@@ -203,8 +203,8 @@ bench([](){
     std::sort(v.begin(), v.end());
 });
 
-std::cout << "Total: " << bench.getTotalDuration().count() << " ns\n";
-std::cout << "Avg: " << bench.getDuration().count() << " ns\n";
+std::cout << "Total: " << bench.totalDuration().count() << " ns\n";
+std::cout << "Avg: " << bench.duration().count() << " ns\n";
 ```
 
 ## Command Line Interface
