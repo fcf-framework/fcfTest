@@ -176,6 +176,225 @@
 namespace fcf {
   namespace NTest {
 
+#include <chrono>
+#include <string>
+#include <cstdio>
+
+    /**
+     * @class Duration
+     * @brief High-precision timing class for code benchmarking and performance testing.
+     * 
+     * Provides capabilities to measure total accumulated execution time with pause/resume support,
+     * calculate average time per iteration, and isolatedly evaluate the duration of the
+     * last active time segment (between the last resume/begin and end).
+     * Supports dynamic "on-the-fly" metric calculation while the timer is actively running.
+     */
+    class Duration {
+      public:
+        /**
+         * @brief Constructs a Duration object with a specified number of iterations.
+         *
+         * Protects division logic from zero errors: if 0 is passed, 
+         * the iteration count is automatically clamped to 1.
+         *
+         * @param a_iterations The number of planned executions for the tested code block.
+         */
+        Duration(unsigned long long a_iterations)
+          : _iterations(a_iterations ? a_iterations : 1), _pause(true) {
+        }
+
+        /**
+         * @brief Default constructor.
+         * 
+         * Initializes the object with a default value of 1 iteration.
+         */
+        Duration()
+          : _iterations(1), _pause(true) {
+        }
+
+        /**
+         * @brief Returns the configured number of iterations.
+         * @return The number of iterations.
+         */
+        unsigned long long iterationCount() const {
+          return _iterations;
+        }
+
+        /**
+         * @brief Starts the global time measurement.
+         * 
+         * Resets all previously accumulated intervals and captures the current
+         * time point for both the global tracker and the local segment.
+         */
+        void begin() {
+          _start     = std::chrono::steady_clock::now();
+          _end       = _start;
+          _lastStart = _start;
+          _lastEnd   = _start;
+          _pause     = false;
+        }
+
+        /**
+         * @brief Stops the current time measurement (pauses the timer).
+         * 
+         * Records the ending timestamp for both the total accumulation and the current segment.
+         * If the timer is already paused, subsequent calls are ignored.
+         */
+        void end() {
+          if (_pause) {
+            return;
+          }
+          _end = std::chrono::steady_clock::now();
+          _lastEnd = _end;
+          _pause = true;
+        }
+
+        /**
+         * @brief Resumes time measurement after a pause.
+         * 
+         * If called for the very first time (before begin()), it automatically falls back
+         * to act as begin() for seamless code integration.
+         * On subsequent calls, it mathematically shifts the global start timestamp forward
+         * to exclude the paused duration from the total score, and opens a new local segment.
+         */
+        void resume() {
+          if (!_pause) {
+            return;
+          }
+          if (_start == std::chrono::steady_clock::time_point{}) {
+            begin();
+            return;
+          }
+          _lastStart = std::chrono::steady_clock::now();
+          _start = _lastStart - (_end - _start);
+          _pause = false;
+        }
+
+        /**
+         * @brief Executes a functor multiple times and measures the total execution duration.
+         *
+         * Automatically triggers begin() before entering the loop and end() immediately after.
+         *
+         * @tparam TFunctor Type of the callable object (lambda, function pointer, functor).
+         * @param a_functor The callable target to be benchmarked.
+         */
+        template <typename TFunctor>
+        void operator()(TFunctor&& a_functor) {
+          begin();
+          for(unsigned long long i = 0; i < _iterations; ++i) {
+            a_functor();
+          }
+          end();
+        }
+
+        /**
+         * @brief Returns the total accumulated duration across all iterations (excluding pauses).
+         * 
+         * If the timer is active when invoked, the result is dynamically calculated
+         * "on-the-fly" relative to the current time point.
+         *
+         * @return Total duration in nanoseconds.
+         */
+        std::chrono::nanoseconds totalDuration() const {
+          if (!_pause) {
+            auto cur = std::chrono::steady_clock::now();
+            return std::chrono::duration_cast<std::chrono::nanoseconds>(cur - _start);
+          }
+          return std::chrono::duration_cast<std::chrono::nanoseconds>(_end - _start);
+        }
+
+        /**
+         * @brief Returns the duration of the last active execution segment only.
+         * 
+         * A segment is defined as the time interval between the last resume() (or begin()) and end().
+         * If the timer is active when invoked, returns the time elapsed since the current segment started.
+         *
+         * @return Duration of the last segment in nanoseconds.
+         */
+        std::chrono::nanoseconds lastTotalDuration() const {
+          if (!_pause) {
+            auto cur = std::chrono::steady_clock::now();
+            return std::chrono::duration_cast<std::chrono::nanoseconds>(cur - _lastStart);
+          }
+          return std::chrono::duration_cast<std::chrono::nanoseconds>(_lastEnd - _lastStart);
+        }
+
+        /**
+         * @brief Returns a string representation of the total accumulated duration.
+         * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
+         */
+        std::string totalDurationStr() const {
+          return _durationFormat( totalDuration().count() );
+        }
+
+        /**
+         * @brief Returns a string representation of the last active segment duration.
+         * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
+         */
+        std::string lastTotalDurationStr() const {
+          return _durationFormat( lastTotalDuration().count() );
+        }
+
+        /**
+         * @brief Calculates the average duration of a single iteration based on total time.
+         * @return Average duration of one iteration in nanoseconds.
+         */
+        std::chrono::nanoseconds duration() const {
+          return totalDuration() / _iterations;
+        }
+
+        /**
+         * @brief Calculates the average duration of a single iteration based on the last segment.
+         * @return Average duration of one iteration within the last segment in nanoseconds.
+         */
+        std::chrono::nanoseconds lastDuration() const {
+          return lastTotalDuration() / _iterations;
+        }
+
+        /**
+         * @brief Returns a string representation of the average iteration duration based on total time.
+         * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
+         */
+        std::string durationStr() const {
+          return _durationFormat( duration().count() );
+        }
+
+        /**
+         * @brief Returns a string representation of the average iteration duration based on the last segment.
+         * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
+         */
+        std::string lastDurationStr() const {
+          return _durationFormat( lastDuration().count() );
+        }
+
+      private:
+        /**
+         * @brief Formats raw nanoseconds into a custom string representation.
+         * 
+         * Converts raw nanosecond counts into a human-readable format separated by backticks.
+         * Const-correctness guarantees safe execution within the class's const getters.
+         *
+         * @param a_ns The total number of nanoseconds to format.
+         * @return Formatted string matching "SEC.MIL`MICRO`NS".
+         */
+        std::string _durationFormat(unsigned long long a_ns) const {
+          char buf[64];
+          snprintf(buf, sizeof(buf), "%llu.%03llu`%03llu`%03llu", 
+                   a_ns / 1000000000, 
+                   (a_ns / 1000000) % 1000, 
+                   (a_ns / 1000) % 1000, 
+                   a_ns % 1000);
+          return buf;
+        }
+
+        unsigned long long                    _iterations;  ///< Total number of iterations for test execution and average metrics calculation.
+        bool                                  _pause;       ///< State flag: true if the timer is paused/stopped, false if actively running.
+        std::chrono::steady_clock::time_point _start;       ///< Modifiable starting time point of the global (accumulated) tracker.
+        std::chrono::steady_clock::time_point _end;         ///< Ending time point of the global (accumulated) tracker.
+        std::chrono::steady_clock::time_point _lastStart;   ///< Immutable starting time point of the last opened interval segment.
+        std::chrono::steady_clock::time_point _lastEnd;     ///< Ending time point of the last completed interval segment.
+    };
+
     namespace NDetails {
 
       /**
@@ -744,7 +963,6 @@ namespace fcf {
       _FCF_TEST_DECL_EXPORT void cmdList();
     #endif
 
-
     #ifdef FCF_TEST_IMPLEMENTATION
       /**
        * @brief Executes the selected tests based on provided options.
@@ -768,13 +986,20 @@ namespace fcf {
           std::set<Test> tests;
           NDetails::select(tests, a_options);
 
+          unsigned long long nscounter = 0;
+          Duration bench;
           for(const Test& test : tests) {
             tst() << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+            bench.resume();
             test.testFunction();
+            bench.end();
+            nscounter += bench.totalDuration().count();
+            tst() << "  Duration of the \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" test: " << bench.lastTotalDurationStr()  << std::endl;
           }
 
           tst() << std::endl;
           tst() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
+          tst() << "Duration of execution of all tests:        " << bench.totalDurationStr() << std::endl;
         } catch(const std::exception& e){
           tst() << e.what() << std::endl;
           logger().level(lastLevel);
@@ -931,86 +1156,6 @@ namespace fcf {
       Options options;
       return cmdRun(options, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
     }
-
-    /**
-     * @brief Represents a timing duration for benchmarking or performance testing.
-     */
-    class Duration {
-      public:
-        /**
-         * @brief Constructs a duration object with a specified number of iterations.
-         *
-         * @param a_iterations The number of times the enclosed functor will be executed.
-         */
-        Duration(unsigned long long a_iterations)
-          : _iterations(a_iterations){
-        }
-
-        /**
-         * @brief Constructs a duration object with a default of 1 iteration.
-         */
-        Duration()
-          : _iterations(1){
-        }
-
-        /**
-         * @brief Returns the number of iterations set for this duration.
-         * @return The number of iterations.
-         */
-        unsigned long long iterationCount(){
-          return _iterations;
-        }
-
-        /**
-         * @brief Records the start time for timing.
-         */
-        void begin(){
-          _start = std::chrono::high_resolution_clock::now();
-        }
-
-        /**
-         * @brief Records the end time for timing.
-         */
-        void end(){
-          _end = std::chrono::high_resolution_clock::now();
-        }
-
-        /**
-         * @brief Executes a functor multiple times and measures the total duration.
-         *
-         * @tparam TFunctor The type of the callable object.
-         * @param a_functor The callable to execute.
-         */
-        template <typename TFunctor>
-        void operator()(TFunctor&& a_functor){
-          begin();
-          for(unsigned long long i = 0; i < _iterations; ++i) {
-            a_functor();
-          }
-          end();
-        }
-
-        /**
-         * @brief Returns the total duration of all iterations in nanoseconds.
-         * @return Total duration as nanoseconds.
-         */
-        std::chrono::nanoseconds totalDuration(){
-          return std::chrono::duration_cast<std::chrono::nanoseconds>(_end - _start);
-        }
-
-        /**
-         * @brief Returns the average duration of a single iteration in nanoseconds.
-         * @return Average duration as nanoseconds.
-         */
-        std::chrono::nanoseconds duration(){
-          return std::chrono::duration_cast<std::chrono::nanoseconds>(_end - _start) / _iterations;
-        }
-
-      private:
-        unsigned long long                             _iterations; ///< Number of iterations to perform.
-        std::chrono::high_resolution_clock::time_point _start;       ///< Start timestamp.
-        std::chrono::high_resolution_clock::time_point _end;         ///< End timestamp.
-    };
 
   } // NTest namespace
 } // fcf namespace
