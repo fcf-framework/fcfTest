@@ -1,5 +1,5 @@
-#ifndef ___FCF_TEST__TEST_HPP___
-#define ___FCF_TEST__TEST_HPP___
+#ifndef _FCF_TEST__TEST_HPP___
+#define _FCF_TEST__TEST_HPP___
 
 #include <stdexcept>
 #include <algorithm>
@@ -1411,4 +1411,4 @@ namespace fcf {
     } // NDetails namespace
   } // NTest namespace
 } // fcf namespace
-#endif // #ifndef ___FCF_TEST__TEST_HPP___
+#endif // #ifndef _FCF_TEST__TEST_HPP___
