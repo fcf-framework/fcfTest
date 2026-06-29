@@ -438,6 +438,8 @@ namespace fcf {
       LL_ALL = 9,   ///< All levels.
     };
 
+    struct Test;
+
     /**
      * @brief Represents a logging instance with configurable output streams based on level.
      */
@@ -459,7 +461,8 @@ namespace fcf {
          * @brief Constructs a logger with the default log level (LL_LOG).
          */
         Logger()
-          : _level(LL_LOG){
+          : _level(LL_LOG)
+          , _test(0) {
         }
 
         /**
@@ -570,6 +573,14 @@ namespace fcf {
           _level = a_level;
         }
 
+        void test(const Test* a_test) {
+          _test = a_test;
+        }
+
+        const Test* test() {
+          return _test;
+        }
+
         /**
          * @brief Converts a string representation of a log level to its enum value.
          * @param a_level   The string to convert.
@@ -644,7 +655,8 @@ namespace fcf {
             return (std::ostream&)_empty;
           }
         }
-        ELogLevel              _level; ///< Current log level.
+        ELogLevel             _level; ///< Current log level.
+        const Test*           _test;  ///< Current test.
         NDetails::EmptyStream _empty; ///< Empty stream buffer for disabled levels.
         std::list<Prefix>     _prefixes;
     };
@@ -990,17 +1002,20 @@ namespace fcf {
           Duration bench;
           for(const Test& test : tests) {
             tst() << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+            logger().test(&test);
             bench.resume();
             test.testFunction();
             bench.end();
             nscounter += bench.totalDuration().count();
-            tst() << "  Duration of the \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" test: " << bench.lastTotalDurationStr()  << std::endl;
+            logger().test(0);
+            tst() << "  Test completed ("<<bench.lastTotalDurationStr() << "ns)" << std::endl;
           }
 
           tst() << std::endl;
           tst() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
           tst() << "Duration of execution of all tests:        " << bench.totalDurationStr() << std::endl;
         } catch(const std::exception& e){
+          logger().test(0);
           tst() << e.what() << std::endl;
           logger().level(lastLevel);
           if (a_errorPtr){
