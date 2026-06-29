@@ -573,10 +573,23 @@ namespace fcf {
           _level = a_level;
         }
 
+        /**
+         * @brief Sets the current test instance for the logger.
+         *
+         * This method allows the logger to associate a specific test case with its
+         * output, enabling context-aware logging during test execution.
+         *
+         * @param a_test Pointer to the Test object to be used as the current context.
+         */
         void test(const Test* a_test) {
           _test = a_test;
         }
 
+        /**
+         * @brief Retrieves the current test instance from the logger.
+         *
+         * @return A constant pointer to the currently active Test object.
+         */
         const Test* test() {
           return _test;
         }
