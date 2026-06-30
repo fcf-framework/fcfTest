@@ -183,7 +183,7 @@ namespace fcf {
     /**
      * @class Duration
      * @brief High-precision timing class for code benchmarking and performance testing.
-     * 
+     *
      * Provides capabilities to measure total accumulated execution time with pause/resume support,
      * calculate average time per iteration, and isolatedly evaluate the duration of the
      * last active time segment (between the last resume/begin and end).
@@ -194,7 +194,7 @@ namespace fcf {
         /**
          * @brief Constructs a Duration object with a specified number of iterations.
          *
-         * Protects division logic from zero errors: if 0 is passed, 
+         * Protects division logic from zero errors: if 0 is passed,
          * the iteration count is automatically clamped to 1.
          *
          * @param a_iterations The number of planned executions for the tested code block.
@@ -205,7 +205,7 @@ namespace fcf {
 
         /**
          * @brief Default constructor.
-         * 
+         *
          * Initializes the object with a default value of 1 iteration.
          */
         Duration()
@@ -222,7 +222,7 @@ namespace fcf {
 
         /**
          * @brief Starts the global time measurement.
-         * 
+         *
          * Resets all previously accumulated intervals and captures the current
          * time point for both the global tracker and the local segment.
          */
@@ -236,7 +236,7 @@ namespace fcf {
 
         /**
          * @brief Stops the current time measurement (pauses the timer).
-         * 
+         *
          * Records the ending timestamp for both the total accumulation and the current segment.
          * If the timer is already paused, subsequent calls are ignored.
          */
@@ -251,7 +251,7 @@ namespace fcf {
 
         /**
          * @brief Resumes time measurement after a pause.
-         * 
+         *
          * If called for the very first time (before begin()), it automatically falls back
          * to act as begin() for seamless code integration.
          * On subsequent calls, it mathematically shifts the global start timestamp forward
@@ -289,7 +289,7 @@ namespace fcf {
 
         /**
          * @brief Returns the total accumulated duration across all iterations (excluding pauses).
-         * 
+         *
          * If the timer is active when invoked, the result is dynamically calculated
          * "on-the-fly" relative to the current time point.
          *
@@ -305,7 +305,7 @@ namespace fcf {
 
         /**
          * @brief Returns the duration of the last active execution segment only.
-         * 
+         *
          * A segment is defined as the time interval between the last resume() (or begin()) and end().
          * If the timer is active when invoked, returns the time elapsed since the current segment started.
          *
@@ -370,7 +370,7 @@ namespace fcf {
       private:
         /**
          * @brief Formats raw nanoseconds into a custom string representation.
-         * 
+         *
          * Converts raw nanosecond counts into a human-readable format separated by backticks.
          * Const-correctness guarantees safe execution within the class's const getters.
          *
@@ -379,10 +379,10 @@ namespace fcf {
          */
         std::string _durationFormat(unsigned long long a_ns) const {
           char buf[64];
-          snprintf(buf, sizeof(buf), "%llu.%03llu`%03llu`%03llu", 
-                   a_ns / 1000000000, 
-                   (a_ns / 1000000) % 1000, 
-                   (a_ns / 1000) % 1000, 
+          snprintf(buf, sizeof(buf), "%llu.%03llu`%03llu`%03llu",
+                   a_ns / 1000000000,
+                   (a_ns / 1000000) % 1000,
+                   (a_ns / 1000) % 1000,
                    a_ns % 1000);
           return buf;
         }
@@ -839,7 +839,7 @@ namespace fcf {
       std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
       ELogLevel                logLevel;      ///< Desired logging level.
 
-      Options() 
+      Options()
         : logLevel(LL_DEF){
       }
     };
@@ -1021,12 +1021,12 @@ namespace fcf {
             bench.end();
             nscounter += bench.totalDuration().count();
             logger().test(0);
-            tst() << "  Test completed ("<<bench.lastTotalDurationStr() << "ns)" << std::endl;
+            tst() << "  Test completed ("<<bench.lastTotalDurationStr() << " sec)" << std::endl;
           }
 
           tst() << std::endl;
           tst() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
-          tst() << "Duration of execution of all tests:        " << bench.totalDurationStr() << std::endl;
+          tst() << "Duration of execution of all tests:        " << bench.totalDurationStr() << " sec" << std::endl;
         } catch(const std::exception& e){
           logger().test(0);
           tst() << e.what() << std::endl;
