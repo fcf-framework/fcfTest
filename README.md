@@ -1,9 +1,5 @@
 # fcfTest
 
-[![License: MIT](https://shields.io)](https://opensource.org)
-[![Language: C++](https://shields.io)](https://wikipedia.org)
-[![GitHub release](https://shields.io)](https://github.com)
-
 **fcfTest** is a lightweight, zero-dependency, header-only unit testing framework and TDD tool for modern C++. It provides a simple single-macro interface (FCF_TEST) for seamless assertion checks and automatic variable tracking using standard library components. Designed as an easy-to-integrate, standalone C++ test library, it includes built-in test registration, a comprehensive command-line test runner (CLI), a native logger, and benchmarking tools for precise execution time measurement.
 
 The library is distributed as a single header file: `fcfTest/test.hpp`.
