@@ -16,6 +16,7 @@
 #include <vector>
 #include <set>
 #include <regex>
+#include <mutex>
 #include "VERSION"
 
 /**
@@ -117,7 +118,7 @@
 #define _FCF_TEST_DECLARE_IMPL(am_className, am_part, am_group, am_test)\
   namespace {\
   struct am_className { \
-    am_className(){\
+    am_className() {\
       ::fcf::NTest::getStorage().add( ::fcf::NTest::Test{ 0, am_test, 0, am_group, 0, am_part, test } );\
     }\
     static void test();\
@@ -323,16 +324,16 @@ namespace fcf {
          * @brief Returns a string representation of the total accumulated duration.
          * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
          */
-        std::string totalDurationStr() const {
-          return _durationFormat( totalDuration().count() );
+        std::string totalDurationStr(bool a_friendly) const {
+          return nsToStr( totalDuration().count(), a_friendly);
         }
 
         /**
          * @brief Returns a string representation of the last active segment duration.
          * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
          */
-        std::string lastTotalDurationStr() const {
-          return _durationFormat( lastTotalDuration().count() );
+        std::string lastTotalDurationStr(bool a_friendly) const {
+          return nsToStr( lastTotalDuration().count(), a_friendly);
         }
 
         /**
@@ -355,19 +356,18 @@ namespace fcf {
          * @brief Returns a string representation of the average iteration duration based on total time.
          * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
          */
-        std::string durationStr() const {
-          return _durationFormat( duration().count() );
+        std::string durationStr(bool a_friendly) const {
+          return nsToStr(duration().count(), a_friendly);
         }
 
         /**
          * @brief Returns a string representation of the average iteration duration based on the last segment.
          * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
          */
-        std::string lastDurationStr() const {
-          return _durationFormat( lastDuration().count() );
+        std::string lastDurationStr(bool a_friendly) const {
+          return nsToStr( lastDuration().count(), a_friendly);
         }
 
-      private:
         /**
          * @brief Formats raw nanoseconds into a custom string representation.
          *
@@ -377,16 +377,23 @@ namespace fcf {
          * @param a_ns The total number of nanoseconds to format.
          * @return Formatted string matching "SEC.MIL`MICRO`NS".
          */
-        std::string _durationFormat(unsigned long long a_ns) const {
+        static std::string nsToStr(unsigned long long a_ns, bool a_friendly) {
           char buf[64];
-          snprintf(buf, sizeof(buf), "%llu.%03llu`%03llu`%03llu",
-                   a_ns / 1000000000,
-                   (a_ns / 1000000) % 1000,
-                   (a_ns / 1000) % 1000,
-                   a_ns % 1000);
+          if (a_friendly) {
+            snprintf(buf, sizeof(buf), "%u.%03u`%03u`%03u",
+                     (unsigned int)(a_ns / 1000000000),
+                     (unsigned int)((a_ns / 1000000) % 1000),
+                     (unsigned int)((a_ns / 1000) % 1000),
+                     (unsigned int)(a_ns % 1000));
+          } else {
+            snprintf(buf, sizeof(buf), "%u.%09u",
+                     (unsigned int)(a_ns / 1000000000),
+                     (unsigned int)(a_ns % 1000000000));
+          }
           return buf;
         }
 
+      private:
         unsigned long long                    _iterations;  ///< Total number of iterations for test execution and average metrics calculation.
         bool                                  _pause;       ///< State flag: true if the timer is paused/stopped, false if actively running.
         std::chrono::steady_clock::time_point _start;       ///< Modifiable starting time point of the global (accumulated) tracker.
@@ -403,7 +410,7 @@ namespace fcf {
        */
       class EmptyStreamBuffer: public std::streambuf {
         protected:
-          int_type overflow(int_type a_char) override{
+          int_type overflow(int_type a_char) override {
             return a_char;
           }
       };
@@ -424,7 +431,7 @@ namespace fcf {
     /**
      * @brief Enumerates the available log levels.
      */
-    enum ELogLevel{
+    enum ELogLevel {
       LL_DEF = -1,  ///< is used to indicate the use of the meaning by default.
       LL_OFF = 0,   ///< No logging.
       LL_FTL = 1,   ///< Fatal level.
@@ -440,19 +447,212 @@ namespace fcf {
 
     struct Test;
 
+    enum ELoggerMessageType {
+      LMT_USER                  = 0x0001,
+      LMT_START                 = 0x0002,
+      LMT_END                   = 0x0004,
+      LMT_COMPLETE              = 0x0008,
+      LMT_ERROR                 = 0x0010,
+      LMT_RESULT                = 0x0020,
+      LMT_DURATION              = 0x0040,
+      LMT_TEST_START            = 0x0080,
+      LMT_TEST_START_MESSAGE    = 0x0100,
+      LMT_TEST_COMPLETE         = 0x0200,
+      LMT_TEST_ERROR            = 0x0400,
+      LMT_TEST_ERROR_MESSAGE    = 0x0800,
+      LMT_TEST_END              = 0x1000,
+      LMT_TEST                  = LMT_USER | LMT_TEST_COMPLETE | LMT_TEST_ERROR | LMT_TEST_ERROR_MESSAGE,
+      LMT_ALL                   = 0xFFFF,
+    };
+
+    struct LoggerHandlerDataWrapperBase {
+      virtual ~LoggerHandlerDataWrapperBase();
+      virtual void* get() = 0;
+    };
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      LoggerHandlerDataWrapperBase::~LoggerHandlerDataWrapperBase() {
+      }
+    #endif
+
+    template <typename Ty>
+    struct LoggerHandlerDataWrapper : public LoggerHandlerDataWrapperBase {
+      template <typename ...TPack>
+      LoggerHandlerDataWrapper(TPack... a_argPack)
+        : data(a_argPack...) {
+      }
+      virtual void* get() {
+        return &data;
+      };
+      Ty data;
+    };
+
+
+    class LoggerHandlerData {
+      public:
+        struct HistoryValueType {
+          std::string                                     strValue;
+          unsigned long long                              ullValue;
+          void*                                           ptrValue;
+          std::shared_ptr<LoggerHandlerDataWrapperBase>   sptrValue;
+        };
+        typedef std::map<std::string, HistoryValueType>  HistoryItemType;
+        typedef std::list< HistoryItemType >             HistoryType;
+
+        HistoryType& history() {
+          return _history;
+        }
+
+        void append(const HistoryItemType& a_item) {
+          _history.push_back(a_item);
+        }
+
+      private:
+        HistoryType     _history;
+    };
+
+    struct LoggerMessageStatus {
+      ELoggerMessageType    messageType;
+      std::string*          message;
+      std::string*          prefix;
+      size_t                line;
+      ELogLevel             level;
+      Duration*             duration;
+      const Test*           test;
+      const std::set<Test>* tests;
+      std::ostream*         stream;
+      const char*           streamName;
+      LoggerHandlerData*    data;
+    };
+
+    struct LoggerPrefixOptions {
+      std::string         name;
+      bool                multiLine;
+      unsigned int        messageTypes;
+      LoggerPrefixOptions()
+        : multiLine(false)
+        , name("")
+        , messageTypes(LMT_USER)
+      {}
+    };
+
+    struct LoggerFormatOptions {
+      std::string         name;
+    };
+
+    struct Logger;
+
+    class LoggerOutput {
+      public:
+        LoggerOutput()
+          : _logger(0) {
+        }
+
+        LoggerOutput(const LoggerOutput& a_output)
+          : _logger((Logger*)a_output._logger)
+          , _level(a_output._level)
+          , _loggerMessageType(a_output._loggerMessageType)
+          , _sstream(a_output._sstream.str()) {
+        }
+
+        LoggerOutput(Logger& a_logger, ELogLevel a_level, ELoggerMessageType a_loggerMessageType)
+          : _logger(&a_logger), _level(a_level), _loggerMessageType(a_loggerMessageType) {
+        }
+
+        ~LoggerOutput();
+
+        template <typename Ty>
+        LoggerOutput& operator<<(const Ty& a_value) {
+          _sstream << a_value;
+          return *this;
+        }
+
+        LoggerOutput& operator<<(std::ostream& (*a_manipulator)(std::ostream&)) {
+          a_manipulator(_sstream);
+          return *this;
+        }
+
+      private:
+        Logger*             _logger;
+        ELogLevel           _level;
+        ELoggerMessageType  _loggerMessageType;
+        std::stringstream   _sstream;
+    };
+
+    class LoggerJunitFormat {
+      public:
+        static const LoggerHandlerData::HistoryValueType& getHistoryValue(const LoggerHandlerData::HistoryItemType& a_item, const char* a_key);
+        static const LoggerHandlerData::HistoryValueType& getHistoryValue(const LoggerHandlerData::HistoryType& a_history, const char* a_key);
+        static std::string suiteName(const Test& a_test);
+        static void format(Logger& a_logger, LoggerMessageStatus& a_messageStatus);
+        static std::string xmlAttribute(const std::string& a_string);
+        static std::string xmlText(const std::string& a_string);
+
+      private:
+        struct TestStatusType {
+          bool                error;
+          std::string         message;
+          unsigned long long  duration;
+        };
+        std::map<Test, TestStatusType> _processed;
+    };
+
+    /**
+     * @brief Configuration options for running tests.
+     */
+    struct Options {
+      std::vector<std::string> parts;         ///< List of part names to run (empty means all).
+      std::vector<std::string> groups;        ///< List of group names to run (empty means all).
+      std::vector<std::string> tests;         ///< List of specific test names to run (empty means all).
+      std::vector<std::string> ignoreParts;   ///< List of ignore part names.
+      std::vector<std::string> ignoreGroups;  ///< List of ignore group names to run.
+      std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
+      ELogLevel                logLevel;      ///< Desired logging level.
+      std::string              format;
+      bool                     noBreak;
+
+      Options()
+        : logLevel(LL_DEF)
+        , format("default")
+        , noBreak(false) {
+      }
+    };
+
+    namespace NDetails {
+      _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+    }
+
     /**
      * @brief Represents a logging instance with configurable output streams based on level.
      */
     struct Logger {
-      public:
+        friend LoggerOutput;
+        friend void cmdHelp();
+        friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+        typedef std::map<std::string, LoggerHandlerData> HandlerDataStorageType;
 
-        typedef std::function<std::string(Logger&, ELogLevel)> PrefixFunctionType;
+      public:
+        typedef std::function<std::string(Logger&, LoggerMessageStatus&)> PrefixFunctionType;
+        typedef std::function<void(Logger&, LoggerMessageStatus&)>        FormatFunctionType;
 
       protected:
+        struct PrefixType {
+          std::string         str;
+          PrefixFunctionType  func;
+          LoggerPrefixOptions options;
+        };
 
-        struct Prefix{
-          std::string        str;
-          PrefixFunctionType func;
+        struct FormatType {
+          FormatFunctionType  func;
+          LoggerFormatOptions options;
+        };
+
+        struct EnvironmentType {
+          ELogLevel             level;
+          const Test*           test;
+          const std::set<Test>* tests;
+          Duration*             bench;
+          std::string           format;
         };
 
       public:
@@ -461,95 +661,104 @@ namespace fcf {
          * @brief Constructs a logger with the default log level (LL_LOG).
          */
         Logger()
-          : _level(LL_LOG)
-          , _test(0) {
+          : _environment{LL_LOG, 0, 0, 0, "default"}
+        {
+          LoggerPrefixOptions lpo;
+          lpo.name          = "offset";
+          lpo.multiLine     = true;
+          lpo.messageTypes  = LMT_TEST;
+          addPrefixStr("  ", lpo);
+
+          LoggerFormatOptions lfo;
+          lfo.name          = "junit";
+          addFormatFunc(LoggerJunitFormat::format, lfo);
         }
 
         /**
          * @brief Returns the output stream for fatal messages.
          * @return Reference to the output stream.
          */
-        std::ostream& ftl(){
-          return _write(LL_FTL);
+        LoggerOutput ftl() {
+          return _log(LL_FTL, LMT_USER);
         }
 
         /**
          * @brief Returns the output stream for error messages.
          * @return Reference to the output stream.
          */
-        std::ostream& err(){
-          return _write(LL_ERR);
+        LoggerOutput err() {
+          return _log(LL_ERR, LMT_USER);
         }
 
         /**
          * @brief Returns the output stream for warning messages.
          * @return Reference to the output stream.
          */
-        std::ostream& wrn(){
-          return _write(LL_WRN);
+        LoggerOutput wrn() {
+          return _log(LL_WRN, LMT_USER);
         }
 
         /**
          * @brief Returns the output stream for attention messages.
          * @return Reference to the output stream.
          */
-        std::ostream& att(){
-          return _write(LL_ATT);
+        LoggerOutput att() {
+          return _log(LL_ATT, LMT_USER);
         }
 
         /**
          * @brief Returns the output stream for log messages.
          * @return Reference to the output stream.
          */
-        std::ostream& log(){
-          return _write(LL_LOG);
+        LoggerOutput log() {
+          return _log(LL_LOG, LMT_USER);
         }
 
         /**
          * @brief Returns the output stream for informational messages.
          * @return Reference to the output stream.
          */
-        std::ostream& inf(){
-          return _write(LL_INF);
+        LoggerOutput inf() {
+          return _log(LL_INF, LMT_USER);
         }
 
         /**
          * @brief Returns the output stream for debug messages.
          * @return Reference to the output stream.
          */
-        std::ostream& dbg(){
-          return _write(LL_DBG);
+        LoggerOutput dbg() {
+          return _log(LL_DBG, LMT_USER);
         }
 
         /**
          * @brief Returns the output stream for trace messages.
          * @return Reference to the output stream.
          */
-        std::ostream& trc(){
-          return _write(LL_TRC);
+        LoggerOutput trc() {
+          return _log(LL_TRC, LMT_USER);
         }
 
         /**
          * @brief The output stream returns for the test inner message. The log recording is always performed.
          * @return Reference to the output stream.
          */
-        std::ostream& tst(){
-          return (std::ostream&)std::cout;
+        LoggerOutput sys(ELoggerMessageType a_messageType) {
+          return _log(LL_LOG, a_messageType);
         }
 
         /**
          * @brief Returns the current string representation of the log level.
          * @return Pointer to a static string representing the level name.
          */
-        const char* levelStr() const{
-          return toLevelStr(_level);
+        const char* levelStr() const {
+          return toLevelStr(_environment.level);
         }
 
         /**
          * @brief Sets the log level by name.
          * @param a_level Pointer to a string representing the desired log level (e.g., "dbg", "err").
          */
-        void levelStr(const char* a_level){
+        void levelStr(const char* a_level) {
           level(toLevel(a_level));
         }
 
@@ -557,8 +766,8 @@ namespace fcf {
          * @brief Returns the current ELogLevel value of the log level.
          * @return ELogLevel representation of the log level.
          */
-        ELogLevel level() const{
-          return _level;
+        ELogLevel level() const {
+          return _environment.level;
         }
 
         /**
@@ -566,11 +775,11 @@ namespace fcf {
          * @param a_level An ELogLevel value representing the desired logging level.
          * @throw std::runtime_error throws if the value passed is LL__DEF
          */
-        void level(ELogLevel a_level){
+        void level(ELogLevel a_level) {
           if (a_level == LL_DEF) {
             throw std::runtime_error("LL_DEF value cannot be set as primary value");
           }
-          _level = a_level;
+          _environment.level = a_level;
         }
 
         /**
@@ -582,7 +791,7 @@ namespace fcf {
          * @param a_test Pointer to the Test object to be used as the current context.
          */
         void test(const Test* a_test) {
-          _test = a_test;
+          _environment.test = a_test;
         }
 
         /**
@@ -591,7 +800,31 @@ namespace fcf {
          * @return A constant pointer to the currently active Test object.
          */
         const Test* test() {
-          return _test;
+          return _environment.test;
+        }
+
+        void tests(const std::set<Test>* a_tests) {
+          _environment.tests = a_tests;
+        }
+
+        const std::set<Test>* tests() {
+          return _environment.tests;
+        }
+
+        void bench(Duration* a_bench) {
+          _environment.bench = a_bench;
+        }
+
+        Duration* bench() {
+          return _environment.bench;
+        }
+
+        void format(const std::string& a_format) {
+          _environment.format = a_format.length() ? a_format : std::string("default");
+        }
+
+        const std::string& format() const {
+          return _environment.format;
         }
 
         /**
@@ -604,9 +837,9 @@ namespace fcf {
           const char* levels[] = {"def", "off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
           a_default = a_default == LL_DEF ? LL_LOG : a_default;
           int size = sizeof(levels) / sizeof(levels[0]);
-          for(int i = 0; i < size; ++i){
+          for(int i = 0; i < size; ++i) {
             int l = i - 1;
-            if (a_level == levels[i]){
+            if (a_level == levels[i]) {
               return l == LL_DEF ? a_default : (ELogLevel)l;
             }
           }
@@ -618,7 +851,7 @@ namespace fcf {
          * @param a_level The log level to convert.
          * @return A pointer to a static string representing the level name.
          */
-        static const char* toLevelStr(ELogLevel a_level){
+        static const char* toLevelStr(ELogLevel a_level) {
           const char* levels[] = {"def", "off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
           int size  = sizeof(levels) / sizeof(levels[0]);
           int level = (int)a_level + 1;
@@ -632,8 +865,15 @@ namespace fcf {
          * @brief Adds a static string prefix to all log messages.
          * @param a_prefix The string to append as a prefix.
          */
-        void addPrefixStr(const std::string& a_prefix){
-          Prefix prefix;
+        void addPrefixStr(const std::string& a_prefix, const LoggerPrefixOptions& a_options) {
+          PrefixType prefix;
+          prefix.str = a_prefix;
+          prefix.options = a_options;
+          _prefixes.push_back(prefix);
+        }
+
+        void addPrefixStr(const std::string& a_prefix) {
+          PrefixType prefix;
           prefix.str = a_prefix;
           _prefixes.push_back(prefix);
         }
@@ -642,37 +882,123 @@ namespace fcf {
          * @brief Adds a functional prefix to all log messages.
          * @param a_prefix A function that returns a string to be used as a prefix.
          */
-        void addPrefixFunc(const PrefixFunctionType& a_prefix){
-          Prefix prefix;
+        void addPrefixFunc(const PrefixFunctionType& a_prefix, const LoggerPrefixOptions& a_options) {
+          PrefixType prefix;
+          prefix.func = a_prefix;
+          prefix.options = a_options;
+          _prefixes.push_back(prefix);
+        }
+
+        void addPrefixFunc(const PrefixFunctionType& a_prefix) {
+          PrefixType prefix;
           prefix.func = a_prefix;
           _prefixes.push_back(prefix);
         }
 
+        void addFormatFunc(const FormatFunctionType& a_prefix, const LoggerFormatOptions& a_options) {
+          FormatType format;
+          format.func = a_prefix;
+          format.options = a_options;
+
+          auto existIt = std::find_if(_formats.begin(), _formats.end(), [&a_options](const FormatType& a_item) { return a_options.name == a_item.options.name; });
+          if (existIt != _formats.end()) {
+            _formats.erase(existIt);
+          }
+          _formats.push_back(format);
+        }
+
       protected:
-        /**
-         * @brief Internal method to handle writing to the appropriate stream based on the log level.
-         * @param a_forLevel The level of the message being written.
-         * @return Reference to the output stream (either std::cout or an empty stream).
-         */
-        std::ostream& _write(int a_forLevel){
-          if (_level >= a_forLevel) {
-            for(Prefix prefix : _prefixes){
-              if (prefix.func){
-                std::cout << prefix.func(*this, (ELogLevel)a_forLevel);
-              } else {
-                std::cout << prefix.str;
+
+        const EnvironmentType& _getEnvironment() {
+          return _environment;
+        }
+
+        void _setEnvironment(const EnvironmentType& a_environment) {
+          _environment = a_environment;
+        }
+
+        void _write(fcf::NTest::ELogLevel a_level, ELoggerMessageType a_messageType, const std::string& a_message) {
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+          std::string messageStr(a_message);
+          std::string prefixStr;
+
+          LoggerMessageStatus lms;
+          lms.messageType   = a_messageType;
+          lms.message       = &messageStr;
+          lms.prefix        = &prefixStr;
+          lms.line          = 0;
+          lms.level         = a_level;
+          lms.duration      = _environment.bench;
+          lms.test          = _environment.test;
+          lms.tests         = _environment.tests;
+          lms.stream        = &std::cout;
+          lms.streamName    = "cout";
+          lms.data          = nullptr;
+
+          if (messageStr.length()) {
+            for(PrefixType prefix : _prefixes) {
+              if (a_messageType & prefix.options.messageTypes) {
+                if (prefix.func) {
+                  const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
+                  HandlerDataStorageType::iterator dataIt = _prefixData.find(prefixName);
+                  if (dataIt == _prefixData.end()) {
+                    dataIt = _prefixData.insert({prefixName, LoggerHandlerData()}).first;
+                  }
+                  lms.data = &dataIt->second;
+
+                  std::string prefixPart = prefix.func(*this, lms);
+                  *lms.prefix += prefixPart;
+                } else {
+                  *lms.prefix += prefix.str;
+                }
               }
             }
-            return (std::ostream&)std::cout;
-          } else {
-            return (std::ostream&)_empty;
+          }
+
+          for(FormatType format : _formats) {
+            const char* formatName = format.options.name.empty() ? "default" : format.options.name.c_str();
+            if (formatName == _environment.format) {
+              HandlerDataStorageType::iterator dataIt = _formatData.find(formatName);
+              if (dataIt == _formatData.end()) {
+                dataIt = _formatData.insert({formatName, LoggerHandlerData()}).first;
+              }
+              lms.data = &dataIt->second;
+              format.func(*this, lms);
+            }
+          }
+
+          std::string outputStr( *lms.prefix + *lms.message );
+
+          if (outputStr.length()) {
+            (*lms.stream) << outputStr;
           }
         }
-        ELogLevel             _level; ///< Current log level.
-        const Test*           _test;  ///< Current test.
-        NDetails::EmptyStream _empty; ///< Empty stream buffer for disabled levels.
-        std::list<Prefix>     _prefixes;
+
+        LoggerOutput _log(ELogLevel a_level, ELoggerMessageType a_messageType) {
+          if (_environment.level >= a_level || a_messageType != LMT_USER) {
+            return LoggerOutput(*this, a_level, a_messageType);
+          } else {
+            return LoggerOutput();
+          }
+        }
+
+        EnvironmentType         _environment;
+        std::list<PrefixType>   _prefixes;
+        std::list<FormatType>   _formats;
+        std::recursive_mutex    _mutex;
+        HandlerDataStorageType  _prefixData;
+        HandlerDataStorageType  _formatData;
     };
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      LoggerOutput::~LoggerOutput() {
+        if (_logger) {
+          _logger->_write(_level, _loggerMessageType, _sstream.str());
+        }
+      }
+    #endif
+
 
     #ifdef FCF_TEST_IMPLEMENTATION
       /**
@@ -680,9 +1006,9 @@ namespace fcf {
        * Initializes the static logger on first call if not present.
        * @return Reference to the Logger instance.
        */
-      _FCF_TEST_DECL_EXPORT Logger& logger(){
+      _FCF_TEST_DECL_EXPORT Logger& logger() {
         static Logger* logger = 0;
-        if (!logger){
+        if (!logger) {
           logger = new Logger();
         }
         return *logger;
@@ -699,7 +1025,7 @@ namespace fcf {
      * @brief Returns the output stream for fatal messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline std::ostream& ftl(){
+    inline LoggerOutput ftl() {
       return logger().ftl();
     }
 
@@ -707,7 +1033,7 @@ namespace fcf {
      * @brief Returns the output stream for error messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline std::ostream& err(){
+    inline LoggerOutput err() {
       return logger().err();
     }
 
@@ -715,7 +1041,7 @@ namespace fcf {
      * @brief Returns the output stream for warning messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline std::ostream& wrn(){
+    inline LoggerOutput wrn() {
       return logger().wrn();
     }
 
@@ -723,7 +1049,7 @@ namespace fcf {
      * @brief Returns the output stream for attention messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline std::ostream& att(){
+    inline LoggerOutput att() {
       return logger().att();
     }
 
@@ -731,7 +1057,7 @@ namespace fcf {
      * @brief Returns the output stream for log messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline std::ostream& log(){
+    inline LoggerOutput log() {
       return logger().log();
     }
 
@@ -739,7 +1065,7 @@ namespace fcf {
      * @brief Returns the output stream for informational messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline std::ostream& inf(){
+    inline LoggerOutput inf() {
       return logger().inf();
     }
 
@@ -747,7 +1073,7 @@ namespace fcf {
      * @brief Returns the output stream for debug messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline std::ostream& dbg(){
+    inline LoggerOutput dbg() {
       return logger().dbg();
     }
 
@@ -755,7 +1081,7 @@ namespace fcf {
      * @brief Returns the output stream for trace messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline std::ostream& trc(){
+    inline LoggerOutput trc() {
       return logger().trc();
     }
 
@@ -763,8 +1089,8 @@ namespace fcf {
      * @brief The output stream returns for the test inner message. The log recording is always performed.
      * @return Reference to the output stream.
      */
-    inline std::ostream& tst(){
-      return logger().tst();
+    inline LoggerOutput sys(ELoggerMessageType a_messageType) {
+      return logger().sys(a_messageType);
     }
 
     /**
@@ -786,7 +1112,7 @@ namespace fcf {
        * @param a_test The test instance to compare against.
        * @return true if this test should precede the other in execution order.
        */
-      bool operator<(const Test& a_test) const{
+      bool operator<(const Test& a_test) const {
         return partOrder < a_test.partOrder ? true :
                partOrder > a_test.partOrder ? false :
                part < a_test.part ? true :
@@ -806,7 +1132,7 @@ namespace fcf {
     /**
      * @brief Container for a collection of tests within a group.
      */
-    struct Tests{
+    struct Tests {
       typedef std::map<std::string, Test> MapType;
       MapType values; ///< Map of test names to Test objects.
     };
@@ -814,7 +1140,7 @@ namespace fcf {
     /**
      * @brief Container for a collection of groups within a part.
      */
-    struct Groups{
+    struct Groups {
       typedef std::map<std::string, Tests> MapType;
       MapType values; ///< Map of group names to Tests containers.
     };
@@ -822,26 +1148,9 @@ namespace fcf {
     /**
      * @brief Container for a collection of groups across all parts.
      */
-    struct Parts{
+    struct Parts {
       typedef std::map<std::string, Groups> MapType;
       MapType values; ///< Map of part names to Groups containers.
-    };
-
-    /**
-     * @brief Configuration options for running tests.
-     */
-    struct Options{
-      std::vector<std::string> parts;         ///< List of part names to run (empty means all).
-      std::vector<std::string> groups;        ///< List of group names to run (empty means all).
-      std::vector<std::string> tests;         ///< List of specific test names to run (empty means all).
-      std::vector<std::string> ignoreParts;   ///< List of ignore part names.
-      std::vector<std::string> ignoreGroups;  ///< List of ignore group names to run.
-      std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
-      ELogLevel                logLevel;      ///< Desired logging level.
-
-      Options()
-        : logLevel(LL_DEF){
-      }
     };
 
     /**
@@ -882,9 +1191,9 @@ namespace fcf {
        * Initializes the static storage on first call if not present.
        * @return Reference to the Storage instance.
        */
-      _FCF_TEST_DECL_EXPORT Storage& getStorage(){
+      _FCF_TEST_DECL_EXPORT Storage& getStorage() {
         static Storage* storage = 0;
-        if (!storage){
+        if (!storage) {
           storage = new Storage();
         }
         return *storage;
@@ -903,7 +1212,7 @@ namespace fcf {
      * @param a_test The test object associated with the registration (used in constructor).
      */
     struct Regisrator {
-      Regisrator(const Test& a_test){
+      Regisrator(const Test& a_test) {
         getStorage().add(a_test);
       }
     };
@@ -915,7 +1224,7 @@ namespace fcf {
      * @param a_order The desired execution order (integer).
      */
     struct PartOrderRegisrator {
-      PartOrderRegisrator(const char* a_name, int a_order){
+      PartOrderRegisrator(const char* a_name, int a_order) {
         getStorage().partOrders[a_name] = a_order;
       }
     };
@@ -927,7 +1236,7 @@ namespace fcf {
      * @param a_order The desired execution order (integer).
      */
     struct GroupOrderRegisrator {
-      GroupOrderRegisrator(const char* a_name, int a_order){
+      GroupOrderRegisrator(const char* a_name, int a_order) {
         getStorage().groupOrders[a_name] = a_order;
       }
     };
@@ -939,7 +1248,7 @@ namespace fcf {
      * @param a_order The desired execution order (integer).
      */
     struct TestOrderRegisrator {
-      TestOrderRegisrator(const char* a_name, int a_order){
+      TestOrderRegisrator(const char* a_name, int a_order) {
         getStorage().testOrders[a_name] = a_order;
       }
     };
@@ -948,7 +1257,7 @@ namespace fcf {
       /**
        * @brief Displays help information for the test runner.
        */
-      _FCF_TEST_DECL_EXPORT void cmdHelp(){
+      _FCF_TEST_DECL_EXPORT void cmdHelp() {
         std::cout << "Test options:" << std::endl;
         std::cout << "  --test-run  - Run tests" << std::endl;
         std::cout << "  --test-list - Displays a list of all tests" << std::endl;
@@ -959,6 +1268,13 @@ namespace fcf {
         std::cout << "  --test-ignore-group GROUP_NAME - Exclude tests in the specified group(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-test TEST_NAME - Exclude the specified test(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-log-level LEVEL - Logging level (VALUES: def, off, ftl, err, wrn, att, log, inf, dbg, trc, all)" << std::endl;
+        std::cout << "  --test-no-break - In case of an error, testing does not stop" << std::endl;
+        std::string formats;
+        for(auto format : logger()._formats) {
+          formats += ", ";
+          formats += format.options.name;
+        }
+        std::cout << "  --test-format FORMAT - Output format (default" + formats + ")." << std::endl;
         std::cout << "  --test-help  - Help message" << std::endl;
       }
     #else
@@ -972,12 +1288,12 @@ namespace fcf {
       /**
        * @brief  Displays a list of all registered tests.
        */
-      _FCF_TEST_DECL_EXPORT void cmdList(){
+      _FCF_TEST_DECL_EXPORT void cmdList() {
         Options options;
         std::set<Test> tests;
         NDetails::select(tests, options);
         std::cout << "List of tests:" << std::endl;
-        for(const Test& test : tests){
+        for(const Test& test : tests) {
           std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.name  << "\""<< std::endl;
         }
       }
@@ -988,75 +1304,123 @@ namespace fcf {
       _FCF_TEST_DECL_EXPORT void cmdList();
     #endif
 
-    #ifdef FCF_TEST_IMPLEMENTATION
-      /**
-       * @brief Executes the selected tests based on provided options.
-       *
-       * @param a_options Configuration options specifying which tests to run and logging level.
-       * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information.
-       *                                        If an error occurs, the value is set to true.
-       *                                        If a null pointer is passed, the function throws an exception.
-       */
-      _FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0){
-        ELogLevel lastLevel = logger().level();
-        if (a_options.logLevel != LL_DEF) {
-          logger().level(a_options.logLevel);
-        }
+    namespace NDetails {
+      #ifdef FCF_TEST_IMPLEMENTATION
+        _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr) {
+          bool totalErrorFlag = false;
+          if (a_errorPtr) {
+            *a_errorPtr = totalErrorFlag;
+          }
 
-        if (a_errorPtr){
-          *a_errorPtr = false;
-        }
+          Logger::EnvironmentType lastEnv = logger()._getEnvironment();
+          Logger::EnvironmentType newEnv {
+                                a_options.logLevel != LL_DEF ? a_options.logLevel : lastEnv.level,
+                                0,
+                                0,
+                                0,
+                                a_options.format.length() ? a_options.format : lastEnv.format,
+                              };
+          logger()._setEnvironment(newEnv);
 
-        try {
-          std::set<Test> tests;
-          NDetails::select(tests, a_options);
-
-          unsigned long long nscounter = 0;
           Duration bench;
+          std::set<Test> tests;
+
+          sys(LMT_START);
+
+          NDetails::select(tests, a_options);
+          logger().tests(&tests);
+
+          unsigned int errorCounter = 0;
+          unsigned int passedCounter = 0;
+          logger().bench(&bench);
           for(const Test& test : tests) {
-            tst() << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+            sys(LMT_TEST_START);
+            sys(LMT_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
             logger().test(&test);
             bench.resume();
-            test.testFunction();
+            ++passedCounter;
+            try {
+              test.testFunction();
+            } catch(std::exception& e) {
+              bench.end();
+              totalErrorFlag = true;
+              ++errorCounter;
+              std::string errorMesssage = e.what();
+              errorMesssage = errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
+              sys(LMT_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
+              sys(LMT_TEST_ERROR) << "Test failed (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
+              sys(LMT_TEST_END);
+              if (a_options.noBreak) {
+                continue;
+              } else {
+                break;
+              }
+            }
             bench.end();
-            nscounter += bench.totalDuration().count();
-            logger().test(0);
-            tst() << "  Test completed ("<<bench.lastTotalDurationStr() << " sec)" << std::endl;
+            sys(LMT_TEST_COMPLETE) << "Test completed successfully (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
+            sys(LMT_TEST_END);
           }
 
-          tst() << std::endl;
-          tst() << "All tests were completed. Number of tests: " << tests.size() << std::endl;
-          tst() << "Duration of execution of all tests:        " << bench.totalDurationStr() << " sec" << std::endl;
-        } catch(const std::exception& e){
-          logger().test(0);
-          tst() << e.what() << std::endl;
-          logger().level(lastLevel);
-          if (a_errorPtr){
-            *a_errorPtr = true;
+          unsigned int skipedCounter = tests.size() - passedCounter;
+
+          if (!errorCounter) {
+            sys(LMT_COMPLETE) << std::endl
+                              << "All tests were completed." << std::endl;
           } else {
-            throw;
+            sys(LMT_ERROR) << std::endl
+                           << "Testing completed with failures." << std::endl;
+          }
+
+          sys(LMT_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skipedCounter << " skiped, " << tests.size() << " total" << std::endl;
+          sys(LMT_DURATION) << "Duration: " << bench.totalDurationStr(true) << " sec" << std::endl;
+
+          sys(LMT_END);
+
+          logger()._setEnvironment(lastEnv);
+
+          if (totalErrorFlag) {
+            if (a_enableThrow) {
+              throw std::runtime_error("Testing completed with failures");
+            }
+            if (a_errorPtr) {
+              *a_errorPtr = totalErrorFlag;
+            }
           }
         }
 
-        logger().level(lastLevel);
-      }
+      #else
+        /**
+         * @brief Declaration for executing the selected tests.
+         *
+         * @param a_options Configuration options specifying which tests to run and logging level.
+         * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information.
+         *                                       If an error occurs, the value is set to true.
+         *                                       If a null pointer is passed, the function throws an exception.
+         */
+        //_FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+      #endif
+    } // NDetails namespace
 
-    #else
-      /**
-       * @brief Declaration for executing the selected tests.
-       *
-       * @param a_options Configuration options specifying which tests to run and logging level.
-       * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information.
-       *                                       If an error occurs, the value is set to true.
-       *                                       If a null pointer is passed, the function throws an exception.
-       */
-      _FCF_TEST_DECL_EXPORT void run(const Options& a_options, bool* a_errorPtr = 0);
-    #endif
+    /**
+     * @brief Executes the selected tests based on provided options.
+     *
+     * @param a_options Configuration options specifying which tests to run and logging level.
+     * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information.
+     *                                        If an error occurs, the value is set to true.
+     *                                        If a null pointer is passed, the function throws an exception.
+     */
+    inline void run(const Options& a_options, bool* a_errorPtr) {
+      NDetails::runImpl(a_options, false, a_errorPtr);
+    }
+
+    inline void run(const Options& a_options) {
+      NDetails::runImpl(a_options, true, 0);
+    }
 
     /**
      * @brief Enumerates command modes for the test runner.
      */
-    enum ECmdMode{
+    enum ECmdMode {
       CM_NONE,   ///< No specific mode set.
       CM_RUN,    ///< Run tests mode.
       CM_LIST,   ///< List tests mode.
@@ -1072,99 +1436,103 @@ namespace fcf {
       CRM_RUN,      ///< cmdRun() parses the command line and runs the tests unless the --test-help or --test-list run flags were specified on the command line.
     };
 
-    #ifdef FCF_TEST_IMPLEMENTATION
+    namespace NDetails {
 
-      namespace NDetails {
-        /**
-         * @brief Parses command line arguments into a vector of strings.
-         * @param a_argc Number of arguments.
-         * @param a_argv Array of argument strings.
-         * @return A vector containing parsed arguments.
-         */
+      #ifdef FCF_TEST_IMPLEMENTATION
+
         inline std::vector<std::string> parseArgs(int a_argc, const char* const* a_argv);
-      } // NDetails namespace
 
+        _FCF_TEST_DECL_EXPORT ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr) {
+          ECmdMode mode = CM_NONE;
 
-      /**
-       * @brief Parses command line arguments and executes the appropriate action.
-       *
-       * @param a_dstOptions Reference to the options structure to populate with parsed arguments.
-       * @param a_argc Number of command line arguments.
-       * @param a_argv Array of command line arguments.
-       * @param a_runMode Current mode of execution (parse, execute, or run).
-       * @param a_errorPtr (default = (bool*)0) A pointer to a variable that receives information about a test error.
-       *                                        If an error occurs, the value is set to true.
-       *                                        If a null pointer is passed, the function throws an exception.
-       * @return The determined command mode after processing.
-       */
-      _FCF_TEST_DECL_EXPORT ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0){
-        ECmdMode mode = CM_NONE;
+          std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);
 
-        std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);
-
-        for(size_t i = 0; i < args.size(); ++i){
-          if (args[i] == "--test-run"){
-            mode = CM_RUN;
-          } else if (args[i] == "--test-help"){
-            mode = CM_HELP;
-            if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN){
-              cmdHelp();
-              return mode;
+          for(size_t i = 0; i < args.size(); ++i) {
+            if (args[i] == "--test-run") {
+              mode = CM_RUN;
+            } else if (args[i] == "--test-help") {
+              mode = CM_HELP;
+              if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN) {
+                cmdHelp();
+                return mode;
+              }
+            } else if (args[i] == "--test-log-level" && (i+1) < args.size()) {
+              a_dstOptions.logLevel = Logger::toLevel(args[i+1], logger().level());
+              ++i;
+            } else if (args[i] == "--test-list") {
+              mode = CM_LIST;
+              if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN) {
+                cmdList();
+                return mode;
+              }
+            } else if (args[i] == "--test-format" && (i+1) < args.size()) {
+              a_dstOptions.format = args[i+1];
+              ++i;
+            } else if (args[i] == "--test-part" && (i+1) < args.size()) {
+              a_dstOptions.parts.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-group" && (i+1) < args.size()) {
+              a_dstOptions.groups.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-test" && (i+1) < args.size()) {
+              a_dstOptions.tests.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-ignore-part" && (i+1) < args.size()) {
+              a_dstOptions.ignoreParts.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-ignore-group" && (i+1) < args.size()) {
+              a_dstOptions.ignoreGroups.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-ignore-test" && (i+1) < args.size()) {
+              a_dstOptions.ignoreTests.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-no-break") {
+              a_dstOptions.noBreak = true;
             }
-          } else if (args[i] == "--test-log-level" && (i+1) < args.size()) {
-            a_dstOptions.logLevel = Logger::toLevel(args[i+1], logger().level());
-            ++i;
-          } else if (args[i] == "--test-list"){
-            mode = CM_LIST;
-            if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN){
-              cmdList();
-              return mode;
-            }
-          } else if (args[i] == "--test-part" && (i+1) < args.size()){
-            a_dstOptions.parts.push_back(args[i+1]);
-            ++i;
-          } else if (args[i] == "--test-group" && (i+1) < args.size()){
-            a_dstOptions.groups.push_back(args[i+1]);
-            ++i;
-          } else if (args[i] == "--test-test" && (i+1) < args.size()){
-            a_dstOptions.tests.push_back(args[i+1]);
-            ++i;
-          } else if (args[i] == "--test-ignore-part" && (i+1) < args.size()){
-            a_dstOptions.ignoreParts.push_back(args[i+1]);
-            ++i;
-          } else if (args[i] == "--test-ignore-group" && (i+1) < args.size()){
-            a_dstOptions.ignoreGroups.push_back(args[i+1]);
-            ++i;
-          } else if (args[i] == "--test-ignore-test" && (i+1) < args.size()){
-            a_dstOptions.ignoreTests.push_back(args[i+1]);
-            ++i;
           }
-        }
-        if ((mode == CM_RUN && a_runMode == CRM_EXECUTE) || a_runMode == CRM_RUN){
-          run(a_dstOptions, a_errorPtr);
+          if ((mode == CM_RUN && a_runMode == CRM_EXECUTE) || a_runMode == CRM_RUN) {
+            runImpl(a_dstOptions, a_enableThrow, a_errorPtr);
+          }
+
+          return mode;
         }
 
-        return mode;
-      }
-    #else
-      /**
-       * @brief Declaration for parsing command line arguments and executing the appropriate action.
-       *
-       * @param a_dstOptions Reference to the options structure to populate with parsed arguments.
-       * @param a_argc Number of command line arguments.
-       * @param a_argv Array of command line arguments.
-       * @param a_runMode Current mode of execution (parse, execute, or run).
-       * @param a_errorPtr (default = (bool*)0) A pointer to a variable that receives information about a test error.
-       *                                        If an error occurs, the value is set to true.
-       *                                        If a null pointer is passed, the function throws an exception.
-       * @return The determined command mode after processing.
-       */
-      _FCF_TEST_DECL_EXPORT ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0);
-    #endif
+      #else 
+
+        _FCF_TEST_DECL_EXPORT ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr);
+
+      #endif
+
+    } // NDetails namespace
+
+    /**
+     * @brief Parses command line arguments and executes the appropriate action.
+     *
+     * @param a_dstOptions Reference to the options structure to populate with parsed arguments.
+     * @param a_argc Number of command line arguments.
+     * @param a_argv Array of command line arguments.
+     * @param a_runMode Current mode of execution (parse, execute, or run).
+     )* @param a_errorPtr (default = (bool*)0) A pointer to a variable that receives information about a test error.
+     *                                        If an error occurs, the value is set to true.
+     *                                        If a null pointer is passed, the function throws an exception.
+     * @return The determined command mode after processing.
+     */
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
+      return NDetails::cmdRunImpl(a_dstOptions, a_argc, a_argv, a_runMode, false, a_errorPtr);
+    }
+
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode) {
+      return NDetails::cmdRunImpl(a_dstOptions, a_argc, a_argv, a_runMode, true, nullptr);
+    }
 
     template <typename Ty>
-    ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0){
+    ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
       return cmdRun(a_dstOptions, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
+    }
+
+    template <typename Ty>
+    ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode) {
+      return cmdRun(a_dstOptions, a_argc, (const char* const*)a_argv, a_runMode);
     }
 
     /**
@@ -1180,10 +1548,211 @@ namespace fcf {
      * @return The determined command mode after processing.
      */
     template <typename Ty>
-    inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0){
+    inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
       Options options;
       return cmdRun(options, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
     }
+
+    template <typename Ty>
+    inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode) {
+      Options options;
+      return cmdRun(options, a_argc, (const char* const*)a_argv, a_runMode);
+    }
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      const LoggerHandlerData::HistoryValueType& LoggerJunitFormat::getHistoryValue(const LoggerHandlerData::HistoryItemType& a_item, const char* a_key) {
+        const static LoggerHandlerData::HistoryValueType empty = {"", 0, nullptr, nullptr};
+        LoggerHandlerData::HistoryItemType::const_iterator it = a_item.find(a_key);
+        if (it != a_item.end()) {
+          return it->second;
+        } else  {
+          return empty;
+        }
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      const LoggerHandlerData::HistoryValueType& LoggerJunitFormat::getHistoryValue(const LoggerHandlerData::HistoryType& a_history, const char* a_key) {
+        const static LoggerHandlerData::HistoryValueType empty = {"", 0, nullptr, nullptr};
+        if (!a_history.size()) {
+          return empty;
+        }
+        return getHistoryValue(a_history.front(), a_key);
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      std::string LoggerJunitFormat::suiteName(const Test& a_test) {
+        return a_test.part + "/" + a_test.group;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      std::string LoggerJunitFormat::xmlAttribute(const std::string& a_string) {
+        std::string result;
+        result.reserve(a_string.size());
+        for (char ch : a_string) {
+          if (ch == '\\' || ch == '"') {
+            result += '\\';
+          }
+          result += ch;
+        }
+        return result;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      std::string LoggerJunitFormat::xmlText(const std::string& a_string) {
+        std::string result;
+        result.reserve(a_string.size());
+        for (char ch : a_string) {
+          if (ch == '<') {
+            result += "&lt;";
+          } else if (ch == '>') {
+            result += "&gt;";
+          } else if (ch == '&') {
+            result += "&amp;";
+          } else {
+            result += ch;
+          }
+        }
+        return result;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void LoggerJunitFormat::format(Logger& a_logger, LoggerMessageStatus& a_messageStatus) {
+        std::ostringstream output;
+
+        switch (a_messageStatus.messageType) {
+          case LMT_START:
+            {
+              std::shared_ptr<LoggerHandlerDataWrapperBase> formatHandler(new LoggerHandlerDataWrapper<LoggerJunitFormat>());
+              a_messageStatus.data->append({ { "handler", {"", 0, 0, formatHandler} } });
+            }
+            break;
+          case LMT_TEST_COMPLETE:
+          case LMT_TEST_ERROR_MESSAGE:
+            {
+              LoggerJunitFormat* formatHandler = (LoggerJunitFormat*)getHistoryValue(a_messageStatus.data->history(), "handler").sptrValue->get();
+              if (formatHandler) {
+                TestStatusType ts;
+                ts.error = a_messageStatus.messageType == LMT_TEST_ERROR_MESSAGE;
+                ts.message = *a_messageStatus.message;
+                ts.duration = a_messageStatus.duration->lastTotalDuration().count();
+                formatHandler->_processed.insert({*a_messageStatus.test, ts});
+              }
+            }
+            break;
+          case LMT_END:
+            {
+              LoggerJunitFormat* formatHandler = (LoggerJunitFormat*)getHistoryValue(a_messageStatus.data->history(), "handler").sptrValue->get();
+              if (formatHandler) {
+
+                size_t totalTestCount   = a_messageStatus.tests->size();
+                size_t totalTestFailure = std::count_if(formatHandler->_processed.begin(),
+                                                        formatHandler->_processed.end(),
+                                                        [](const std::pair<Test, TestStatusType>& a_item) {
+                                                          return a_item.second.error;
+                                                        });
+                size_t totalTestSkipped  = a_messageStatus.tests->size() - formatHandler->_processed.size();
+
+                std::map<std::string, std::set<Test> > suites;
+                for(const Test& test : *a_messageStatus.tests) {
+                  std::string currentSuiteName = suiteName(test);
+                  std::map<std::string, std::set<Test> >::iterator it = suites.find(currentSuiteName);
+                  if (it == suites.end()) {
+                    it = suites.insert({currentSuiteName, {}}).first;
+                  }
+                  it->second.insert(test);
+                }
+
+                output << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+                output << "<testsuites "
+                       << "tests=\"" << totalTestCount << "\" "
+                       << "failure=\"" << totalTestFailure << "\" "
+                       << "skipped=\"" << totalTestSkipped << "\" "
+                       << "time=\"" << a_messageStatus.duration->totalDurationStr(false) << "\""
+                       << ">\n";
+                for(const std::pair< std::string, std::set<Test> >& currentSuite : suites ) {
+                  const std::string& currentSuiteName = currentSuite.first;
+                  const std::set<Test>& currentTests = currentSuite.second;
+                  size_t currentTestCount = currentTests.size();
+                  size_t currentFailureCount = std::count_if(currentTests.begin(),
+                                                             currentTests.end(),
+                                                          [&formatHandler](const Test& a_test) {
+                                                            auto it = formatHandler->_processed.find(a_test);
+                                                            if (it == formatHandler->_processed.end()) {
+                                                              return false;
+                                                            }
+                                                            return it->second.error;
+                                                          });
+                  size_t currentSkippedCount = std::count_if(currentTests.begin(),
+                                                          currentTests.end(),
+                                                          [&formatHandler](const Test& a_test) {
+                                                            auto it = formatHandler->_processed.find(a_test);
+                                                            return it == formatHandler->_processed.end();
+                                                          });
+                  unsigned long long time = 0;
+                  for(const Test& test : currentTests) {
+                    auto it = formatHandler->_processed.find(test);
+                    if (it != formatHandler->_processed.end()) {
+                      time += it->second.duration;
+                    }
+                  }
+                  output << "  <testsuite "
+                         << "name=\""<< xmlAttribute(currentSuiteName) << "\" "
+                         << "tests=\"" << currentTestCount << "\" "
+                         << "failure=\"" << currentFailureCount <<"\" "
+                         << "skipped=\"" << currentSkippedCount << "\" "
+                         << "time=\"" << Duration::nsToStr(time, false) << "\""
+                         << ">\n";
+                  for(const Test& currentTest : currentTests) {
+                    auto processedIt = formatHandler->_processed.find(currentTest);
+                    bool isSkipped = processedIt == formatHandler->_processed.end();
+                    if (isSkipped) {
+                      output << "    <testcase classname=\"" << xmlAttribute(currentSuiteName) << "\" "
+                             << "name=\"" << xmlAttribute(currentTest.name) << "\" "
+                             << "time=\"" << Duration::nsToStr(0, false) << "\""
+                             << ">\n";
+                      output << "      <skipped message=\"The test was skipped because the fail-on-error mode was enabled.\"/>\n";
+                      output << "    </testcase>\n";
+                    } else if (processedIt->second.error) {
+                      std::string message = processedIt->second.message.erase(processedIt->second.message.find_last_not_of(" \t\n\r\f\v") + 1);
+                      std::string shortMessage = message.substr(0, message.find("\n"));
+                      shortMessage = shortMessage.substr(0, shortMessage.find("[FILE:"));
+                      shortMessage = shortMessage.erase(shortMessage.find_last_not_of(" \t\n\r\f\v") + 1);
+                      output << "    <testcase " 
+                             << "classname=\"" << xmlAttribute(currentSuiteName) << "\" "
+                             << "name=\"" << xmlAttribute(currentTest.name) << "\" "
+                             << "time=\"" << Duration::nsToStr(processedIt->second.duration, false) << "\""
+                             << ">\n";
+                      output << "      <failure message=\"" << xmlAttribute(shortMessage) << "\" type=\"AssertionError\">\n";
+                      output << xmlText(message) << "\n";
+                      output << "      </failure>\n";
+                      output << "    </testcase>\n";
+                    } else {
+                      output << "    <testcase "
+                             << "classname=\"" << xmlAttribute(currentSuiteName) << "\" "
+                             << "name=\"" << xmlAttribute(currentTest.name) << "\" "
+                             << "time=\"" << Duration::nsToStr(processedIt->second.duration, false) << "\""
+                             << "/>\n";
+                    }
+                  }
+                  output << "  </testsuite>\n";
+                }
+                output << "</testsuites>\n";
+
+                a_messageStatus.data->history().clear();
+              }
+            }
+            break;
+        }
+
+        a_messageStatus.prefix->clear();
+        *a_messageStatus.message = output.str();
+      }
+    #endif
 
   } // NTest namespace
 } // fcf namespace
@@ -1213,11 +1782,11 @@ namespace fcf {
          * @return Formatted string with names and values.
          */
         template <typename TIterator, typename TArg, typename... TPack2>
-        std::string operator()(TIterator a_begName, TIterator a_endName, const TArg& a_arg, const TPack2&... a_pack){
+        std::string operator()(TIterator a_begName, TIterator a_endName, const TArg& a_arg, const TPack2&... a_pack) {
           std::stringstream ss;
           std::string name = a_begName != a_endName ? *a_begName : "arg";
           ss << "    " << name << ": " << a_arg << std::endl;
-          if (a_begName != a_endName){
+          if (a_begName != a_endName) {
             ++a_begName;
           }
           return ss.str() + PrintPack<TPack2...>()(a_begName, a_endName, a_pack...);
@@ -1241,7 +1810,7 @@ namespace fcf {
          * @return An empty string.
          */
         template <typename TIterator>
-        std::string operator()(TIterator /*a_begName*/, TIterator /*a_endName*/){
+        std::string operator()(TIterator /*a_begName*/, TIterator /*a_endName*/) {
           return std::string();
         }
       };
@@ -1252,7 +1821,7 @@ namespace fcf {
        * @tparam TIterator Iterator type for the name list.
        */
       template <typename TIterator>
-      struct PrintArgs{
+      struct PrintArgs {
         TIterator begin; ///< Iterator pointing to the beginning of the names.
         TIterator end;   ///< Iterator pointing to the end of the names.
 
@@ -1264,9 +1833,9 @@ namespace fcf {
          * @return Formatted string with names and values.
          */
         template <typename... TArgPack>
-        std::string operator()(const TArgPack&... a_pack){
+        std::string operator()(const TArgPack&... a_pack) {
           std::string result;
-          if (sizeof...(TArgPack) && begin != end){
+          if (sizeof...(TArgPack) && begin != end) {
             result += "  Values:\n";
           }
           result += PrintPack<TArgPack...>()(begin, end, a_pack...);
@@ -1374,7 +1943,7 @@ namespace fcf {
  * @param ... Variable list of arguments whose values will be included in the error message if 'exp' is false.
  */
 #define FCF_TEST(exp, ...) \
-  if (!(exp)){ \
+  if (!(exp)) { \
     std::list<std::string> names;\
     _FCF_TEST__APPEND_TO_LIST(names, __VA_ARGS__)\
     fcf::NTest::Details::PrintArgs<std::list<std::string>::iterator> p;\
@@ -1398,12 +1967,12 @@ namespace fcf {
        * @param a_input The input string to parse.
        */
       inline void parseArgs(std::vector<std::string>& a_dstVector, std::string a_input) {
-        if (a_input == "="){
+        if (a_input == "=") {
           return;
         }
-        if (!a_input.empty()){
+        if (!a_input.empty()) {
           size_t pos = a_input.find("=");
-          if (pos != std::string::npos){
+          if (pos != std::string::npos) {
             size_t len = pos;
             if (len) {
               a_dstVector.push_back(a_input.substr(0, len));
@@ -1468,7 +2037,7 @@ namespace fcf {
            * @param a_typeName Name of the type for error reporting.
            */
           void _check(std::map<std::string, bool>& elements, const char* a_typeName) {
-            for(const auto& item : elements){
+            for(const auto& item : elements) {
               if (!item.second) {
                 throw std::runtime_error(std::string() + "The test " + a_typeName + "named '" + item.first + "' cannot be found");
               }
@@ -1485,7 +2054,7 @@ namespace fcf {
        * @return The updated EAllow state.
        */
       template <typename TAllowList>
-      EAllow checkAllow(EAllow a_allow, const TAllowList& a_allowList, const TAllowList& a_ignoreList, const std::string& a_name){
+      EAllow checkAllow(EAllow a_allow, const TAllowList& a_allowList, const TAllowList& a_ignoreList, const std::string& a_name) {
         if (a_allow == ALLOW) {
           if (!a_allowList.empty()) {
             auto it = std::find(a_allowList.begin(), a_allowList.end(), a_name);
@@ -1517,7 +2086,7 @@ namespace fcf {
        * @param a_allowList The list of items to look for.
        */
       template <typename TMap, typename TAllowList>
-      void checkExists(std::map<std::string, bool>& a_state, const TMap& a_map, const TAllowList& a_allowList){
+      void checkExists(std::map<std::string, bool>& a_state, const TMap& a_map, const TAllowList& a_allowList) {
         for (const auto& allowItem : a_allowList) {
           auto stateIt = a_state.insert({allowItem, false}).first;
           if (a_map.find(allowItem) != a_map.end()) {
@@ -1532,7 +2101,7 @@ namespace fcf {
        * @param a_dst Destination set where selected tests will be inserted.
        * @param a_options Configuration options (filters).
        */
-      inline void select(std::set<Test>& a_dst, const Options& a_options){
+      inline void select(std::set<Test>& a_dst, const Options& a_options) {
         SearchState state;
         checkExists(state.parts, getStorage().parts.values, a_options.parts);
 
@@ -1551,26 +2120,26 @@ namespace fcf {
             for(const auto& testItem : groupItem.second.values) {
               EAllow allowTest = checkAllow(allowGroup, a_options.tests, a_options.ignoreTests, testItem.first);
 
-              if (allowTest == NONE || allowTest == IGNORE){
+              if (allowTest == NONE || allowTest == IGNORE) {
                 continue;
               }
 
               Test test(testItem.second);
               {
                 Storage::OrderMapType::const_iterator it = getStorage().partOrders.find(test.part);
-                if (it != getStorage().partOrders.end()){
+                if (it != getStorage().partOrders.end()) {
                   test.partOrder = it->second;
                 }
               }
               {
                 Storage::OrderMapType::const_iterator it = getStorage().groupOrders.find(test.group);
-                if (it != getStorage().groupOrders.end()){
+                if (it != getStorage().groupOrders.end()) {
                   test.groupOrder = it->second;
                 }
               }
               {
                 Storage::OrderMapType::const_iterator it = getStorage().testOrders.find(test.name);
-                if (it != getStorage().testOrders.end()){
+                if (it != getStorage().testOrders.end()) {
                   test.nameOrder = it->second;
                 }
               }
