@@ -2,7 +2,7 @@
 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-%2300599C.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![C++11](https://img.shields.io/badge/>=c++11-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white)](https://en.wikipedia.org/wiki/C++)
+[![C++11](https://img.shields.io/badge/>=c++11-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white)](https://en.wikipedia.org/wiki/C++11)
 [![GitHub release](https://img.shields.io/badge/GitHub-release-%2300599C.svg?style=for-the-badge&logo=github)](https://github.com/fcf-framework/fcfTest/releases)
 
 
