@@ -1,12 +1,16 @@
 # fcfTest
 
+[![License: MIT](https://shields.io)](https://opensource.org)
+[![Language: C++](https://shields.io)](https://wikipedia.org)
+[![GitHub release](https://shields.io)](https://github.com)
+
 **fcfTest** is a lightweight, header-only unit testing framework for C++. It provides a simple macro, FCF_TEST, which implements all possible checks and displays the current values ​​of variables. The framework also includes test registration, command-line execution, a built-in simple logger, and tools for measuring execution time.
 
 The library is distributed as a single header file: `fcfTest/test.hpp`.
 
 To use the library, you must define the `FCF_TEST_IMPLEMENTATION` macro before including the header file in your application's main cpp file to avoid errors due to multiple definitions.
 
-### Liniks:
+### Links:
 (New section of the site dedicated to the description of this library.)
 
 Official page with documentation: https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest 
