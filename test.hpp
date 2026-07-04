@@ -649,12 +649,14 @@ namespace fcf {
         };
 
         struct EnvironmentType {
-          ELogLevel             level;
-          const Test*           test;
-          const std::set<Test>* tests;
-          Duration*             bench;
-          std::string           format;
-          std::ostream*         stream;
+          ELogLevel               level;
+          const Test*             test;
+          const std::set<Test>*   tests;
+          Duration*               bench;
+          std::string             format;
+          HandlerDataStorageType  prefixData;
+          HandlerDataStorageType  formatData;
+          std::ostream*           stream;
         };
 
       public:
@@ -663,7 +665,7 @@ namespace fcf {
          * @brief Constructs a logger with the default log level (LL_LOG).
          */
         Logger()
-          : _environment{LL_LOG, nullptr, nullptr, nullptr, "default", nullptr}
+          : _environment{LL_LOG, nullptr, nullptr, nullptr, "default", {}, {}, nullptr}
           , _newLine(true)
         {
           LoggerPrefixOptions lpo;
@@ -960,9 +962,9 @@ namespace fcf {
 
                 if (prefix.func) {
                   const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
-                  HandlerDataStorageType::iterator dataIt = _prefixData.find(prefixName);
-                  if (dataIt == _prefixData.end()) {
-                    dataIt = _prefixData.insert({prefixName, LoggerHandlerData()}).first;
+                  HandlerDataStorageType::iterator dataIt = _environment.prefixData.find(prefixName);
+                  if (dataIt == _environment.prefixData.end()) {
+                    dataIt = _environment.prefixData.insert({prefixName, LoggerHandlerData()}).first;
                   }
                   lms.data = &dataIt->second;
 
@@ -984,9 +986,9 @@ namespace fcf {
           for(FormatType format : _formats) {
             const char* formatName = format.options.name.empty() ? "default" : format.options.name.c_str();
             if (formatName == _environment.format) {
-              HandlerDataStorageType::iterator dataIt = _formatData.find(formatName);
-              if (dataIt == _formatData.end()) {
-                dataIt = _formatData.insert({formatName, LoggerHandlerData()}).first;
+              HandlerDataStorageType::iterator dataIt = _environment.formatData.find(formatName);
+              if (dataIt == _environment.formatData.end()) {
+                dataIt = _environment.formatData.insert({formatName, LoggerHandlerData()}).first;
               }
               lms.data = &dataIt->second;
               format.func(*this, lms);
@@ -1014,8 +1016,6 @@ namespace fcf {
         std::list<PrefixType>   _prefixes;
         std::list<FormatType>   _formats;
         std::recursive_mutex    _mutex;
-        HandlerDataStorageType  _prefixData;
-        HandlerDataStorageType  _formatData;
         bool                    _newLine;
     };
 
@@ -1365,6 +1365,8 @@ namespace fcf {
                                 0,
                                 0,
                                 a_options.format.length() ? a_options.format : lastEnv.format,
+                                {},
+                                {},
                                 a_options.stream
                               };
 
@@ -1690,7 +1692,8 @@ namespace fcf {
           case LMT_TEST_COMPLETE:
           case LMT_TEST_ERROR_MESSAGE:
             {
-              LoggerJunitFormat* formatHandler = (LoggerJunitFormat*)getHistoryValue(a_messageStatus.data->history(), "handler").sptrValue->get();
+              LoggerHandlerDataWrapperBase* formatHandlerWrapper = (LoggerHandlerDataWrapperBase*)getHistoryValue(a_messageStatus.data->history(), "handler").sptrValue.get();
+              LoggerJunitFormat* formatHandler = formatHandlerWrapper ? (LoggerJunitFormat*)formatHandlerWrapper->get() : (LoggerJunitFormat*)0;
               if (formatHandler) {
                 TestStatusType ts;
                 ts.error = a_messageStatus.messageType == LMT_TEST_ERROR_MESSAGE;
@@ -1702,7 +1705,8 @@ namespace fcf {
             break;
           case LMT_END:
             {
-              LoggerJunitFormat* formatHandler = (LoggerJunitFormat*)getHistoryValue(a_messageStatus.data->history(), "handler").sptrValue->get();
+              LoggerHandlerDataWrapperBase* formatHandlerWrapper = (LoggerHandlerDataWrapperBase*)getHistoryValue(a_messageStatus.data->history(), "handler").sptrValue.get();
+              LoggerJunitFormat* formatHandler = formatHandlerWrapper ? (LoggerJunitFormat*)formatHandlerWrapper->get() : (LoggerJunitFormat*)0;
               if (formatHandler) {
 
                 size_t totalTestCount   = a_messageStatus.tests->size();
