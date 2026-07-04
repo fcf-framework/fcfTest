@@ -1,0 +1,43 @@
+name: C++ Multi-Standard CI
+
+on:
+  push:
+    branches: [ "development" ]
+  pull_request:
+    branches: [ "development" ]
+
+jobs:
+  build_and_test:
+    name: ${{ matrix.os }} | C++${{ matrix.cpp_std }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        cpp_std: [11, 17, 20]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: >
+        cmake -B ${{github.workspace}}/build
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }}
+        -DCMAKE_CXX_STANDARD_REQUIRED=ON
+
+    - name: Build Project
+      run: cmake --build ${{github.workspace}}/build --config Release
+
+    - name: Run Tests
+      working-directory: ${{github.workspace}}/build
+      run: ./test/fcf_test_run --test-format junit > junit-report.xml
+
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: "${{github.workspace}}/build/test/junit-report.xml"
+
