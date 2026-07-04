@@ -513,8 +513,8 @@ namespace fcf {
 
     struct LoggerMessageStatus {
       ELoggerMessageType    messageType;
+      const std::string*    origin;
       std::string*          message;
-      std::string*          prefix;
       size_t                line;
       ELogLevel             level;
       Duration*             duration;
@@ -529,8 +529,8 @@ namespace fcf {
       bool                multiLine;
       unsigned int        messageTypes;
       LoggerPrefixOptions()
-        : multiLine(false)
-        , name("")
+        : name("")
+        , multiLine(false)
         , messageTypes(LMT_USER)
       {}
     };
@@ -663,7 +663,8 @@ namespace fcf {
          * @brief Constructs a logger with the default log level (LL_LOG).
          */
         Logger()
-          : _environment{LL_LOG, 0, 0, 0, "default"}
+          : _environment{LL_LOG, nullptr, nullptr, nullptr, "default", nullptr}
+          , _newLine(true)
         {
           LoggerPrefixOptions lpo;
           lpo.name          = "offset";
@@ -923,12 +924,11 @@ namespace fcf {
           std::lock_guard<std::recursive_mutex> lock(_mutex);
 
           std::string messageStr(a_message);
-          std::string prefixStr;
 
           LoggerMessageStatus lms;
           lms.messageType   = a_messageType;
+          lms.origin        = &a_message;
           lms.message       = &messageStr;
-          lms.prefix        = &prefixStr;
           lms.line          = 0;
           lms.level         = a_level;
           lms.duration      = _environment.bench;
@@ -939,7 +939,25 @@ namespace fcf {
 
           if (messageStr.length()) {
             for(PrefixType prefix : _prefixes) {
-              if (a_messageType & prefix.options.messageTypes) {
+              if (!(a_messageType & prefix.options.messageTypes)) {
+                continue;
+              }
+              if (!_newLine) {
+                continue;
+              }
+              size_t lastPos = 0;
+              std::string resultMessage;
+              while(lastPos < messageStr.length()) {
+                size_t pos = prefix.options.multiLine ? messageStr.find("\n", lastPos)
+                                                      : messageStr.length()-1;
+                if (pos == std::string::npos) {
+                  pos = messageStr.length();
+                } else {
+                  ++pos;
+                }
+                std::string line = messageStr.substr(lastPos, pos - lastPos);
+                lms.message = &line;
+
                 if (prefix.func) {
                   const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
                   HandlerDataStorageType::iterator dataIt = _prefixData.find(prefixName);
@@ -949,11 +967,17 @@ namespace fcf {
                   lms.data = &dataIt->second;
 
                   std::string prefixPart = prefix.func(*this, lms);
-                  *lms.prefix += prefixPart;
+                  if (prefixPart.length()) {
+                    *lms.message = prefixPart + *lms.message;
+                  }
                 } else {
-                  *lms.prefix += prefix.str;
+                  *lms.message = prefix.str + *lms.message;
                 }
+                resultMessage += *lms.message;
+                lastPos = pos;
               }
+              std::swap(messageStr,resultMessage);
+              lms.message = &messageStr;
             }
           }
 
@@ -969,10 +993,12 @@ namespace fcf {
             }
           }
 
-          std::string outputStr( *lms.prefix + *lms.message );
+          if (lms.message->length()) {
+            (*lms.stream) << *lms.message;
+          }
 
-          if (outputStr.length()) {
-            (*lms.stream) << outputStr;
+          if (a_message.length()) {
+            _newLine = a_message[a_message.length()-1] == '\n';
           }
         }
 
@@ -990,6 +1016,7 @@ namespace fcf {
         std::recursive_mutex    _mutex;
         HandlerDataStorageType  _prefixData;
         HandlerDataStorageType  _formatData;
+        bool                    _newLine;
     };
 
     #ifdef FCF_TEST_IMPLEMENTATION
@@ -1277,6 +1304,10 @@ namespace fcf {
         }
         std::cout << "  --test-format FORMAT - Output format (default" + formats + ")." << std::endl;
         std::cout << "  --test-help  - Help message" << std::endl;
+        std::cout << std::endl;
+        std::cout << "Explanatory details:" << std::endl;
+        std::cout << "  1. The --test-part, --test-group, --test-test commands are combined using the OR operation" << std::endl;
+        std::cout << "  2. The --test-ignore-part, --test-ignore-group, --test-ignore-test commands are combined using the OR operation" << std::endl;
       }
     #else
       /**
@@ -1327,16 +1358,17 @@ namespace fcf {
 
           bool totalErrorFlag = false;
 
+          Logger::EnvironmentType lastEnv = logger()._getEnvironment();
+          Logger::EnvironmentType newEnv {
+                                a_options.logLevel != LL_DEF ? a_options.logLevel : lastEnv.level,
+                                0,
+                                0,
+                                0,
+                                a_options.format.length() ? a_options.format : lastEnv.format,
+                                a_options.stream
+                              };
+
           try {
-            Logger::EnvironmentType lastEnv = logger()._getEnvironment();
-            Logger::EnvironmentType newEnv {
-                                  a_options.logLevel != LL_DEF ? a_options.logLevel : lastEnv.level,
-                                  0,
-                                  0,
-                                  0,
-                                  a_options.format.length() ? a_options.format : lastEnv.format,
-                                  a_options.stream
-                                };
             logger()._setEnvironment(newEnv);
 
             Duration bench;
@@ -1394,12 +1426,12 @@ namespace fcf {
             sys(LMT_END);
 
             logger()._setEnvironment(lastEnv);
-
             {
               std::lock_guard<std::recursive_mutex> lock(mutex);
               globalRunState = false;
             }
           } catch(const std::exception&) {
+            logger()._setEnvironment(lastEnv);
             {
               std::lock_guard<std::recursive_mutex> lock(mutex);
               globalRunState = false;
@@ -1521,7 +1553,7 @@ namespace fcf {
           return mode;
         }
 
-      #else 
+      #else
 
         _FCF_TEST_DECL_EXPORT ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr);
 
@@ -1662,7 +1694,7 @@ namespace fcf {
               if (formatHandler) {
                 TestStatusType ts;
                 ts.error = a_messageStatus.messageType == LMT_TEST_ERROR_MESSAGE;
-                ts.message = *a_messageStatus.message;
+                ts.message = *a_messageStatus.origin;
                 ts.duration = a_messageStatus.duration->lastTotalDuration().count();
                 formatHandler->_processed.insert({*a_messageStatus.test, ts});
               }
@@ -1746,7 +1778,7 @@ namespace fcf {
                       std::string shortMessage = message.substr(0, message.find("\n"));
                       shortMessage = shortMessage.substr(0, shortMessage.find("[FILE:"));
                       shortMessage = shortMessage.erase(shortMessage.find_last_not_of(" \t\n\r\f\v") + 1);
-                      output << "    <testcase " 
+                      output << "    <testcase "
                              << "classname=\"" << xmlAttribute(currentSuiteName) << "\" "
                              << "name=\"" << xmlAttribute(currentTest.name) << "\" "
                              << "time=\"" << Duration::nsToStr(processedIt->second.duration, false) << "\""
@@ -1773,7 +1805,6 @@ namespace fcf {
             break;
         }
 
-        a_messageStatus.prefix->clear();
         *a_messageStatus.message = output.str();
       }
     #endif
