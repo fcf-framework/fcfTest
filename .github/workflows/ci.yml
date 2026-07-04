@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ "development" ]
 
+permissions:
+  checks: write
+  workflows: write
+  pull-requests: write
+  contents: read
+
 jobs:
   build_and_test:
     name: ${{ matrix.os }} | C++${{ matrix.cpp_std }}
