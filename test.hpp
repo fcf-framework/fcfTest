@@ -119,7 +119,7 @@
   namespace {\
   struct am_className { \
     am_className() {\
-      ::fcf::NTest::getStorage().add( ::fcf::NTest::Test{ 0, am_test, 0, am_group, 0, am_part, test } );\
+      ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ 0, am_test, 0, am_group, 0, am_part, test } );\
     }\
     static void test();\
   };\
@@ -669,11 +669,11 @@ namespace fcf {
           lpo.name          = "offset";
           lpo.multiLine     = true;
           lpo.messageTypes  = LMT_TEST;
-          addPrefixStr("  ", lpo);
+          appendPrefixStr("  ", lpo);
 
           LoggerFormatOptions lfo;
           lfo.name          = "junit";
-          addFormatFunc(LoggerJunitFormat::format, lfo);
+          appendFormatFunc(LoggerJunitFormat::format, lfo);
         }
 
         /**
@@ -867,14 +867,14 @@ namespace fcf {
          * @brief Adds a static string prefix to all log messages.
          * @param a_prefix The string to append as a prefix.
          */
-        void addPrefixStr(const std::string& a_prefix, const LoggerPrefixOptions& a_options) {
+        void appendPrefixStr(const std::string& a_prefix, const LoggerPrefixOptions& a_options) {
           PrefixType prefix;
           prefix.str = a_prefix;
           prefix.options = a_options;
           _prefixes.push_back(prefix);
         }
 
-        void addPrefixStr(const std::string& a_prefix) {
+        void appendPrefixStr(const std::string& a_prefix) {
           PrefixType prefix;
           prefix.str = a_prefix;
           _prefixes.push_back(prefix);
@@ -884,20 +884,20 @@ namespace fcf {
          * @brief Adds a functional prefix to all log messages.
          * @param a_prefix A function that returns a string to be used as a prefix.
          */
-        void addPrefixFunc(const PrefixFunctionType& a_prefix, const LoggerPrefixOptions& a_options) {
+        void appendPrefixFunc(const PrefixFunctionType& a_prefix, const LoggerPrefixOptions& a_options) {
           PrefixType prefix;
           prefix.func = a_prefix;
           prefix.options = a_options;
           _prefixes.push_back(prefix);
         }
 
-        void addPrefixFunc(const PrefixFunctionType& a_prefix) {
+        void appendPrefixFunc(const PrefixFunctionType& a_prefix) {
           PrefixType prefix;
           prefix.func = a_prefix;
           _prefixes.push_back(prefix);
         }
 
-        void addFormatFunc(const FormatFunctionType& a_prefix, const LoggerFormatOptions& a_options) {
+        void appendFormatFunc(const FormatFunctionType& a_prefix, const LoggerFormatOptions& a_options) {
           FormatType format;
           format.func = a_prefix;
           format.options = a_options;
@@ -1170,7 +1170,7 @@ namespace fcf {
        *
        * @param a_test The Test object containing metadata and function pointer.
        */
-      void add(const Test& a_test) {
+      void append(const Test& a_test) {
         Parts::MapType::iterator partIterator = parts.values.insert( Parts::MapType::value_type(a_test.part, Groups() )  ).first;
         Groups::MapType::iterator groupIterator = partIterator->second.values.insert( Groups::MapType::value_type(a_test.group, Tests() )  ).first;
         groupIterator->second.values[a_test.name] = a_test;
@@ -1214,7 +1214,7 @@ namespace fcf {
      */
     struct Regisrator {
       Regisrator(const Test& a_test) {
-        getStorage().add(a_test);
+        getStorage().append(a_test);
       }
     };
 
