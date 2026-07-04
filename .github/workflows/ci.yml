@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        cpp_std: [11]
+        cpp_std: [11, 14, 17, 20, 26]
 
     steps:
     - name: Checkout repository
