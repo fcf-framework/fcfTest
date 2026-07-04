@@ -67,9 +67,9 @@ FCF_TEST_DECLARE("Benchmark", "Manual", "ManualLoopBenchmark") {
     bench.begin();
     for (unsigned long long i = 0; i < bench.iterationCount(); ++i) {
         // Perform some dummy work
-        int a = i;
-        int b = i * 2;
-        int c = a + b;
+        unsigned long long a = i;
+        unsigned long long b = i * 2;
+        unsigned long long c = a + b;
         FCF_TEST(c == (i * 3));
     }
     bench.end();
@@ -90,14 +90,14 @@ int main(int a_argc, char* a_argv[]) {
 
     // Register a functional prefix that dynamically generates a timestamp and log level string.
     // This function is called by the logger every time a message is written.
-    fcf::NTest::logger().addPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::ELogLevel a_level){
+    fcf::NTest::logger().addPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::LoggerMessageStatus a_status){
         // Get current system time
         auto time = std::time(nullptr);
         // Format the output as: "YYYY-MM-DD HH:MM:SS [LEVEL]: "
         return (std::stringstream() 
                   << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S") 
                   << " [" 
-                  << a_logger.toLevelStr(a_level) 
+                  << a_logger.toLevelStr(a_status.level) 
                   << "]: "
                 ).str();
     });

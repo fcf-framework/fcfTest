@@ -521,7 +521,6 @@ namespace fcf {
       const Test*           test;
       const std::set<Test>* tests;
       std::ostream*         stream;
-      const char*           streamName;
       LoggerHandlerData*    data;
     };
 
@@ -610,11 +609,13 @@ namespace fcf {
       ELogLevel                logLevel;      ///< Desired logging level.
       std::string              format;
       bool                     noBreak;
+      std::ostream*            stream;
 
       Options()
         : logLevel(LL_DEF)
         , format("default")
-        , noBreak(false) {
+        , noBreak(false)
+        , stream(0) {
       }
     };
 
@@ -653,6 +654,7 @@ namespace fcf {
           const std::set<Test>* tests;
           Duration*             bench;
           std::string           format;
+          std::ostream*         stream;
         };
 
       public:
@@ -932,8 +934,7 @@ namespace fcf {
           lms.duration      = _environment.bench;
           lms.test          = _environment.test;
           lms.tests         = _environment.tests;
-          lms.stream        = &std::cout;
-          lms.streamName    = "cout";
+          lms.stream        = _environment.stream ? _environment.stream : &std::cout;
           lms.data          = nullptr;
 
           if (messageStr.length()) {
@@ -1307,97 +1308,120 @@ namespace fcf {
     namespace NDetails {
       #ifdef FCF_TEST_IMPLEMENTATION
         _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr) {
+          static std::recursive_mutex mutex;
+          static bool globalRunState = false;
+          {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            #ifndef _FCF_TEST_RECURCIVE_RUN_DISABLE
+              if (globalRunState) {
+                if (a_enableThrow) {
+                  throw std::runtime_error("The tests have already been launched");
+                } else if (a_errorPtr){
+                  *a_errorPtr = true;
+                }
+                return;
+              }
+            #endif
+            globalRunState = true;
+          }
+
           bool totalErrorFlag = false;
+
+          try {
+            Logger::EnvironmentType lastEnv = logger()._getEnvironment();
+            Logger::EnvironmentType newEnv {
+                                  a_options.logLevel != LL_DEF ? a_options.logLevel : lastEnv.level,
+                                  0,
+                                  0,
+                                  0,
+                                  a_options.format.length() ? a_options.format : lastEnv.format,
+                                  a_options.stream
+                                };
+            logger()._setEnvironment(newEnv);
+
+            Duration bench;
+            std::set<Test> tests;
+
+            sys(LMT_START);
+
+            NDetails::select(tests, a_options);
+            logger().tests(&tests);
+
+            unsigned int errorCounter = 0;
+            unsigned int passedCounter = 0;
+            logger().bench(&bench);
+            for(const Test& test : tests) {
+              sys(LMT_TEST_START);
+              sys(LMT_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+              logger().test(&test);
+              bench.resume();
+              ++passedCounter;
+              try {
+                test.testFunction();
+              } catch(std::exception& e) {
+                bench.end();
+                totalErrorFlag = true;
+                ++errorCounter;
+                std::string errorMesssage = e.what();
+                errorMesssage = errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
+                sys(LMT_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
+                sys(LMT_TEST_ERROR) << "Test failed (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
+                sys(LMT_TEST_END);
+                if (a_options.noBreak) {
+                  continue;
+                } else {
+                  break;
+                }
+              }
+              bench.end();
+              sys(LMT_TEST_COMPLETE) << "Test completed successfully (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
+              sys(LMT_TEST_END);
+            }
+
+            unsigned int skipedCounter = tests.size() - passedCounter;
+
+            if (!errorCounter) {
+              sys(LMT_COMPLETE) << std::endl
+                                << "All tests were completed." << std::endl;
+            } else {
+              sys(LMT_ERROR) << std::endl
+                             << "Testing completed with failures." << std::endl;
+            }
+
+            sys(LMT_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skipedCounter << " skiped, " << tests.size() << " total" << std::endl;
+            sys(LMT_DURATION) << "Duration: " << bench.totalDurationStr(true) << " sec" << std::endl;
+
+            sys(LMT_END);
+
+            logger()._setEnvironment(lastEnv);
+
+            {
+              std::lock_guard<std::recursive_mutex> lock(mutex);
+              globalRunState = false;
+            }
+          } catch(const std::exception&) {
+            {
+              std::lock_guard<std::recursive_mutex> lock(mutex);
+              globalRunState = false;
+            }
+            if (a_enableThrow) {
+              throw;
+            }
+            if (a_errorPtr) {
+              *a_errorPtr = true;
+            }
+            return;
+          }
+
+
+          if (totalErrorFlag && a_enableThrow) {
+            throw std::runtime_error("Testing completed with failures");
+          }
           if (a_errorPtr) {
             *a_errorPtr = totalErrorFlag;
           }
-
-          Logger::EnvironmentType lastEnv = logger()._getEnvironment();
-          Logger::EnvironmentType newEnv {
-                                a_options.logLevel != LL_DEF ? a_options.logLevel : lastEnv.level,
-                                0,
-                                0,
-                                0,
-                                a_options.format.length() ? a_options.format : lastEnv.format,
-                              };
-          logger()._setEnvironment(newEnv);
-
-          Duration bench;
-          std::set<Test> tests;
-
-          sys(LMT_START);
-
-          NDetails::select(tests, a_options);
-          logger().tests(&tests);
-
-          unsigned int errorCounter = 0;
-          unsigned int passedCounter = 0;
-          logger().bench(&bench);
-          for(const Test& test : tests) {
-            sys(LMT_TEST_START);
-            sys(LMT_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
-            logger().test(&test);
-            bench.resume();
-            ++passedCounter;
-            try {
-              test.testFunction();
-            } catch(std::exception& e) {
-              bench.end();
-              totalErrorFlag = true;
-              ++errorCounter;
-              std::string errorMesssage = e.what();
-              errorMesssage = errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
-              sys(LMT_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
-              sys(LMT_TEST_ERROR) << "Test failed (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
-              sys(LMT_TEST_END);
-              if (a_options.noBreak) {
-                continue;
-              } else {
-                break;
-              }
-            }
-            bench.end();
-            sys(LMT_TEST_COMPLETE) << "Test completed successfully (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
-            sys(LMT_TEST_END);
-          }
-
-          unsigned int skipedCounter = tests.size() - passedCounter;
-
-          if (!errorCounter) {
-            sys(LMT_COMPLETE) << std::endl
-                              << "All tests were completed." << std::endl;
-          } else {
-            sys(LMT_ERROR) << std::endl
-                           << "Testing completed with failures." << std::endl;
-          }
-
-          sys(LMT_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skipedCounter << " skiped, " << tests.size() << " total" << std::endl;
-          sys(LMT_DURATION) << "Duration: " << bench.totalDurationStr(true) << " sec" << std::endl;
-
-          sys(LMT_END);
-
-          logger()._setEnvironment(lastEnv);
-
-          if (totalErrorFlag) {
-            if (a_enableThrow) {
-              throw std::runtime_error("Testing completed with failures");
-            }
-            if (a_errorPtr) {
-              *a_errorPtr = totalErrorFlag;
-            }
-          }
         }
 
-      #else
-        /**
-         * @brief Declaration for executing the selected tests.
-         *
-         * @param a_options Configuration options specifying which tests to run and logging level.
-         * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information.
-         *                                       If an error occurs, the value is set to true.
-         *                                       If a null pointer is passed, the function throws an exception.
-         */
-        //_FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
       #endif
     } // NDetails namespace
 

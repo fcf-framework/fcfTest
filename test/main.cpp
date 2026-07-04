@@ -1,157 +1,77 @@
-#include <iostream>
 #include <sstream>
+#include <regex>
+
+#define _FCF_TEST_RECURCIVE_RUN_DISABLE
 #define FCF_TEST_IMPLEMENTATION
 #include <fcfTest/test.hpp>
 
-int main(int a_argc, char* a_argv[]){
-  {
-    std::cout << "Input:" << std::endl;
-    for(size_t i = 0; i < a_argc; ++i){
-      std::cout << "  |" << a_argv[i] << "|" << std::endl;
-    }
-    auto vec = fcf::NTest::NDetails::parseArgs(a_argc, a_argv);
-    std::cout << "Output:" << std::endl;
-    for(size_t i = 0; i < vec.size(); ++i){
-      std::cout << "  |" << vec[i] << "|" << std::endl;
-    }
-  } 
-  {
-    const char* argv[] = {"--test=12"};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "12")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
-    const char* argv[] = {"--test", "12"};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "12")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
-    const char* argv[] = {"--test=12"};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "12")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
-    const char* argv[] = {"--test-test=dynamic container access"};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test-test")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[0]:" << vec[0] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "dynamic container access")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]:" << vec[1] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
-    const char* argv[] = {"--test-group=Variant", "--test-test=dynamic container access"};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 4)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    size_t i = 0;
-    if (vec[i] != "--test-group")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[0]:" << vec[i] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    ++i;
-    if (vec[i] != "Variant")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]:" << vec[i] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    ++i;
-    if (vec[i] != "--test-test")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[2]:" << vec[i] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    ++i;
-    if (vec[i] != "dynamic container access")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[3]:" << vec[i] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    ++i;
-  }
 
-  {
-    const char* argv[] = {"--test=", "12"};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "12")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
-    const char* argv[] = {"--test", "\"12\""};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "\"12\"")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
-    const char* argv[] = {"--test", "=12"};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "12")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
-    const char* argv[] = {"--test", "=", "12"};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "12")
-      throw std::runtime_error((std::stringstream() << "Invalid check [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
-    const char* argv[] = {"--test", "=12"};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    /*
-    for(auto itm : vec){
-      std::cout << itm << std::endl;
-    }
-    */
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]: " << vec[0] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "12")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]: " << vec[1] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
-  {
-    const char* argv[] = {"--test", "=1\"2"};
-    int   argc = sizeof(argv) / sizeof(argv[0]);
-    auto vec = fcf::NTest::NDetails::parseArgs(argc, argv);
-    if (vec.size() != 2)
-      throw std::runtime_error((std::stringstream() << "Invalid check (size:" << vec.size() << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[0] != "--test")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]: " << vec[0] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-    if (vec[1] != "1\"2")
-      throw std::runtime_error((std::stringstream() << "Invalid check (vec[1]: " << vec[1] << ") [" << __FILE__ << ":" << __LINE__ << "]").str());
-  }
+std::string uniout(std::string a_string){
+  std::string result;
+  std::regex pattern1(R"(\d+\.\d+`\d+`\d+)");
+  std::regex pattern2(R"(time=\"\d+\.\d+\")");
+  result = std::regex_replace(a_string, pattern1, "XXX");
+  result = std::regex_replace(result, pattern2, "time=\"XXX\"");
+  return result;
+}
 
-  return 0;
+FCF_TEST_GROUP_ORDER("cmd", 1);
+
+FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
+  {
+    std::stringstream ss;
+    fcf::NTest::Options options;
+    options.parts   = {"run"};
+    options.groups  = {"default"};
+    options.tests   = {"ok"};
+    options.stream  = &ss;
+    fcf::NTest::cmdRun(options, 0, 0, fcf::NTest::CRM_RUN);
+    std::string expected = std::string()+ 
+                          "Performing the test: \"run\" -> \"default\" -> \"ok\" ...\n"+
+                          "  Test completed successfully (XXX sec)\n"+
+                          "\n"+
+                          "All tests were completed.\n"+
+                          "Tests: 1 passed, 0 failed, 0 skiped, 1 total\n"+
+                          "Duration: XXX sec\n";
+    FCF_TEST(expected == uniout(ss.str()), uniout(ss.str()), expected);
+  }
+  {
+    std::stringstream ss;
+    fcf::NTest::Options options;
+    options.parts   = {"run"};
+    options.groups  = {"default"};
+    options.tests   = {"ok"};
+    options.stream  = &ss;
+    const char* argv[] = {"--test-format=junit"};
+    fcf::NTest::cmdRun(options, 1, argv, fcf::NTest::CRM_RUN);
+    std::string expected = std::string()+ 
+                          "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
+                          "<testsuites tests=\"1\" failure=\"0\" skipped=\"0\" time=\"XXX\">\n"+
+                          "  <testsuite name=\"run/default\" tests=\"1\" failure=\"0\" skipped=\"0\" time=\"XXX\">\n"+
+                          "    <testcase classname=\"run/default\" name=\"ok\" time=\"XXX\"/>\n"+
+                          "  </testsuite>\n"+
+                          "</testsuites>\n";
+    FCF_TEST(expected == uniout(ss.str()), uniout(ss.str()), expected);
+
+  }
+}
+
+
+FCF_TEST_DECLARE("run", "default", "ok"){
+
+}
+/*
+FCF_TEST_DECLARE("run", "junit", "ok"){
+
+}
+*/
+
+
+int main(int a_argc, char* a_argv[]) {
+  bool error = false;
+  fcf::NTest::Options options;
+  options.ignoreParts = {"run"};
+  fcf::NTest::cmdRun(options, a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
+  return error ? 1 : 0;
 }
 
