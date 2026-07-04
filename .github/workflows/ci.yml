@@ -38,7 +38,13 @@ jobs:
 
     - name: Run Tests
       working-directory: ${{github.workspace}}/build
-      run: ./test/fcf-test-test --test-format junit > junit-report.xml
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          ./test/Release/fcf-test-test.exe --test-format junit > junit-report.xml
+        else
+          ./test/fcf-test-test --test-format junit > junit-report.xml
+        fi
 
     - name: Publish Test Results
       uses: EnricoMi/publish-unit-test-result-action@v2
