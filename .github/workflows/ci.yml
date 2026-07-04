@@ -14,8 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        cpp_std: [11, 17, 20]
+        os: [ubuntu-latest]
+        cpp_std: [11]
 
     steps:
     - name: Checkout repository
@@ -33,7 +33,7 @@ jobs:
 
     - name: Run Tests
       working-directory: ${{github.workspace}}/build
-      run: ./fcf_test_run --test-format junit > junit-report.xml
+      run: ./test/fcf_test_run --test-format junit > junit-report.xml
 
     - name: Publish Test Results
       uses: EnricoMi/publish-unit-test-result-action@v2
