@@ -951,20 +951,24 @@ namespace fcf {
         }
 
         void appendStream(const LoggerStreamHandler& a_stream) {
+          _appendStream(a_stream, _environment);
+        }
+
+      protected:
+
+        static void _appendStream(const LoggerStreamHandler& a_stream, EnvironmentType& a_environment ) {
           LoggerStreamHandlers::iterator it = std::find_if(
-                                                _environment.streams.begin(), 
-                                                _environment.streams.end(),
+                                                a_environment.streams.begin(), 
+                                                a_environment.streams.end(),
                                                 [&a_stream](LoggerStreamHandler& a_item){
                                                   return a_item.name == a_stream.name;
                                                 });
-          if (it == _environment.streams.end()) {
-            _environment.streams.push_back(a_stream);
+          if (it == a_environment.streams.end()) {
+            a_environment.streams.push_back(a_stream);
           } else {
             *it = a_stream;
           }
         }
-
-      protected:
 
         const EnvironmentType& _getEnvironment() {
           return _environment;
@@ -1438,7 +1442,7 @@ namespace fcf {
             std::string streamName = file.format.length() ? (std::string() + "file-" + file.format)
                                                           : std::string("file");
             ofstreams.push_back(std::ofstream(file.file));
-            newEnv.streams.push_back({streamName, &ofstreams.back(), file.format, {}, {}});
+            Logger::_appendStream({streamName, &ofstreams.back(), file.format, {}, {}}, newEnv);
           }
 
           try {
