@@ -15,6 +15,23 @@ std::string uniout(std::string a_string){
   return result;
 }
 
+class InnerTestRunner{
+  public:
+    InnerTestRunner(fcf::NTest::Options& a_options, std::stringstream& a_sstream, int a_argc, const char** a_argv)
+      : _streams(fcf::NTest::logger().streams()) 
+    {
+      fcf::NTest::LoggerStreamHandlers streams = { {"default", &a_sstream, "", {}, {}} };
+      fcf::NTest::logger().streams(streams);
+      fcf::NTest::cmdRun(a_options, a_argc, a_argv, fcf::NTest::CRM_RUN);
+    }
+    ~InnerTestRunner(){
+      fcf::NTest::logger().streams(_streams);
+    }
+  private:
+    fcf::NTest::LoggerStreamHandlers  _streams;
+};
+
+
 FCF_TEST_GROUP_ORDER("cmd", 1);
 
 FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
@@ -22,8 +39,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
     std::stringstream ss;
     fcf::NTest::Options options;
     options.parts   = {"subrun"};
-    options.stream  = &ss;
-    fcf::NTest::cmdRun(options, 0, 0, fcf::NTest::CRM_RUN);
+    InnerTestRunner itr(options, ss, 0, 0);
     std::string expected = std::string()+ 
                           "Performing the test: \"subrun\" -> \"default\" -> \"ok\" ...\n"+
                           "  Test completed successfully (XXX sec)\n"+
@@ -37,9 +53,8 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
     std::stringstream ss;
     fcf::NTest::Options options;
     options.parts   = {"subrun"};
-    options.stream  = &ss;
     const char* argv[] = {"--test-format=junit"};
-    fcf::NTest::cmdRun(options, 1, argv, fcf::NTest::CRM_RUN);
+    InnerTestRunner itr(options, ss, 1, &argv[0]);
     std::string expected = std::string()+ 
                           "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
                           "<testsuites tests=\"1\" failure=\"0\" skipped=\"0\" time=\"XXX\">\n"+

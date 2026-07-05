@@ -7,6 +7,7 @@
 #include <functional>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <cstring>
 #include <streambuf>
 #include <cctype>
@@ -600,6 +601,11 @@ namespace fcf {
      * @brief Configuration options for running tests.
      */
     struct Options {
+      struct FileType {
+        std::string  file;
+        std::string  format;
+      };
+
       std::vector<std::string> parts;         ///< List of part names to run (empty means all).
       std::vector<std::string> groups;        ///< List of group names to run (empty means all).
       std::vector<std::string> tests;         ///< List of specific test names to run (empty means all).
@@ -609,13 +615,12 @@ namespace fcf {
       ELogLevel                logLevel;      ///< Desired logging level.
       std::string              format;
       bool                     noBreak;
-      std::ostream*            stream;
+      std::list<FileType>      files;
 
       Options()
         : logLevel(LL_DEF)
         , format("default")
-        , noBreak(false)
-        , stream(0) {
+        , noBreak(false) {
       }
     };
 
@@ -623,12 +628,23 @@ namespace fcf {
       _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
     }
 
+    typedef std::map<std::string, LoggerHandlerData> LoggerHandlerDataStorageType;
+
+    struct LoggerStreamHandler {
+      std::string                   name;
+      std::ostream*                 stream;
+      std::string                   format;
+      LoggerHandlerDataStorageType  prefixData;
+      LoggerHandlerDataStorageType  formatData;
+    };
+
+    typedef std::list<LoggerStreamHandler> LoggerStreamHandlers;
+
     /**
      * @brief Represents a logging instance with configurable output streams based on level.
      */
     struct Logger {
         friend LoggerOutput;
-        friend void cmdHelp();
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
         typedef std::map<std::string, LoggerHandlerData> HandlerDataStorageType;
 
@@ -654,9 +670,7 @@ namespace fcf {
           const std::set<Test>*   tests;
           Duration*               bench;
           std::string             format;
-          HandlerDataStorageType  prefixData;
-          HandlerDataStorageType  formatData;
-          std::ostream*           stream;
+          LoggerStreamHandlers    streams;
         };
 
       public:
@@ -665,7 +679,7 @@ namespace fcf {
          * @brief Constructs a logger with the default log level (LL_LOG).
          */
         Logger()
-          : _environment{LL_LOG, nullptr, nullptr, nullptr, "default", {}, {}, nullptr}
+          : _environment{LL_LOG, nullptr, nullptr, nullptr, "default"}
           , _newLine(true)
         {
           LoggerPrefixOptions lpo;
@@ -677,6 +691,8 @@ namespace fcf {
           LoggerFormatOptions lfo;
           lfo.name          = "junit";
           appendFormatFunc(LoggerJunitFormat::format, lfo);
+          
+          clearStreams(true);
         }
 
         /**
@@ -832,6 +848,10 @@ namespace fcf {
           return _environment.format;
         }
 
+        const std::list<FormatType>& formats() const {
+          return _formats;
+        }
+
         /**
          * @brief Converts a string representation of a log level to its enum value.
          * @param a_level   The string to convert.
@@ -912,6 +932,38 @@ namespace fcf {
           _formats.push_back(format);
         }
 
+        const LoggerStreamHandlers& streams(){
+          return _environment.streams;
+        }
+
+        void streams(const LoggerStreamHandlers& a_streams) {
+          clearStreams(false);
+          for(const LoggerStreamHandler& stream : a_streams) {
+            appendStream(stream);
+          }
+        }
+
+        void clearStreams(bool a_defaultState) {
+          _environment.streams.clear();
+          if (a_defaultState) {
+            _environment.streams.push_back({"default", &std::cout, "", {}, {}});
+          }
+        }
+
+        void appendStream(const LoggerStreamHandler& a_stream) {
+          LoggerStreamHandlers::iterator it = std::find_if(
+                                                _environment.streams.begin(), 
+                                                _environment.streams.end(),
+                                                [&a_stream](LoggerStreamHandler& a_item){
+                                                  return a_item.name == a_stream.name;
+                                                });
+          if (it == _environment.streams.end()) {
+            _environment.streams.push_back(a_stream);
+          } else {
+            *it = a_stream;
+          }
+        }
+
       protected:
 
         const EnvironmentType& _getEnvironment() {
@@ -925,82 +977,89 @@ namespace fcf {
         void _write(fcf::NTest::ELogLevel a_level, ELoggerMessageType a_messageType, const std::string& a_message) {
           std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-          std::string messageStr(a_message);
+          for(LoggerStreamHandler& stream : _environment.streams) {
 
-          LoggerMessageStatus lms;
-          lms.messageType   = a_messageType;
-          lms.origin        = &a_message;
-          lms.message       = &messageStr;
-          lms.line          = 0;
-          lms.level         = a_level;
-          lms.duration      = _environment.bench;
-          lms.test          = _environment.test;
-          lms.tests         = _environment.tests;
-          lms.stream        = _environment.stream ? _environment.stream : &std::cout;
-          lms.data          = nullptr;
+            std::string messageStr(a_message);
 
-          if (messageStr.length()) {
-            for(PrefixType prefix : _prefixes) {
-              if (!(a_messageType & prefix.options.messageTypes)) {
-                continue;
-              }
-              if (!_newLine) {
-                continue;
-              }
-              size_t lastPos = 0;
-              std::string resultMessage;
-              while(lastPos < messageStr.length()) {
-                size_t pos = prefix.options.multiLine ? messageStr.find("\n", lastPos)
-                                                      : messageStr.length()-1;
-                if (pos == std::string::npos) {
-                  pos = messageStr.length();
-                } else {
-                  ++pos;
+            LoggerMessageStatus lms;
+            lms.messageType   = a_messageType;
+            lms.origin        = &a_message;
+            lms.message       = &messageStr;
+            lms.line          = 0;
+            lms.level         = a_level;
+            lms.duration      = _environment.bench;
+            lms.test          = _environment.test;
+            lms.tests         = _environment.tests;
+            lms.stream        = stream.stream ? stream.stream : &std::cout;
+            lms.data          = nullptr;
+
+            const std::string& currentFormatName = stream.format.length() 
+                                                    ? stream.format
+                                                    : _environment.format;
+
+            if (messageStr.length()) {
+              for(PrefixType prefix : _prefixes) {
+                if (!(a_messageType & prefix.options.messageTypes)) {
+                  continue;
                 }
-                std::string line = messageStr.substr(lastPos, pos - lastPos);
-                lms.message = &line;
-
-                if (prefix.func) {
-                  const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
-                  HandlerDataStorageType::iterator dataIt = _environment.prefixData.find(prefixName);
-                  if (dataIt == _environment.prefixData.end()) {
-                    dataIt = _environment.prefixData.insert({prefixName, LoggerHandlerData()}).first;
-                  }
-                  lms.data = &dataIt->second;
-
-                  std::string prefixPart = prefix.func(*this, lms);
-                  if (prefixPart.length()) {
-                    *lms.message = prefixPart + *lms.message;
-                  }
-                } else {
-                  *lms.message = prefix.str + *lms.message;
+                if (!_newLine) {
+                  continue;
                 }
-                resultMessage += *lms.message;
-                lastPos = pos;
+                size_t lastPos = 0;
+                std::string resultMessage;
+                while(lastPos < messageStr.length()) {
+                  size_t pos = prefix.options.multiLine ? messageStr.find("\n", lastPos)
+                                                        : messageStr.length()-1;
+                  if (pos == std::string::npos) {
+                    pos = messageStr.length();
+                  } else {
+                    ++pos;
+                  }
+                  std::string line = messageStr.substr(lastPos, pos - lastPos);
+                  lms.message = &line;
+
+                  if (prefix.func) {
+                    const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
+                    HandlerDataStorageType::iterator dataIt = stream.prefixData.find(prefixName);
+                    if (dataIt == stream.prefixData.end()) {
+                      dataIt = stream.prefixData.insert({prefixName, LoggerHandlerData()}).first;
+                    }
+                    lms.data = &dataIt->second;
+
+                    std::string prefixPart = prefix.func(*this, lms);
+                    if (prefixPart.length()) {
+                      *lms.message = prefixPart + *lms.message;
+                    }
+                  } else {
+                    *lms.message = prefix.str + *lms.message;
+                  }
+                  resultMessage += *lms.message;
+                  lastPos = pos;
+                }
+                std::swap(messageStr,resultMessage);
+                lms.message = &messageStr;
               }
-              std::swap(messageStr,resultMessage);
-              lms.message = &messageStr;
             }
-          }
 
-          for(FormatType format : _formats) {
-            const char* formatName = format.options.name.empty() ? "default" : format.options.name.c_str();
-            if (formatName == _environment.format) {
-              HandlerDataStorageType::iterator dataIt = _environment.formatData.find(formatName);
-              if (dataIt == _environment.formatData.end()) {
-                dataIt = _environment.formatData.insert({formatName, LoggerHandlerData()}).first;
+            for(FormatType format : _formats) {
+              const char* formatName = format.options.name.empty() ? "default" : format.options.name.c_str();
+              if (formatName == currentFormatName) {
+                HandlerDataStorageType::iterator dataIt = stream.formatData.find(formatName);
+                if (dataIt == stream.formatData.end()) {
+                  dataIt = stream.formatData.insert({formatName, LoggerHandlerData()}).first;
+                }
+                lms.data = &dataIt->second;
+                format.func(*this, lms);
               }
-              lms.data = &dataIt->second;
-              format.func(*this, lms);
             }
-          }
 
-          if (lms.message->length()) {
-            (*lms.stream) << *lms.message;
-          }
+            if (lms.message->length()) {
+              (*lms.stream) << *lms.message;
+            }
 
-          if (a_message.length()) {
-            _newLine = a_message[a_message.length()-1] == '\n';
+            if (a_message.length()) {
+              _newLine = a_message[a_message.length()-1] == '\n';
+            }
           }
         }
 
@@ -1298,11 +1357,18 @@ namespace fcf {
         std::cout << "  --test-log-level LEVEL - Logging level (VALUES: def, off, ftl, err, wrn, att, log, inf, dbg, trc, all)" << std::endl;
         std::cout << "  --test-no-break - In case of an error, testing does not stop" << std::endl;
         std::string formats;
-        for(auto format : logger()._formats) {
+        for(auto format : logger().formats()) {
           formats += ", ";
           formats += format.options.name;
         }
         std::cout << "  --test-format FORMAT - Output format (default" + formats + ")." << std::endl;
+
+        std::cout << "  --test-file FILE_PATH - Log file" << std::endl 
+                  << "                          Use the default format or specify the --test-format parameter" << std::endl;
+        std::cout << "  --test-file-default FILE_PATH - Log file (format: default)." << std::endl;
+        for(auto format : logger().formats()) {
+          std::cout << "  --test-file-" << format.options.name << " FILE_PATH - Log file (format: " << format.options.name << ")." << std::endl;
+        }
         std::cout << "  --test-help  - Help message" << std::endl;
         std::cout << std::endl;
         std::cout << "Explanatory details:" << std::endl;
@@ -1365,10 +1431,15 @@ namespace fcf {
                                 0,
                                 0,
                                 a_options.format.length() ? a_options.format : lastEnv.format,
-                                {},
-                                {},
-                                a_options.stream
+                                lastEnv.streams
                               };
+          std::list<std::ofstream> ofstreams;
+          for(const Options::FileType& file : a_options.files) {
+            std::string streamName = file.format.length() ? (std::string() + "file-" + file.format)
+                                                          : std::string("file");
+            ofstreams.push_back(std::ofstream(file.file));
+            newEnv.streams.push_back({streamName, &ofstreams.back(), file.format, {}, {}});
+          }
 
           try {
             logger()._setEnvironment(newEnv);
@@ -1546,7 +1617,22 @@ namespace fcf {
               ++i;
             } else if (args[i] == "--test-no-break") {
               a_dstOptions.noBreak = true;
+            } else if (args[i] == "--test-file" && (i+1) < args.size()) {
+              a_dstOptions.files.push_back({args[i+1], ""});
+              ++i;
+            } else if (args[i] == "--test-file-default" && (i+1) < args.size()) {
+              a_dstOptions.files.push_back({args[i+1], "default"});
+              ++i;
             }
+            for(auto format : logger().formats()) {
+              std::string param = "--test-file-" + format.options.name;
+              if (args[i] == param && (i+1) < args.size()) {
+                a_dstOptions.files.push_back({args[i+1], format.options.name});
+                ++i;
+                break;
+              }
+            }
+
           }
           if ((mode == CM_RUN && a_runMode == CRM_EXECUTE) || a_runMode == CRM_RUN) {
             runImpl(a_dstOptions, a_enableThrow, a_errorPtr);

@@ -41,9 +41,9 @@ jobs:
       shell: bash
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
-          ./test/Release/fcf-test-test.exe --test-format junit > junit-report.xml
+          ./test/Release/fcf-test-test.exe --test-file-junit junit-report.xml
         else
-          ./test/fcf-test-test --test-format junit > junit-report.xml
+          ./test/fcf-test-test --test-file-junit junit-report.xml
         fi
 
     - name: Publish Test Results
