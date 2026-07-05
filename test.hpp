@@ -466,24 +466,24 @@ namespace fcf {
     class LogFormatContext {
       public:
         struct ValueType {
-          std::string                                       strValue;
-          unsigned long long                                ullValue;
-          void*                                             ptrValue;
-          std::shared_ptr<LogFormatContextWrapperBase>   sptrValue;
+          std::string                                   strValue;
+          unsigned long long                            ullValue;
+          void*                                         ptrValue;
+          std::shared_ptr<LogFormatContextWrapperBase>  sptrValue;
         };
         typedef std::map<std::string, ValueType> ItemType;
         typedef std::list< ItemType >            ItemsType;
 
-        ItemsType& history() {
-          return _history;
+        ItemsType& items() {
+          return _items;
         }
 
         void append(const ItemType& a_item) {
-          _history.push_back(a_item);
+          _items.push_back(a_item);
         }
 
       private:
-        ItemsType     _history;
+        ItemsType     _items;
     };
 
     struct LogMessageContext {
@@ -558,20 +558,20 @@ namespace fcf {
 
     class LoggerJunitFormat {
       public:
-        static void format(Logger& a_logger, LogMessageContext& a_messageStatus);
+        static void format(Logger& a_logger, LogMessageContext& a_messageContext);
         static const LogFormatContext::ValueType& getContextValue(const LogFormatContext::ItemType& a_item, const char* a_key);
-        static const LogFormatContext::ValueType& getContextValue(const LogFormatContext::ItemsType& a_history, const char* a_key);
+        static const LogFormatContext::ValueType& getContextValue(const LogFormatContext::ItemsType& a_items, const char* a_key);
         static std::string suiteName(const Test& a_test);
         static std::string xmlAttribute(const std::string& a_string);
         static std::string xmlText(const std::string& a_string);
 
       private:
-        struct TestStatusType {
+        struct ProcessedInfoType {
           bool                error;
           std::string         message;
           unsigned long long  duration;
         };
-        std::map<Test, TestStatusType> _processed;
+        std::map<Test, ProcessedInfoType> _processed;
     };
 
     /**
@@ -1355,6 +1355,7 @@ namespace fcf {
         _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr) {
           static std::recursive_mutex mutex;
           static bool globalRunState = false;
+
           {
             std::lock_guard<std::recursive_mutex> lock(mutex);
             #ifndef _FCF_TEST_RECURCIVE_RUN_DISABLE
@@ -1663,12 +1664,12 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      const LogFormatContext::ValueType& LoggerJunitFormat::getContextValue(const LogFormatContext::ItemsType& a_history, const char* a_key) {
+      const LogFormatContext::ValueType& LoggerJunitFormat::getContextValue(const LogFormatContext::ItemsType& a_items, const char* a_key) {
         const static LogFormatContext::ValueType empty = {"", 0, nullptr, nullptr};
-        if (!a_history.size()) {
+        if (!a_items.size()) {
           return empty;
         }
-        return getContextValue(a_history.front(), a_key);
+        return getContextValue(a_items.front(), a_key);
       }
     #endif
 
@@ -1712,46 +1713,46 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void LoggerJunitFormat::format(Logger& a_logger, LogMessageContext& a_messageStatus) {
+      void LoggerJunitFormat::format(Logger& a_logger, LogMessageContext& a_messageContext) {
         std::ostringstream output;
 
-        switch (a_messageStatus.category) {
+        switch (a_messageContext.category) {
           case LMC_START:
             {
               std::shared_ptr<LogFormatContextWrapperBase> formatHandler(new LogFormatContextWrapper<LoggerJunitFormat>());
-              a_messageStatus.data->append({ { "handler", {"", 0, 0, formatHandler} } });
+              a_messageContext.data->append({ { "handler", {"", 0, 0, formatHandler} } });
             }
             break;
           case LMC_TEST_COMPLETE:
           case LMC_TEST_ERROR_MESSAGE:
             {
-              LogFormatContextWrapperBase* formatHandlerWrapper = (LogFormatContextWrapperBase*)getContextValue(a_messageStatus.data->history(), "handler").sptrValue.get();
+              LogFormatContextWrapperBase* formatHandlerWrapper = (LogFormatContextWrapperBase*)getContextValue(a_messageContext.data->items(), "handler").sptrValue.get();
               LoggerJunitFormat* formatHandler = formatHandlerWrapper ? (LoggerJunitFormat*)formatHandlerWrapper->get() : (LoggerJunitFormat*)0;
               if (formatHandler) {
-                TestStatusType ts;
-                ts.error = a_messageStatus.category == LMC_TEST_ERROR_MESSAGE;
-                ts.message = *a_messageStatus.origin;
-                ts.duration = a_messageStatus.duration->lastTotalDuration().count();
-                formatHandler->_processed.insert({*a_messageStatus.test, ts});
+                ProcessedInfoType pi;
+                pi.error = a_messageContext.category == LMC_TEST_ERROR_MESSAGE;
+                pi.message = *a_messageContext.origin;
+                pi.duration = a_messageContext.duration->lastTotalDuration().count();
+                formatHandler->_processed.insert({*a_messageContext.test, pi});
               }
             }
             break;
           case LMC_END:
             {
-              LogFormatContextWrapperBase* formatHandlerWrapper = (LogFormatContextWrapperBase*)getContextValue(a_messageStatus.data->history(), "handler").sptrValue.get();
+              LogFormatContextWrapperBase* formatHandlerWrapper = (LogFormatContextWrapperBase*)getContextValue(a_messageContext.data->items(), "handler").sptrValue.get();
               LoggerJunitFormat* formatHandler = formatHandlerWrapper ? (LoggerJunitFormat*)formatHandlerWrapper->get() : (LoggerJunitFormat*)0;
               if (formatHandler) {
 
-                size_t totalTestCount   = a_messageStatus.tests->size();
+                size_t totalTestCount   = a_messageContext.tests->size();
                 size_t totalTestFailure = std::count_if(formatHandler->_processed.begin(),
                                                         formatHandler->_processed.end(),
-                                                        [](const std::pair<Test, TestStatusType>& a_item) {
+                                                        [](const std::pair<Test, ProcessedInfoType>& a_item) {
                                                           return a_item.second.error;
                                                         });
-                size_t totalTestSkipped  = a_messageStatus.tests->size() - formatHandler->_processed.size();
+                size_t totalTestSkipped  = a_messageContext.tests->size() - formatHandler->_processed.size();
 
                 std::map<std::string, std::set<Test> > suites;
-                for(const Test& test : *a_messageStatus.tests) {
+                for(const Test& test : *a_messageContext.tests) {
                   std::string currentSuiteName = suiteName(test);
                   std::map<std::string, std::set<Test> >::iterator it = suites.find(currentSuiteName);
                   if (it == suites.end()) {
@@ -1765,7 +1766,7 @@ namespace fcf {
                        << "tests=\"" << totalTestCount << "\" "
                        << "failure=\"" << totalTestFailure << "\" "
                        << "skipped=\"" << totalTestSkipped << "\" "
-                       << "time=\"" << a_messageStatus.duration->totalDurationStr(false) << "\""
+                       << "time=\"" << a_messageContext.duration->totalDurationStr(false) << "\""
                        << ">\n";
                 for(const std::pair< std::string, std::set<Test> >& currentSuite : suites ) {
                   const std::string& currentSuiteName = currentSuite.first;
@@ -1836,13 +1837,13 @@ namespace fcf {
                 }
                 output << "</testsuites>\n";
 
-                a_messageStatus.data->history().clear();
+                a_messageContext.data->items().clear();
               }
             }
             break;
         }
 
-        *a_messageStatus.message = output.str();
+        *a_messageContext.message = output.str();
       }
     #endif
 
