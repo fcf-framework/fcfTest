@@ -18,17 +18,17 @@ std::string uniout(std::string a_string){
 class InnerTestRunner{
   public:
     InnerTestRunner(fcf::NTest::Options& a_options, std::stringstream& a_sstream, int a_argc, const char** a_argv)
-      : _streams(fcf::NTest::logger().streams()) 
+      : _targets(fcf::NTest::logger().targets()) 
     {
-      fcf::NTest::LoggerStreamHandlers streams = { {"default", &a_sstream, "", {}, {}} };
-      fcf::NTest::logger().streams(streams);
+      fcf::NTest::LogOutputTargets targets = { {"default", &a_sstream, "", {}, {}} };
+      fcf::NTest::logger().targets(targets);
       fcf::NTest::cmdRun(a_options, a_argc, a_argv, fcf::NTest::CRM_RUN);
     }
     ~InnerTestRunner(){
-      fcf::NTest::logger().streams(_streams);
+      fcf::NTest::logger().targets(_targets);
     }
   private:
-    fcf::NTest::LoggerStreamHandlers  _streams;
+    fcf::NTest::LogOutputTargets  _targets;
 };
 
 

@@ -403,33 +403,7 @@ namespace fcf {
         std::chrono::steady_clock::time_point _lastEnd;     ///< Ending time point of the last completed interval segment.
     };
 
-    namespace NDetails {
-
-      /**
-       * @brief A custom stream buffer that discards all characters written to it.
-       * Used internally for loggers that are disabled.
-       */
-      class EmptyStreamBuffer: public std::streambuf {
-        protected:
-          int_type overflow(int_type a_char) override {
-            return a_char;
-          }
-      };
-
-      /**
-       * @brief A custom output stream that writes to an empty buffer (no-op).
-       * Used internally for loggers that are disabled.
-       */
-      class EmptyStream : public std::ostream {
-        public:
-          EmptyStream() : std::ostream(&_buffer) {
-          }
-        private:
-          EmptyStreamBuffer _buffer;
-      };
-    }
-
-    /**
+   /**
      * @brief Enumerates the available log levels.
      */
     enum ELogLevel {
@@ -448,38 +422,38 @@ namespace fcf {
 
     struct Test;
 
-    enum ELoggerMessageType {
-      LMT_USER                  = 0x0001,
-      LMT_START                 = 0x0002,
-      LMT_END                   = 0x0004,
-      LMT_COMPLETE              = 0x0008,
-      LMT_ERROR                 = 0x0010,
-      LMT_RESULT                = 0x0020,
-      LMT_DURATION              = 0x0040,
-      LMT_TEST_START            = 0x0080,
-      LMT_TEST_START_MESSAGE    = 0x0100,
-      LMT_TEST_COMPLETE         = 0x0200,
-      LMT_TEST_ERROR            = 0x0400,
-      LMT_TEST_ERROR_MESSAGE    = 0x0800,
-      LMT_TEST_END              = 0x1000,
-      LMT_TEST                  = LMT_USER | LMT_TEST_COMPLETE | LMT_TEST_ERROR | LMT_TEST_ERROR_MESSAGE,
-      LMT_ALL                   = 0xFFFF,
+    enum ELogMessageCategory {
+      LMC_USER                  = 0x0001,
+      LMC_START                 = 0x0002,
+      LMC_END                   = 0x0004,
+      LMC_COMPLETE              = 0x0008,
+      LMC_ERROR                 = 0x0010,
+      LMC_RESULT                = 0x0020,
+      LMC_DURATION              = 0x0040,
+      LMC_TEST_START            = 0x0080,
+      LMC_TEST_START_MESSAGE    = 0x0100,
+      LMC_TEST_COMPLETE         = 0x0200,
+      LMC_TEST_ERROR            = 0x0400,
+      LMC_TEST_ERROR_MESSAGE    = 0x0800,
+      LMC_TEST_END              = 0x1000,
+      LMC_TEST                  = LMC_USER | LMC_TEST_COMPLETE | LMC_TEST_ERROR | LMC_TEST_ERROR_MESSAGE,
+      LMC_ALL                   = 0xFFFF,
     };
 
-    struct LoggerHandlerDataWrapperBase {
-      virtual ~LoggerHandlerDataWrapperBase();
+    struct LogFormatContextWrapperBase {
+      virtual ~LogFormatContextWrapperBase();
       virtual void* get() = 0;
     };
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LoggerHandlerDataWrapperBase::~LoggerHandlerDataWrapperBase() {
+      LogFormatContextWrapperBase::~LogFormatContextWrapperBase() {
       }
     #endif
 
     template <typename Ty>
-    struct LoggerHandlerDataWrapper : public LoggerHandlerDataWrapperBase {
+    struct LogFormatContextWrapper : public LogFormatContextWrapperBase {
       template <typename ...TPack>
-      LoggerHandlerDataWrapper(TPack... a_argPack)
+      LogFormatContextWrapper(TPack... a_argPack)
         : data(a_argPack...) {
       }
       virtual void* get() {
@@ -489,31 +463,31 @@ namespace fcf {
     };
 
 
-    class LoggerHandlerData {
+    class LogFormatContext {
       public:
-        struct HistoryValueType {
-          std::string                                     strValue;
-          unsigned long long                              ullValue;
-          void*                                           ptrValue;
-          std::shared_ptr<LoggerHandlerDataWrapperBase>   sptrValue;
+        struct ValueType {
+          std::string                                       strValue;
+          unsigned long long                                ullValue;
+          void*                                             ptrValue;
+          std::shared_ptr<LogFormatContextWrapperBase>   sptrValue;
         };
-        typedef std::map<std::string, HistoryValueType>  HistoryItemType;
-        typedef std::list< HistoryItemType >             HistoryType;
+        typedef std::map<std::string, ValueType> ItemType;
+        typedef std::list< ItemType >            ItemsType;
 
-        HistoryType& history() {
+        ItemsType& history() {
           return _history;
         }
 
-        void append(const HistoryItemType& a_item) {
+        void append(const ItemType& a_item) {
           _history.push_back(a_item);
         }
 
       private:
-        HistoryType     _history;
+        ItemsType     _history;
     };
 
-    struct LoggerMessageStatus {
-      ELoggerMessageType    messageType;
+    struct LogMessageContext {
+      ELogMessageCategory   category;
       const std::string*    origin;
       std::string*          message;
       size_t                line;
@@ -522,52 +496,55 @@ namespace fcf {
       const Test*           test;
       const std::set<Test>* tests;
       std::ostream*         stream;
-      LoggerHandlerData*    data;
+      LogFormatContext*     data;
     };
 
-    struct LoggerPrefixOptions {
+    struct LogPrefixSettings {
       std::string         name;
       bool                multiLine;
-      unsigned int        messageTypes;
-      LoggerPrefixOptions()
+      unsigned int        messageCategories;
+      LogPrefixSettings()
         : name("")
         , multiLine(false)
-        , messageTypes(LMT_USER)
+        , messageCategories(LMC_USER)
       {}
     };
 
-    struct LoggerFormatOptions {
+    struct LogFormatSettings {
       std::string         name;
     };
 
     struct Logger;
 
-    class LoggerOutput {
+    class LogWriter {
       public:
-        LoggerOutput()
+        LogWriter()
           : _logger(0) {
         }
 
-        LoggerOutput(const LoggerOutput& a_output)
+        LogWriter(const LogWriter& a_output)  = delete;
+
+        LogWriter(LogWriter&& a_output)
           : _logger((Logger*)a_output._logger)
           , _level(a_output._level)
           , _loggerMessageType(a_output._loggerMessageType)
-          , _sstream(a_output._sstream.str()) {
+          , _sstream(std::move(a_output._sstream)) {
+            a_output._logger = nullptr;
         }
 
-        LoggerOutput(Logger& a_logger, ELogLevel a_level, ELoggerMessageType a_loggerMessageType)
+        LogWriter(Logger& a_logger, ELogLevel a_level, ELogMessageCategory a_loggerMessageType)
           : _logger(&a_logger), _level(a_level), _loggerMessageType(a_loggerMessageType) {
         }
 
-        ~LoggerOutput();
+        ~LogWriter();
 
         template <typename Ty>
-        LoggerOutput& operator<<(const Ty& a_value) {
+        LogWriter& operator<<(const Ty& a_value) {
           _sstream << a_value;
           return *this;
         }
 
-        LoggerOutput& operator<<(std::ostream& (*a_manipulator)(std::ostream&)) {
+        LogWriter& operator<<(std::ostream& (*a_manipulator)(std::ostream&)) {
           a_manipulator(_sstream);
           return *this;
         }
@@ -575,16 +552,16 @@ namespace fcf {
       private:
         Logger*             _logger;
         ELogLevel           _level;
-        ELoggerMessageType  _loggerMessageType;
+        ELogMessageCategory _loggerMessageType;
         std::stringstream   _sstream;
     };
 
     class LoggerJunitFormat {
       public:
-        static const LoggerHandlerData::HistoryValueType& getHistoryValue(const LoggerHandlerData::HistoryItemType& a_item, const char* a_key);
-        static const LoggerHandlerData::HistoryValueType& getHistoryValue(const LoggerHandlerData::HistoryType& a_history, const char* a_key);
+        static void format(Logger& a_logger, LogMessageContext& a_messageStatus);
+        static const LogFormatContext::ValueType& getContextValue(const LogFormatContext::ItemType& a_item, const char* a_key);
+        static const LogFormatContext::ValueType& getContextValue(const LogFormatContext::ItemsType& a_history, const char* a_key);
         static std::string suiteName(const Test& a_test);
-        static void format(Logger& a_logger, LoggerMessageStatus& a_messageStatus);
         static std::string xmlAttribute(const std::string& a_string);
         static std::string xmlText(const std::string& a_string);
 
@@ -628,40 +605,40 @@ namespace fcf {
       _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
     }
 
-    typedef std::map<std::string, LoggerHandlerData> LoggerHandlerDataStorageType;
+    typedef std::map<std::string, LogFormatContext> LogFormatContextStorageType;
 
-    struct LoggerStreamHandler {
-      std::string                   name;
-      std::ostream*                 stream;
-      std::string                   format;
-      LoggerHandlerDataStorageType  prefixData;
-      LoggerHandlerDataStorageType  formatData;
+    struct LogOutputTarget {
+      std::string                     name;
+      std::ostream*                   stream;
+      std::string                     format;
+      LogFormatContextStorageType  prefixData;
+      LogFormatContextStorageType  formatData;
     };
 
-    typedef std::list<LoggerStreamHandler> LoggerStreamHandlers;
+    typedef std::list<LogOutputTarget> LogOutputTargets;
 
     /**
      * @brief Represents a logging instance with configurable output streams based on level.
      */
     struct Logger {
-        friend LoggerOutput;
+        friend LogWriter;
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
-        typedef std::map<std::string, LoggerHandlerData> HandlerDataStorageType;
+        typedef std::map<std::string, LogFormatContext> HandlerDataStorageType;
 
       public:
-        typedef std::function<std::string(Logger&, LoggerMessageStatus&)> PrefixFunctionType;
-        typedef std::function<void(Logger&, LoggerMessageStatus&)>        FormatFunctionType;
+        typedef std::function<std::string(Logger&, LogMessageContext&)> PrefixFunctionType;
+        typedef std::function<void(Logger&, LogMessageContext&)>        FormatFunctionType;
 
       protected:
         struct PrefixType {
           std::string         str;
           PrefixFunctionType  func;
-          LoggerPrefixOptions options;
+          LogPrefixSettings options;
         };
 
         struct FormatType {
           FormatFunctionType  func;
-          LoggerFormatOptions options;
+          LogFormatSettings options;
         };
 
         struct EnvironmentType {
@@ -670,7 +647,7 @@ namespace fcf {
           const std::set<Test>*   tests;
           Duration*               bench;
           std::string             format;
-          LoggerStreamHandlers    streams;
+          LogOutputTargets    targets;
         };
 
       public:
@@ -682,89 +659,89 @@ namespace fcf {
           : _environment{LL_LOG, nullptr, nullptr, nullptr, "default"}
           , _newLine(true)
         {
-          LoggerPrefixOptions lpo;
+          LogPrefixSettings lpo;
           lpo.name          = "offset";
           lpo.multiLine     = true;
-          lpo.messageTypes  = LMT_TEST;
+          lpo.messageCategories  = LMC_TEST;
           appendPrefixStr("  ", lpo);
 
-          LoggerFormatOptions lfo;
+          LogFormatSettings lfo;
           lfo.name          = "junit";
           appendFormatFunc(LoggerJunitFormat::format, lfo);
           
-          clearStreams(true);
+          clearTargets(true);
         }
 
         /**
          * @brief Returns the output stream for fatal messages.
          * @return Reference to the output stream.
          */
-        LoggerOutput ftl() {
-          return _log(LL_FTL, LMT_USER);
+        LogWriter ftl() {
+          return _log(LL_FTL, LMC_USER);
         }
 
         /**
          * @brief Returns the output stream for error messages.
          * @return Reference to the output stream.
          */
-        LoggerOutput err() {
-          return _log(LL_ERR, LMT_USER);
+        LogWriter err() {
+          return _log(LL_ERR, LMC_USER);
         }
 
         /**
          * @brief Returns the output stream for warning messages.
          * @return Reference to the output stream.
          */
-        LoggerOutput wrn() {
-          return _log(LL_WRN, LMT_USER);
+        LogWriter wrn() {
+          return _log(LL_WRN, LMC_USER);
         }
 
         /**
          * @brief Returns the output stream for attention messages.
          * @return Reference to the output stream.
          */
-        LoggerOutput att() {
-          return _log(LL_ATT, LMT_USER);
+        LogWriter att() {
+          return _log(LL_ATT, LMC_USER);
         }
 
         /**
          * @brief Returns the output stream for log messages.
          * @return Reference to the output stream.
          */
-        LoggerOutput log() {
-          return _log(LL_LOG, LMT_USER);
+        LogWriter log() {
+          return _log(LL_LOG, LMC_USER);
         }
 
         /**
          * @brief Returns the output stream for informational messages.
          * @return Reference to the output stream.
          */
-        LoggerOutput inf() {
-          return _log(LL_INF, LMT_USER);
+        LogWriter inf() {
+          return _log(LL_INF, LMC_USER);
         }
 
         /**
          * @brief Returns the output stream for debug messages.
          * @return Reference to the output stream.
          */
-        LoggerOutput dbg() {
-          return _log(LL_DBG, LMT_USER);
+        LogWriter dbg() {
+          return _log(LL_DBG, LMC_USER);
         }
 
         /**
          * @brief Returns the output stream for trace messages.
          * @return Reference to the output stream.
          */
-        LoggerOutput trc() {
-          return _log(LL_TRC, LMT_USER);
+        LogWriter trc() {
+          return _log(LL_TRC, LMC_USER);
         }
 
         /**
          * @brief The output stream returns for the test inner message. The log recording is always performed.
          * @return Reference to the output stream.
          */
-        LoggerOutput sys(ELoggerMessageType a_messageType) {
-          return _log(LL_LOG, a_messageType);
+        LogWriter sys(ELogMessageCategory a_messageCategory) {
+          return _log(LL_LOG, a_messageCategory);
         }
 
         /**
@@ -801,55 +778,6 @@ namespace fcf {
             throw std::runtime_error("LL_DEF value cannot be set as primary value");
           }
           _environment.level = a_level;
-        }
-
-        /**
-         * @brief Sets the current test instance for the logger.
-         *
-         * This method allows the logger to associate a specific test case with its
-         * output, enabling context-aware logging during test execution.
-         *
-         * @param a_test Pointer to the Test object to be used as the current context.
-         */
-        void test(const Test* a_test) {
-          _environment.test = a_test;
-        }
-
-        /**
-         * @brief Retrieves the current test instance from the logger.
-         *
-         * @return A constant pointer to the currently active Test object.
-         */
-        const Test* test() {
-          return _environment.test;
-        }
-
-        void tests(const std::set<Test>* a_tests) {
-          _environment.tests = a_tests;
-        }
-
-        const std::set<Test>* tests() {
-          return _environment.tests;
-        }
-
-        void bench(Duration* a_bench) {
-          _environment.bench = a_bench;
-        }
-
-        Duration* bench() {
-          return _environment.bench;
-        }
-
-        void format(const std::string& a_format) {
-          _environment.format = a_format.length() ? a_format : std::string("default");
-        }
-
-        const std::string& format() const {
-          return _environment.format;
-        }
-
-        const std::list<FormatType>& formats() const {
-          return _formats;
         }
 
         /**
@@ -890,7 +818,7 @@ namespace fcf {
          * @brief Adds a static string prefix to all log messages.
          * @param a_prefix The string to append as a prefix.
          */
-        void appendPrefixStr(const std::string& a_prefix, const LoggerPrefixOptions& a_options) {
+        void appendPrefixStr(const std::string& a_prefix, const LogPrefixSettings& a_options) {
           PrefixType prefix;
           prefix.str = a_prefix;
           prefix.options = a_options;
@@ -907,7 +835,7 @@ namespace fcf {
          * @brief Adds a functional prefix to all log messages.
          * @param a_prefix A function that returns a string to be used as a prefix.
          */
-        void appendPrefixFunc(const PrefixFunctionType& a_prefix, const LoggerPrefixOptions& a_options) {
+        void appendPrefixFunc(const PrefixFunctionType& a_prefix, const LogPrefixSettings& a_options) {
           PrefixType prefix;
           prefix.func = a_prefix;
           prefix.options = a_options;
@@ -920,7 +848,11 @@ namespace fcf {
           _prefixes.push_back(prefix);
         }
 
-        void appendFormatFunc(const FormatFunctionType& a_prefix, const LoggerFormatOptions& a_options) {
+        const std::list<FormatType>& formats() const {
+          return _formats;
+        }
+
+        void appendFormatFunc(const FormatFunctionType& a_prefix, const LogFormatSettings& a_options) {
           FormatType format;
           format.func = a_prefix;
           format.options = a_options;
@@ -932,39 +864,44 @@ namespace fcf {
           _formats.push_back(format);
         }
 
-        const LoggerStreamHandlers& streams(){
-          return _environment.streams;
+        LogOutputTargets targets(){
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          LogOutputTargets result(_environment.targets);
+          return result;
         }
 
-        void streams(const LoggerStreamHandlers& a_streams) {
-          clearStreams(false);
-          for(const LoggerStreamHandler& stream : a_streams) {
-            appendStream(stream);
+        void targets(const LogOutputTargets& a_targets) {
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          clearTargets(false);
+          for(const LogOutputTarget& stream : a_targets) {
+            appendTarget(stream);
           }
         }
 
-        void clearStreams(bool a_defaultState) {
-          _environment.streams.clear();
+        void clearTargets(bool a_defaultState) {
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          _environment.targets.clear();
           if (a_defaultState) {
-            _environment.streams.push_back({"default", &std::cout, "", {}, {}});
+            _environment.targets.push_back({"default", &std::cout, "", {}, {}});
           }
         }
 
-        void appendStream(const LoggerStreamHandler& a_stream) {
-          _appendStream(a_stream, _environment);
+        void appendTarget(const LogOutputTarget& a_stream) {
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          _appendTarget(a_stream, _environment);
         }
 
       protected:
 
-        static void _appendStream(const LoggerStreamHandler& a_stream, EnvironmentType& a_environment ) {
-          LoggerStreamHandlers::iterator it = std::find_if(
-                                                a_environment.streams.begin(), 
-                                                a_environment.streams.end(),
-                                                [&a_stream](LoggerStreamHandler& a_item){
+        static void _appendTarget(const LogOutputTarget& a_stream, EnvironmentType& a_environment ) {
+          LogOutputTargets::iterator it = std::find_if(
+                                                a_environment.targets.begin(), 
+                                                a_environment.targets.end(),
+                                                [&a_stream](LogOutputTarget& a_item){
                                                   return a_item.name == a_stream.name;
                                                 });
-          if (it == a_environment.streams.end()) {
-            a_environment.streams.push_back(a_stream);
+          if (it == a_environment.targets.end()) {
+            a_environment.targets.push_back(a_stream);
           } else {
             *it = a_stream;
           }
@@ -976,17 +913,24 @@ namespace fcf {
 
         void _setEnvironment(const EnvironmentType& a_environment) {
           _environment = a_environment;
+          if (_environment.format.empty()) {
+            _environment.format = "default";
+          }
         }
 
-        void _write(fcf::NTest::ELogLevel a_level, ELoggerMessageType a_messageType, const std::string& a_message) {
+        void _setTest(const Test* a_test) {
+          _environment.test = a_test;
+        }
+
+        void _write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, const std::string& a_message) {
           std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-          for(LoggerStreamHandler& stream : _environment.streams) {
+          for(LogOutputTarget& stream : _environment.targets) {
 
             std::string messageStr(a_message);
 
-            LoggerMessageStatus lms;
-            lms.messageType   = a_messageType;
+            LogMessageContext lms;
+            lms.category   = a_messageCategory;
             lms.origin        = &a_message;
             lms.message       = &messageStr;
             lms.line          = 0;
@@ -1003,7 +947,7 @@ namespace fcf {
 
             if (messageStr.length()) {
               for(PrefixType prefix : _prefixes) {
-                if (!(a_messageType & prefix.options.messageTypes)) {
+                if (!(a_messageCategory & prefix.options.messageCategories)) {
                   continue;
                 }
                 if (!_newLine) {
@@ -1026,7 +970,7 @@ namespace fcf {
                     const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
                     HandlerDataStorageType::iterator dataIt = stream.prefixData.find(prefixName);
                     if (dataIt == stream.prefixData.end()) {
-                      dataIt = stream.prefixData.insert({prefixName, LoggerHandlerData()}).first;
+                      dataIt = stream.prefixData.insert({prefixName, LogFormatContext()}).first;
                     }
                     lms.data = &dataIt->second;
 
@@ -1050,7 +994,7 @@ namespace fcf {
               if (formatName == currentFormatName) {
                 HandlerDataStorageType::iterator dataIt = stream.formatData.find(formatName);
                 if (dataIt == stream.formatData.end()) {
-                  dataIt = stream.formatData.insert({formatName, LoggerHandlerData()}).first;
+                  dataIt = stream.formatData.insert({formatName, LogFormatContext()}).first;
                 }
                 lms.data = &dataIt->second;
                 format.func(*this, lms);
@@ -1067,11 +1011,11 @@ namespace fcf {
           }
         }
 
-        LoggerOutput _log(ELogLevel a_level, ELoggerMessageType a_messageType) {
-          if (_environment.level >= a_level || a_messageType != LMT_USER) {
-            return LoggerOutput(*this, a_level, a_messageType);
+        LogWriter _log(ELogLevel a_level, ELogMessageCategory a_messageCategory) {
+          if (_environment.level >= a_level || a_messageCategory != LMC_USER) {
+            return LogWriter(*this, a_level, a_messageCategory);
           } else {
-            return LoggerOutput();
+            return LogWriter();
           }
         }
 
@@ -1083,7 +1027,7 @@ namespace fcf {
     };
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LoggerOutput::~LoggerOutput() {
+      LogWriter::~LogWriter() {
         if (_logger) {
           _logger->_write(_level, _loggerMessageType, _sstream.str());
         }
@@ -1116,7 +1060,7 @@ namespace fcf {
      * @brief Returns the output stream for fatal messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline LoggerOutput ftl() {
+    inline LogWriter ftl() {
       return logger().ftl();
     }
 
@@ -1124,7 +1068,7 @@ namespace fcf {
      * @brief Returns the output stream for error messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline LoggerOutput err() {
+    inline LogWriter err() {
       return logger().err();
     }
 
@@ -1132,7 +1076,7 @@ namespace fcf {
      * @brief Returns the output stream for warning messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline LoggerOutput wrn() {
+    inline LogWriter wrn() {
       return logger().wrn();
     }
 
@@ -1140,7 +1084,7 @@ namespace fcf {
      * @brief Returns the output stream for attention messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline LoggerOutput att() {
+    inline LogWriter att() {
       return logger().att();
     }
 
@@ -1148,7 +1092,7 @@ namespace fcf {
      * @brief Returns the output stream for log messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline LoggerOutput log() {
+    inline LogWriter log() {
       return logger().log();
     }
 
@@ -1156,7 +1100,7 @@ namespace fcf {
      * @brief Returns the output stream for informational messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline LoggerOutput inf() {
+    inline LogWriter inf() {
       return logger().inf();
     }
 
@@ -1164,7 +1108,7 @@ namespace fcf {
      * @brief Returns the output stream for debug messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline LoggerOutput dbg() {
+    inline LogWriter dbg() {
       return logger().dbg();
     }
 
@@ -1172,7 +1116,7 @@ namespace fcf {
      * @brief Returns the output stream for trace messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline LoggerOutput trc() {
+    inline LogWriter trc() {
       return logger().trc();
     }
 
@@ -1180,8 +1124,8 @@ namespace fcf {
      * @brief The output stream returns for the test inner message. The log recording is always performed.
      * @return Reference to the output stream.
      */
-    inline LoggerOutput sys(ELoggerMessageType a_messageType) {
-      return logger().sys(a_messageType);
+    inline LogWriter sys(ELogMessageCategory a_messageCategory) {
+      return logger().sys(a_messageCategory);
     }
 
     /**
@@ -1428,41 +1372,40 @@ namespace fcf {
 
           bool totalErrorFlag = false;
 
+          Duration bench;
+          std::set<Test> tests;
+
           Logger::EnvironmentType lastEnv = logger()._getEnvironment();
           Logger::EnvironmentType newEnv {
                                 a_options.logLevel != LL_DEF ? a_options.logLevel : lastEnv.level,
                                 0,
-                                0,
-                                0,
+                                &tests,
+                                &bench,
                                 a_options.format.length() ? a_options.format : lastEnv.format,
-                                lastEnv.streams
+                                lastEnv.targets
                               };
           std::list<std::ofstream> ofstreams;
           for(const Options::FileType& file : a_options.files) {
             std::string streamName = file.format.length() ? (std::string() + "file-" + file.format)
                                                           : std::string("file");
             ofstreams.push_back(std::ofstream(file.file));
-            Logger::_appendStream({streamName, &ofstreams.back(), file.format, {}, {}}, newEnv);
+            Logger::_appendTarget({streamName, &ofstreams.back(), file.format, {}, {}}, newEnv);
           }
 
           try {
             logger()._setEnvironment(newEnv);
 
-            Duration bench;
-            std::set<Test> tests;
 
-            sys(LMT_START);
+            sys(LMC_START);
 
             NDetails::select(tests, a_options);
-            logger().tests(&tests);
 
             unsigned int errorCounter = 0;
             unsigned int passedCounter = 0;
-            logger().bench(&bench);
             for(const Test& test : tests) {
-              sys(LMT_TEST_START);
-              sys(LMT_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
-              logger().test(&test);
+              sys(LMC_TEST_START);
+              sys(LMC_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+              logger()._setTest(&test);
               bench.resume();
               ++passedCounter;
               try {
@@ -1473,9 +1416,9 @@ namespace fcf {
                 ++errorCounter;
                 std::string errorMesssage = e.what();
                 errorMesssage = errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
-                sys(LMT_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
-                sys(LMT_TEST_ERROR) << "Test failed (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
-                sys(LMT_TEST_END);
+                sys(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
+                sys(LMC_TEST_ERROR) << "Test failed (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
+                sys(LMC_TEST_END);
                 if (a_options.noBreak) {
                   continue;
                 } else {
@@ -1483,24 +1426,24 @@ namespace fcf {
                 }
               }
               bench.end();
-              sys(LMT_TEST_COMPLETE) << "Test completed successfully (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
-              sys(LMT_TEST_END);
+              sys(LMC_TEST_COMPLETE) << "Test completed successfully (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
+              sys(LMC_TEST_END);
             }
 
             unsigned int skipedCounter = tests.size() - passedCounter;
 
             if (!errorCounter) {
-              sys(LMT_COMPLETE) << std::endl
+              sys(LMC_COMPLETE) << std::endl
                                 << "All tests were completed." << std::endl;
             } else {
-              sys(LMT_ERROR) << std::endl
+              sys(LMC_ERROR) << std::endl
                              << "Testing completed with failures." << std::endl;
             }
 
-            sys(LMT_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skipedCounter << " skiped, " << tests.size() << " total" << std::endl;
-            sys(LMT_DURATION) << "Duration: " << bench.totalDurationStr(true) << " sec" << std::endl;
+            sys(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skipedCounter << " skiped, " << tests.size() << " total" << std::endl;
+            sys(LMC_DURATION) << "Duration: " << bench.totalDurationStr(true) << " sec" << std::endl;
 
-            sys(LMT_END);
+            sys(LMC_END);
 
             logger()._setEnvironment(lastEnv);
             {
@@ -1708,9 +1651,9 @@ namespace fcf {
     }
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      const LoggerHandlerData::HistoryValueType& LoggerJunitFormat::getHistoryValue(const LoggerHandlerData::HistoryItemType& a_item, const char* a_key) {
-        const static LoggerHandlerData::HistoryValueType empty = {"", 0, nullptr, nullptr};
-        LoggerHandlerData::HistoryItemType::const_iterator it = a_item.find(a_key);
+      const LogFormatContext::ValueType& LoggerJunitFormat::getContextValue(const LogFormatContext::ItemType& a_item, const char* a_key) {
+        const static LogFormatContext::ValueType empty = {"", 0, nullptr, nullptr};
+        LogFormatContext::ItemType::const_iterator it = a_item.find(a_key);
         if (it != a_item.end()) {
           return it->second;
         } else  {
@@ -1720,12 +1663,12 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      const LoggerHandlerData::HistoryValueType& LoggerJunitFormat::getHistoryValue(const LoggerHandlerData::HistoryType& a_history, const char* a_key) {
-        const static LoggerHandlerData::HistoryValueType empty = {"", 0, nullptr, nullptr};
+      const LogFormatContext::ValueType& LoggerJunitFormat::getContextValue(const LogFormatContext::ItemsType& a_history, const char* a_key) {
+        const static LogFormatContext::ValueType empty = {"", 0, nullptr, nullptr};
         if (!a_history.size()) {
           return empty;
         }
-        return getHistoryValue(a_history.front(), a_key);
+        return getContextValue(a_history.front(), a_key);
       }
     #endif
 
@@ -1769,33 +1712,33 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void LoggerJunitFormat::format(Logger& a_logger, LoggerMessageStatus& a_messageStatus) {
+      void LoggerJunitFormat::format(Logger& a_logger, LogMessageContext& a_messageStatus) {
         std::ostringstream output;
 
-        switch (a_messageStatus.messageType) {
-          case LMT_START:
+        switch (a_messageStatus.category) {
+          case LMC_START:
             {
-              std::shared_ptr<LoggerHandlerDataWrapperBase> formatHandler(new LoggerHandlerDataWrapper<LoggerJunitFormat>());
+              std::shared_ptr<LogFormatContextWrapperBase> formatHandler(new LogFormatContextWrapper<LoggerJunitFormat>());
               a_messageStatus.data->append({ { "handler", {"", 0, 0, formatHandler} } });
             }
             break;
-          case LMT_TEST_COMPLETE:
-          case LMT_TEST_ERROR_MESSAGE:
+          case LMC_TEST_COMPLETE:
+          case LMC_TEST_ERROR_MESSAGE:
             {
-              LoggerHandlerDataWrapperBase* formatHandlerWrapper = (LoggerHandlerDataWrapperBase*)getHistoryValue(a_messageStatus.data->history(), "handler").sptrValue.get();
+              LogFormatContextWrapperBase* formatHandlerWrapper = (LogFormatContextWrapperBase*)getContextValue(a_messageStatus.data->history(), "handler").sptrValue.get();
               LoggerJunitFormat* formatHandler = formatHandlerWrapper ? (LoggerJunitFormat*)formatHandlerWrapper->get() : (LoggerJunitFormat*)0;
               if (formatHandler) {
                 TestStatusType ts;
-                ts.error = a_messageStatus.messageType == LMT_TEST_ERROR_MESSAGE;
+                ts.error = a_messageStatus.category == LMC_TEST_ERROR_MESSAGE;
                 ts.message = *a_messageStatus.origin;
                 ts.duration = a_messageStatus.duration->lastTotalDuration().count();
                 formatHandler->_processed.insert({*a_messageStatus.test, ts});
               }
             }
             break;
-          case LMT_END:
+          case LMC_END:
             {
-              LoggerHandlerDataWrapperBase* formatHandlerWrapper = (LoggerHandlerDataWrapperBase*)getHistoryValue(a_messageStatus.data->history(), "handler").sptrValue.get();
+              LogFormatContextWrapperBase* formatHandlerWrapper = (LogFormatContextWrapperBase*)getContextValue(a_messageStatus.data->history(), "handler").sptrValue.get();
               LoggerJunitFormat* formatHandler = formatHandlerWrapper ? (LoggerJunitFormat*)formatHandlerWrapper->get() : (LoggerJunitFormat*)0;
               if (formatHandler) {
 
