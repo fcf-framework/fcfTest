@@ -67,18 +67,16 @@ jobs:
             cpp_std: 11
             msvc_suffix: " (MSVC12)"
             install_cmd: "choco install microsoft-build-tools-2013 -y"
-            cmake_flags: '-G "Visual Studio 17 2022" -A x64 -T v120 -DCMAKE_VS_MSBuild_Architecture=amd64 "-DCMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE=x64" "-DCMAKE_SHARED_LINKER_FLAGS=/safeseh:no"'
-            set_targets_env: true
-            targets_path: 'C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120'
+            toolset_version: "12.0"
+            cmake_flags: '-G "Ninja" "-DCMAKE_SHARED_LINKER_FLAGS=/safeseh:no"'
 
           - os: windows-2022
             runner_os: windows-2022
             cpp_std: 14
             msvc_suffix: " (MSVC14)"
             install_cmd: "choco install microsoft-visual-cpp-build-tools -y --allow-empty-checksums"
-            cmake_flags: '-G "Visual Studio 17 2022" -A x64 -T v140 -DCMAKE_VS_MSBuild_Architecture=amd64 "-DCMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE=x64"'
-            set_targets_env: true
-            targets_path: 'C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140'
+            toolset_version: "14.0"
+            cmake_flags: '-G "Ninja"'
 
     steps:
     - name: Checkout repository
@@ -89,12 +87,12 @@ jobs:
       shell: powershell
       run: ${{ matrix.install_cmd }}
 
-    - name: Link Legacy MSVC Paths for MSBuild
-      if: matrix.set_targets_env == true
-      shell: powershell
-      run: |
-        echo "VCTargetsPath=${{ matrix.targets_path }}\" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-        echo "MSBUILD_EXE_PATH=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\amd64\MSBuild.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    - name: Configure Developer Command Prompt
+      if: matrix.toolset_version != null
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        toolset: ${{ matrix.toolset_version }}
+        arch: amd64
 
     - name: Configure CMake
       run: >
