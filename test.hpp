@@ -1945,6 +1945,7 @@ namespace fcf {
         std::string operator()(TIterator a_begName, TIterator a_endName, const TArg& a_arg, const TPack2&... a_pack) {
           std::stringstream ss;
           std::string name = a_begName != a_endName ? *a_begName : "arg";
+          name = name.length() && (unsigned char)name[0] <= (unsigned char)' ' ? name.substr(1, std::string::npos) : name;
           ss << "    " << name << ": " << a_arg << std::endl;
           if (a_begName != a_endName) {
             ++a_begName;
