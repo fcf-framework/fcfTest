@@ -394,12 +394,11 @@ namespace fcf {
           if (a_friendly) {
             ss << (a_ns / 1000000000) << '.'
                << std::setfill('0') << std::setw(3) << ((a_ns / 1000000) % 1000) << '`'
-               << std::setw(3) << ((a_ns / 1000) % 1000) << '`'
-               << std::setw(3) << (a_ns % 1000);
+               << std::setw(3)                      << ((a_ns / 1000) % 1000) << '`'
+               << std::setw(3)                      << (a_ns % 1000);
           } else {
             ss << (a_ns / 1000000000) << '.'
-               << std::setfill('0') << std::setw(9)
-               << (a_ns % 1000000000);
+               << std::setfill('0') << std::setw(9) << (a_ns % 1000000000);
           }
           return ss.str();
         }
