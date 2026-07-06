@@ -629,18 +629,23 @@ namespace fcf {
         typedef std::function<std::string(Logger&, LogMessageContext&)> PrefixFunctionType;
         typedef std::function<void(Logger&, LogMessageContext&)>        FormatFunctionType;
 
-      protected:
+        struct FormatType {
+          FormatFunctionType  func;
+          LogFormatSettings options;
+        };
+
+        typedef std::list<FormatType> FormatsType;
+
         struct PrefixType {
           std::string         str;
           PrefixFunctionType  func;
           LogPrefixSettings options;
         };
 
-        struct FormatType {
-          FormatFunctionType  func;
-          LogFormatSettings options;
-        };
+        typedef std::list<PrefixType> PrefixesType;
 
+
+      protected:
         struct EnvironmentType {
           ELogLevel               level;
           const Test*             test;
@@ -659,16 +664,8 @@ namespace fcf {
           : _environment{LL_LOG, nullptr, nullptr, nullptr, "default"}
           , _newLine(true)
         {
-          LogPrefixSettings lpo;
-          lpo.name          = "offset";
-          lpo.multiLine     = true;
-          lpo.messageCategories  = LMC_TEST;
-          appendPrefixStr("  ", lpo);
-
-          LogFormatSettings lfo;
-          lfo.name          = "junit";
-          appendFormatFunc(LoggerJunitFormat::format, lfo);
-          
+          clearPrefixes(true);
+          clearFormats(true);
           clearTargets(true);
         }
 
@@ -787,7 +784,7 @@ namespace fcf {
          * @return The corresponding ELogLevel enum.
          */
         static ELogLevel toLevel(std::string a_level, ELogLevel a_default = LL_LOG) {
-          const char* levels[] = {"def", "off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
+          static const char* levels[] = {"def", "off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
           a_default = a_default == LL_DEF ? LL_LOG : a_default;
           int size = sizeof(levels) / sizeof(levels[0]);
           for(int i = 0; i < size; ++i) {
@@ -805,63 +802,116 @@ namespace fcf {
          * @return A pointer to a static string representing the level name.
          */
         static const char* toLevelStr(ELogLevel a_level) {
-          const char* levels[] = {"def", "off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
+          static const char* levels[] = {"def", "off", "ftl", "err", "wrn", "att", "log", "inf", "dbg", "trc", "all"};
           int size  = sizeof(levels) / sizeof(levels[0]);
           int level = (int)a_level + 1;
-          level = a_level < 0     ? 0 :
-                  a_level >= size ? size - 1 :
-                                    level;
+          level = level < 0     ? 0 :
+                  level >= size ? size - 1 :
+                                  level;
           return levels[level];
         }
 
-        /**
-         * @brief Adds a static string prefix to all log messages.
-         * @param a_prefix The string to append as a prefix.
-         */
-        void appendPrefixStr(const std::string& a_prefix, const LogPrefixSettings& a_options) {
-          PrefixType prefix;
-          prefix.str = a_prefix;
-          prefix.options = a_options;
-          _prefixes.push_back(prefix);
+        PrefixesType prefixes(){
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          PrefixesType prefixes = _prefixes;
+          return prefixes;
+        }
+
+        void prefixes(const PrefixesType& a_prefixes){
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          clearPrefixes(false);
+          for(const PrefixType& prefix : a_prefixes) {
+            appendPrefix(prefix);
+          }
+        }
+
+        void clearPrefixes(bool a_defaultState){
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          _prefixes.clear();
+          if (a_defaultState) {
+            LogPrefixSettings lpo;
+            lpo.name          = "offset";
+            lpo.multiLine     = true;
+            lpo.messageCategories  = LMC_TEST;
+            appendPrefixStr("  ", lpo);
+          }
         }
 
         void appendPrefixStr(const std::string& a_prefix) {
           PrefixType prefix;
           prefix.str = a_prefix;
-          _prefixes.push_back(prefix);
+          appendPrefix(prefix);
         }
 
-        /**
-         * @brief Adds a functional prefix to all log messages.
-         * @param a_prefix A function that returns a string to be used as a prefix.
-         */
-        void appendPrefixFunc(const PrefixFunctionType& a_prefix, const LogPrefixSettings& a_options) {
+        void appendPrefixStr(const std::string& a_prefix, const LogPrefixSettings& a_options) {
           PrefixType prefix;
-          prefix.func = a_prefix;
+          prefix.str = a_prefix;
           prefix.options = a_options;
-          _prefixes.push_back(prefix);
+          appendPrefix(prefix);
         }
 
         void appendPrefixFunc(const PrefixFunctionType& a_prefix) {
           PrefixType prefix;
           prefix.func = a_prefix;
-          _prefixes.push_back(prefix);
+          appendPrefix(prefix);
         }
 
-        const std::list<FormatType>& formats() const {
-          return _formats;
+        void appendPrefixFunc(const PrefixFunctionType& a_prefix, const LogPrefixSettings& a_options) {
+          PrefixType prefix;
+          prefix.func = a_prefix;
+          prefix.options = a_options;
+          appendPrefix(prefix);
+        }
+
+        void appendPrefix(const PrefixType& a_prefix) {
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          auto existIt = std::find_if(_prefixes.begin(), _prefixes.end(), [&a_prefix](const PrefixType& a_item) { return a_prefix.options.name == a_item.options.name; });
+          if (existIt != _prefixes.end()) {
+            *existIt = a_prefix;
+          } else {
+            _prefixes.push_back(a_prefix);
+          }
+        }
+
+        FormatsType formats() {
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          FormatsType formats = _formats;
+          return formats;
+        }
+
+        void formats(FormatsType& a_formats) {
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          _formats.clear();
+          for(const FormatType& format : a_formats){
+            appendFormat(format);
+          }
+        }
+
+        void clearFormats(bool a_defaultState){
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          _formats.clear();
+          if (a_defaultState){
+            LogFormatSettings lfo;
+            lfo.name          = "junit";
+            appendFormatFunc(LoggerJunitFormat::format, lfo);
+          }
+        }
+
+        void appendFormat(const FormatType& a_format) {
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          auto existIt = std::find_if(_formats.begin(), _formats.end(), [&a_format](const FormatType& a_item) { return a_format.options.name == a_item.options.name; });
+          if (existIt != _formats.end()) {
+            *existIt = a_format;
+          } else {
+            _formats.push_back(a_format);
+          }
         }
 
         void appendFormatFunc(const FormatFunctionType& a_prefix, const LogFormatSettings& a_options) {
           FormatType format;
           format.func = a_prefix;
           format.options = a_options;
-
-          auto existIt = std::find_if(_formats.begin(), _formats.end(), [&a_options](const FormatType& a_item) { return a_options.name == a_item.options.name; });
-          if (existIt != _formats.end()) {
-            _formats.erase(existIt);
-          }
-          _formats.push_back(format);
+          appendFormat(format);
         }
 
         LogOutputTargets targets(){
@@ -895,7 +945,7 @@ namespace fcf {
 
         static void _appendTarget(const LogOutputTarget& a_stream, EnvironmentType& a_environment ) {
           LogOutputTargets::iterator it = std::find_if(
-                                                a_environment.targets.begin(), 
+                                                a_environment.targets.begin(),
                                                 a_environment.targets.end(),
                                                 [&a_stream](LogOutputTarget& a_item){
                                                   return a_item.name == a_stream.name;
@@ -907,8 +957,10 @@ namespace fcf {
           }
         }
 
-        const EnvironmentType& _getEnvironment() {
-          return _environment;
+        EnvironmentType _getEnvironment() {
+          std::lock_guard<std::recursive_mutex> lock(_mutex);
+          EnvironmentType environment = _environment;
+          return environment;
         }
 
         void _setEnvironment(const EnvironmentType& a_environment) {
@@ -941,7 +993,7 @@ namespace fcf {
             lms.stream        = stream.stream ? stream.stream : &std::cout;
             lms.data          = nullptr;
 
-            const std::string& currentFormatName = stream.format.length() 
+            const std::string& currentFormatName = stream.format.length()
                                                     ? stream.format
                                                     : _environment.format;
 
@@ -1042,10 +1094,13 @@ namespace fcf {
        * @return Reference to the Logger instance.
        */
       _FCF_TEST_DECL_EXPORT Logger& logger() {
-        static Logger* logger = 0;
-        if (!logger) {
+        static Logger* logger = nullptr;
+        static std::once_flag flag;
+
+        std::call_once(flag, []() {
           logger = new Logger();
-        }
+        });
+
         return *logger;
       }
     #else
@@ -1227,10 +1282,13 @@ namespace fcf {
        * @return Reference to the Storage instance.
        */
       _FCF_TEST_DECL_EXPORT Storage& getStorage() {
-        static Storage* storage = 0;
-        if (!storage) {
+        static Storage* storage = nullptr;
+        static std::once_flag flag;
+
+        std::call_once(flag, []() {
           storage = new Storage();
-        }
+        });
+
         return *storage;
       }
     #else
@@ -1311,7 +1369,7 @@ namespace fcf {
         }
         std::cout << "  --test-format FORMAT - Output format (default" + formats + ")." << std::endl;
 
-        std::cout << "  --test-file FILE_PATH - Log file" << std::endl 
+        std::cout << "  --test-file FILE_PATH - Log file" << std::endl
                   << "                          Use the default format or specify the --test-format parameter" << std::endl;
         std::cout << "  --test-file-default FILE_PATH - Log file (format: default)." << std::endl;
         for(auto format : logger().formats()) {
