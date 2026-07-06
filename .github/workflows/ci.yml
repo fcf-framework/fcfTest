@@ -65,18 +65,18 @@ jobs:
           - os: windows-2022
             runner_os: windows-2022
             cpp_std: 11
-            msvc_suffix: " (MSVC12)"
-            install_cmd: "choco install microsoft-build-tools-2013 -y"
+            msvc_suffix: " (MSVC11)"
+            install_cmd: "choco install visualcpp-build-tools-2015 -y --allow-empty-checksums"
             is_legacy: true
-            search_pattern: "*MSBuild*V120*cl.exe"
+            search_pattern: "cl.exe"
 
           - os: windows-2022
             runner_os: windows-2022
             cpp_std: 14
             msvc_suffix: " (MSVC14)"
-            install_cmd: "choco install microsoft-visual-cpp-build-tools -y --allow-empty-checksums"
+            install_cmd: "choco install visualcpp-build-tools-2017 -y --allow-empty-checksums"
             is_legacy: true
-            search_pattern: "*Build Tools*cl.exe"
+            search_pattern: "cl.exe"
 
     steps:
     - name: Checkout repository
@@ -85,23 +85,83 @@ jobs:
     - name: Install Legacy MSVC Toolset (Windows Only)
       if: matrix.install_cmd != null && matrix.install_cmd != ''
       shell: powershell
-      run: ${{ matrix.install_cmd }}
+      run: |
+        $maxRetries = 3
+        $retry = 0
+        $success = $false
+        
+        while ($retry -lt $maxRetries -and -not $success) {
+          try {
+            Write-Host "Installation attempt $($retry + 1) of $maxRetries..."
+            Invoke-Expression "${{ matrix.install_cmd }}"
+            $success = $true
+            Write-Host "Installation successful"
+          } catch {
+            $retry++
+            if ($retry -lt $maxRetries) {
+              Write-Host "Installation failed, retrying in 10 seconds..."
+              Start-Sleep -Seconds 10
+            } else {
+              Write-Error "Installation failed after $maxRetries attempts"
+              exit 1
+            }
+          }
+        }
 
-    - name: Automatically Find and Inject Legacy Compiler
+    - name: Find Legacy Compiler
       if: matrix.is_legacy == true
       shell: powershell
       run: |
-        $foundCl = Get-ChildItem -Path "C:\Program Files (x86)" -Filter "cl.exe" -Recurse -ErrorAction SilentlyContinue | 
-                   Where-Object { $_.FullName -like "${{ matrix.search_pattern }}" } | 
-                   Select-Object -First 1
+        Write-Host "Searching for cl.exe in common MSVC installation paths..."
+        
+        $searchPaths = @(
+          "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64",
+          "C:\Program Files (x86)\Microsoft Visual Studio\2015\BuildTools\VC\bin",
+          "C:\Program Files (x86)\Microsoft Visual C++ Build Tools\bin",
+          "C:\Program Files (x86)\LLVM\bin",
+          "C:\Program Files\LLVM\bin"
+        )
+        
+        $foundCl = $null
+        
+        foreach ($path in $searchPaths) {
+          Write-Host "Checking: $path"
+          $items = Get-Item -Path $path -ErrorAction SilentlyContinue
+          if ($items) {
+            $clExe = Get-ChildItem -Path $items -Filter "cl.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($clExe) {
+              $foundCl = $clExe.FullName
+              Write-Host "Found cl.exe at: $foundCl"
+              break
+            }
+          }
+        }
+        
+        # Recursive search as fallback
+        if (-not $foundCl) {
+          Write-Host "Performing recursive search in Program Files (x86)..."
+          $foundCl = Get-ChildItem -Path "C:\Program Files (x86)" -Filter "cl.exe" -Recurse -ErrorAction SilentlyContinue | 
+                     Select-Object -First 1 -ExpandProperty FullName
+        }
         
         if ($foundCl) {
-            $clPath = $foundCl.FullName
-            echo "CC=$clPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-            echo "CXX=$clPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Using compiler at: $foundCl"
+          # Set environment variables for CMake
+          Write-Host "Setting CC and CXX environment variables..."
+          Add-Content -Path $env:GITHUB_ENV -Value "CC=$foundCl"
+          Add-Content -Path $env:GITHUB_ENV -Value "CXX=$foundCl"
+          
+          # Also set for immediate use
+          $env:CC = $foundCl
+          $env:CXX = $foundCl
+          
+          # Verify compiler version
+          & $foundCl 2>&1 | Select-Object -First 1
         } else {
-            Write-Error "Could not automatically locate cl.exe for this toolset version."
-            exit 1
+          Write-Error "Could not locate cl.exe for this toolset version"
+          Write-Host "Installed programs:"
+          Get-ChildItem "C:\Program Files (x86)" -Directory -ErrorAction SilentlyContinue | Select-Object -First 20
+          exit 1
         }
 
     - name: Configure CMake
