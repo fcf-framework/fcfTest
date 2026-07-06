@@ -67,18 +67,18 @@ jobs:
             cpp_std: 11
             msvc_suffix: " (MSVC12)"
             install_cmd: "choco install microsoft-build-tools-2013 -y"
-            cmake_flags: '-G "Ninja" "-DCMAKE_SHARED_LINKER_FLAGS=/safeseh:no"'
-            cc_path: 'C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\cl.exe'
-            cxx_path: 'C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\cl.exe'
+            cmake_flags: '-G "Ninja" -DCMAKE_SYSTEM_PROCESSOR=AMD64 -DCMAKE_LINKER="C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\link.exe" "-DCMAKE_SHARED_LINKER_FLAGS=/safeseh:no"'
+            cc_path: 'C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\cl.exe'
+            cxx_path: 'C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\cl.exe'
 
           - os: windows-2022
             runner_os: windows-2022
             cpp_std: 14
             msvc_suffix: " (MSVC14)"
             install_cmd: "choco install microsoft-visual-cpp-build-tools -y --allow-empty-checksums"
-            cmake_flags: '-G "Ninja"'
-            cc_path: 'C:\Program Files (x86)\Microsoft Visual C++ Build Tools\vcbuildtools.bat'
-            cxx_path: 'C:\Program Files (x86)\Microsoft Visual C++ Build Tools\vcbuildtools.bat'
+            cmake_flags: '-G "Ninja" -DCMAKE_SYSTEM_PROCESSOR=AMD64 -DCMAKE_LINKER="C:\Program Files (x86)\Microsoft Visual C++ Build Tools\vcbuildtools\bin\x86_amd64\link.exe"'
+            cc_path: 'C:\Program Files (x86)\Microsoft Visual C++ Build Tools\vcbuildtools\bin\x86_amd64\cl.exe'
+            cxx_path: 'C:\Program Files (x86)\Microsoft Visual C++ Build Tools\vcbuildtools\bin\x86_amd64\cl.exe'
 
     steps:
     - name: Checkout repository
