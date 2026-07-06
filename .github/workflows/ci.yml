@@ -1,3 +1,4 @@
+
 name: C++ Multi-Standard CI
 
 on:
@@ -13,17 +14,35 @@ permissions:
 
 jobs:
   build_and_test:
-    name: ${{ matrix.os }} | C++${{ matrix.cpp_std }}
+    name: ${{ matrix.os }} | C++${{ matrix.cpp_std }}${{ matrix.msvc_suffix }}
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2022, windows-2025]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         cpp_std: [11, 14, 17, 20, 23]
+        include:
+          - os: windows-latest
+            cpp_std: 11
+            msvc_suffix: " (MSVC12)"
+            install_cmd: "choco install microsoft-build-tools-2013 -y"
+            cmake_flags: '-G "Visual Studio 12 2013" -A x64'
+
+          - os: windows-latest
+            cpp_std: 14
+            msvc_suffix: " (MSVC14)"
+            install_cmd: "choco install visualstudio2015buildtools -y"
+            cmake_flags: '-G "Visual Studio 14 2015" -A x64'
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+
+    - name: Install Legacy MSVC Toolset (Windows Only)
+      if: matrix.install_cmd != null && matrix.install_cmd != ''
+      shell: powershell
+      run: ${{ matrix.install_cmd }}
 
     - name: Configure CMake
       run: >
@@ -31,6 +50,7 @@ jobs:
         -DCMAKE_BUILD_TYPE=Release
         -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }}
         -DCMAKE_CXX_STANDARD_REQUIRED=ON
+        ${{ matrix.cmake_flags }}
 
     - name: Build Project
       run: cmake --build ${{github.workspace}}/build --config Release
