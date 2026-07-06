@@ -67,14 +67,16 @@ jobs:
             cpp_std: 11
             msvc_suffix: " (MSVC12)"
             install_cmd: "choco install microsoft-build-tools-2013 -y"
-            toolset_version: "12.0"
+            is_legacy: true
+            legacy_cl: "C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\bin\\x86_amd64\\cl.exe"
 
           - os: windows-2022
             runner_os: windows-2022
             cpp_std: 14
             msvc_suffix: " (MSVC14)"
             install_cmd: "choco install microsoft-visual-cpp-build-tools -y --allow-empty-checksums"
-            toolset_version: "14.0"
+            is_legacy: true
+            legacy_cl: "C:\\Program Files (x86)\\Microsoft Visual C++ Build Tools\\vcbuildtools\\bin\\x86_amd64\\cl.exe"
 
     steps:
     - name: Checkout repository
@@ -85,12 +87,18 @@ jobs:
       shell: powershell
       run: ${{ matrix.install_cmd }}
 
-    - name: Set up Legacy MSVC Environment
-      if: matrix.toolset_version != null
-      uses: egor-tensin/setup-msvc@v1
-      with:
-        toolset: ${{ matrix.toolset_version }}
-        platform: x64
+    - name: Setup Legacy Environment Paths
+      if: matrix.is_legacy == true
+      shell: powershell
+      run: |
+        $clPath = "${{ matrix.legacy_cl }}"
+        if (Test-Path $clPath) {
+            echo "CC=$clPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            echo "CXX=$clPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        } else {
+            Write-Error "Compiler binary not found at $clPath"
+            exit 1
+        }
 
     - name: Configure CMake
       run: >
