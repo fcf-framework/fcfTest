@@ -13,156 +13,17 @@ permissions:
 
 jobs:
   build_and_test:
-    name: ${{ matrix.runner_os }} | C++${{ matrix.cpp_std }}${{ matrix.msvc_suffix }}
+    name: ${{ matrix.os }} | C++${{ matrix.cpp_std }}
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            runner_os: ubuntu-latest
-            cpp_std: 11
-          - os: ubuntu-latest
-            runner_os: ubuntu-latest
-            cpp_std: 14
-          - os: ubuntu-latest
-            runner_os: ubuntu-latest
-            cpp_std: 17
-          - os: ubuntu-latest
-            runner_os: ubuntu-latest
-            cpp_std: 20
-          - os: ubuntu-latest
-            runner_os: ubuntu-latest
-            cpp_std: 23
-
-          - os: macos-latest
-            runner_os: macos-latest
-            cpp_std: 11
-          - os: macos-latest
-            runner_os: macos-latest
-            cpp_std: 14
-          - os: macos-latest
-            runner_os: macos-latest
-            cpp_std: 17
-          - os: macos-latest
-            runner_os: macos-latest
-            cpp_std: 20
-          - os: macos-latest
-            runner_os: macos-latest
-            cpp_std: 23
-
-          - os: windows-latest
-            runner_os: windows-latest
-            cpp_std: 17
-          - os: windows-latest
-            runner_os: windows-latest
-            cpp_std: 20
-          - os: windows-latest
-            runner_os: windows-latest
-            cpp_std: 23
-
-          - os: windows-2022
-            runner_os: windows-2022
-            cpp_std: 11
-            msvc_suffix: " (MSVC11)"
-            install_cmd: "choco install visualcpp-build-tools-2015 -y --allow-empty-checksums"
-            is_legacy: true
-            search_pattern: "cl.exe"
-
-          - os: windows-2022
-            runner_os: windows-2022
-            cpp_std: 14
-            msvc_suffix: " (MSVC14)"
-            install_cmd: "choco install visualcpp-build-tools-2017 -y --allow-empty-checksums"
-            is_legacy: true
-            search_pattern: "cl.exe"
-
+        os: [ubuntu-latest, macos-latest, windows-2022, windows-2025]
+        cpp_std: [11, 14, 17, 20, 23]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-
-    - name: Install Legacy MSVC Toolset (Windows Only)
-      if: matrix.install_cmd != null && matrix.install_cmd != ''
-      shell: powershell
-      run: |
-        $maxRetries = 3
-        $retry = 0
-        $success = $false
-        
-        while ($retry -lt $maxRetries -and -not $success) {
-          try {
-            Write-Host "Installation attempt $($retry + 1) of $maxRetries..."
-            Invoke-Expression "${{ matrix.install_cmd }}"
-            $success = $true
-            Write-Host "Installation successful"
-          } catch {
-            $retry++
-            if ($retry -lt $maxRetries) {
-              Write-Host "Installation failed, retrying in 10 seconds..."
-              Start-Sleep -Seconds 10
-            } else {
-              Write-Error "Installation failed after $maxRetries attempts"
-              exit 1
-            }
-          }
-        }
-
-    - name: Find Legacy Compiler
-      if: matrix.is_legacy == true
-      shell: powershell
-      run: |
-        Write-Host "Searching for cl.exe in common MSVC installation paths..."
-        
-        $searchPaths = @(
-          "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64",
-          "C:\Program Files (x86)\Microsoft Visual Studio\2015\BuildTools\VC\bin",
-          "C:\Program Files (x86)\Microsoft Visual C++ Build Tools\bin",
-          "C:\Program Files (x86)\LLVM\bin",
-          "C:\Program Files\LLVM\bin"
-        )
-        
-        $foundCl = $null
-        
-        foreach ($path in $searchPaths) {
-          Write-Host "Checking: $path"
-          $items = Get-Item -Path $path -ErrorAction SilentlyContinue
-          if ($items) {
-            $clExe = Get-ChildItem -Path $items -Filter "cl.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($clExe) {
-              $foundCl = $clExe.FullName
-              Write-Host "Found cl.exe at: $foundCl"
-              break
-            }
-          }
-        }
-        
-        # Recursive search as fallback
-        if (-not $foundCl) {
-          Write-Host "Performing recursive search in Program Files (x86)..."
-          $foundCl = Get-ChildItem -Path "C:\Program Files (x86)" -Filter "cl.exe" -Recurse -ErrorAction SilentlyContinue | 
-                     Select-Object -First 1 -ExpandProperty FullName
-        }
-        
-        if ($foundCl) {
-          Write-Host "Using compiler at: $foundCl"
-          # Set environment variables for CMake
-          Write-Host "Setting CC and CXX environment variables..."
-          Add-Content -Path $env:GITHUB_ENV -Value "CC=$foundCl"
-          Add-Content -Path $env:GITHUB_ENV -Value "CXX=$foundCl"
-          
-          # Also set for immediate use
-          $env:CC = $foundCl
-          $env:CXX = $foundCl
-          
-          # Verify compiler version
-          & $foundCl 2>&1 | Select-Object -First 1
-        } else {
-          Write-Error "Could not locate cl.exe for this toolset version"
-          Write-Host "Installed programs:"
-          Get-ChildItem "C:\Program Files (x86)" -Directory -ErrorAction SilentlyContinue | Select-Object -First 20
-          exit 1
-        }
 
     - name: Configure CMake
       run: >
@@ -179,11 +40,7 @@ jobs:
       shell: bash
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
-          if [ -f "./test/Release/fcf-test-test.exe" ]; then
-            ./test/Release/fcf-test-test.exe --test-file-junit junit-report.xml
-          else
-            ./test/fcf-test-test.exe --test-file-junit junit-report.xml
-          fi
+          ./test/Release/fcf-test-test.exe --test-file-junit junit-report.xml
         else
           ./test/fcf-test-test --test-file-junit junit-report.xml
         fi
