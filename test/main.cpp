@@ -32,7 +32,6 @@ class InnerTestRunner{
 };
 
 
-FCF_TEST_GROUP_ORDER("cmd", 1);
 
 FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
   {
@@ -66,20 +65,15 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
   }
 }
 
-FCF_TEST_DECLARE("run1", "default", "ok"){
-  FCF_TEST(1 == 1, "1");
-}
-
 
 FCF_TEST_DECLARE("subrun", "default", "ok"){
 
 }
-/*
-FCF_TEST_DECLARE("run", "junit", "ok"){
 
-}
-*/
 
+FCF_TEST_GROUP_ORDER("macro", 1);
+FCF_TEST_GROUP_ORDER("cmd",   2);
+FCF_TEST_GROUP_ORDER("cmdRun", 3);
 
 int main(int a_argc, char* a_argv[]) {
   bool error = false;

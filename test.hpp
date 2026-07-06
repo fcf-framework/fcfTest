@@ -2,12 +2,12 @@
 #define _FCF_TEST__TEST_HPP___
 
 /*
- * fcfTest is a lightweight C++ (>= C++11) unit testing framework. 
- * Modern, zero-dependency, header-only cpp unittest library for TDD. 
- * It provides a simple single-macro interface (FCF_TEST) for seamless 
- * assertion checks and automatic variable tracking using standard library components. 
- * Designed as an easy-to-integrate, standalone C++ test library, 
- * it includes built-in test registration, a comprehensive command-line test runner (CLI), 
+ * fcfTest is a lightweight C++ (>= C++11) unit testing framework.
+ * Modern, zero-dependency, header-only cpp unittest library for TDD.
+ * It provides a simple single-macro interface (FCF_TEST) for seamless
+ * assertion checks and automatic variable tracking using standard library components.
+ * Designed as an easy-to-integrate, standalone C++ test library,
+ * it includes built-in test registration, a comprehensive command-line test runner (CLI),
  * a native logger, and benchmarking tools for precise execution time measurement.
  * */
 
@@ -2006,94 +2006,26 @@ namespace fcf {
   } // NTest namespace
 } // fcf namespace
 
-/**
- * @brief Macro to convert a macro argument into a string literal.
- */
-#define _FCF_TEST__STRINGIFY_2(a_arg) #a_arg
-/**
- * @brief Helper macro for stringification (1 step).
- */
-#define _FCF_TEST__STRINGIFY_1(a_arg) _FCF_TEST__STRINGIFY_2(a_arg)
-/**
- * @brief Macro to convert a macro argument into a string literal.
- */
-#define _FCF_TEST__STRINGIFY(a_arg)  _FCF_TEST__STRINGIFY_1(a_arg)
 
-/**
- * @brief Helper macro to append an item to a list.
- */
-#define _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_value) a_list.push_back(a_value);
-/**
- * @brief Macro to generate string representations of arguments for error messages.
- */
-#define _FCF_TEST__APPEND_TO_LIST__EXPAND1(expand1, ...) #expand1
-/**
- * @brief Macro to generate string representations of arguments for error messages (2 args).
- */
-#define _FCF_TEST__APPEND_TO_LIST__EXPAND2(expand1, expand2, ...) #expand2
-/**
- * @brief Macro to generate string representations of arguments for error messages (3 args).
- */
-#define _FCF_TEST__APPEND_TO_LIST__EXPAND3(expand1, expand2, expand3, ...) #expand3
-/**
- * @brief Macro to generate string representations of arguments for error messages (4 args).
- */
-#define _FCF_TEST__APPEND_TO_LIST__EXPAND4(expand1, expand2, expand3, expand4, ...) #expand4
-/**
- * @brief Macro to generate string representations of arguments for error messages (5 args).
- */
-#define _FCF_TEST__APPEND_TO_LIST__EXPAND5(expand1, expand2, expand3, expand4, expand5, ...) #expand5
-/**
- * @brief Macro to generate string representations of arguments for error messages (6 args).
- */
-#define _FCF_TEST__APPEND_TO_LIST__EXPAND6(expand1, expand2, expand3, expand4, expand5, expand6, ...) #expand6
-/**
- * @brief Macro to generate string representations of arguments for error messages (7 args).
- */
-#define _FCF_TEST__APPEND_TO_LIST__EXPAND7(expand1, expand2, expand3, expand4, expand5, expand6, expand7, ...) #expand7
-/**
- * @brief Macro to generate string representations of arguments for error messages (8 args).
- */
-#define _FCF_TEST__APPEND_TO_LIST__EXPAND8(expand1, expand2, expand3, expand4, expand5, expand6, expand7, expand8, ...) #expand8
-/**
- * @brief Macro to generate string representations of arguments for error messages (9 args).
- */
-#define _FCF_TEST__APPEND_TO_LIST__EXPAND9(expand1, expand2, expand3, expand4, expand5, expand6, expand7, expand8, expand9, ...) #expand9
-/**
- * @brief Macro to generate string representations of arguments for error messages (10 args).
- */
-#define _FCF_TEST__APPEND_TO_LIST__EXPAND10(expand1, expand2, expand3, expand4, expand5, expand6, expand7, expand8, expand9, expand10, ...) #expand10
+#ifndef _FCF_TEST__REMOVE_PARENTHESIS
+  #define _FCF_TEST__REMOVE_PARENTHESIS_SELECTOR_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT
+  #define _FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT(...) _FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__
+  #define _FCF_TEST__REMOVE_PARENTHESIS_0(...) _FCF_TEST__REMOVE_PARENTHESIS_SELECTOR##__VA_ARGS__
+  #define _FCF_TEST__REMOVE_PARENTHESIS(...) _FCF_TEST__REMOVE_PARENTHESIS_0(__VA_ARGS__)
+#endif
 
-/**
- * @brief Macro to execute the expansion of argument strings for error messages.
- */
-#define _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, a_a1, a_a2, a_a3, a_a4, a_a5, a_a6, a_a7, a_a8, a_a9, a_a10, ...) \
-                      _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a1) \
-                      _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a2) \
-                      _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a3) \
-                      _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a4) \
-                      _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a5) \
-                      _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a6) \
-                      _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a7) \
-                      _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a8) \
-                      _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a9) \
-                      _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a10)
 
-/**
- * @brief Macro to append variable arguments to a list (variadic).
- */
-#define _FCF_TEST__APPEND_TO_LIST(a_list, ...)  _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, \
-                                                            _FCF_TEST__APPEND_TO_LIST__EXPAND1(__VA_ARGS__, , , , , , , , , , , ),\
-                                                            _FCF_TEST__APPEND_TO_LIST__EXPAND2(__VA_ARGS__, , , , , , , , , , , ),\
-                                                            _FCF_TEST__APPEND_TO_LIST__EXPAND3(__VA_ARGS__, , , , , , , , , , , ),\
-                                                            _FCF_TEST__APPEND_TO_LIST__EXPAND4(__VA_ARGS__, , , , , , , , , , , ),\
-                                                            _FCF_TEST__APPEND_TO_LIST__EXPAND5(__VA_ARGS__, , , , , , , , , , , ),\
-                                                            _FCF_TEST__APPEND_TO_LIST__EXPAND6(__VA_ARGS__, , , , , , , , , , , ),\
-                                                            _FCF_TEST__APPEND_TO_LIST__EXPAND7(__VA_ARGS__, , , , , , , , , , , ),\
-                                                            _FCF_TEST__APPEND_TO_LIST__EXPAND8(__VA_ARGS__, , , , , , , , , , , ),\
-                                                            _FCF_TEST__APPEND_TO_LIST__EXPAND9(__VA_ARGS__, , , , , , , , , , , ),\
-                                                            _FCF_TEST__APPEND_TO_LIST__EXPAND10(__VA_ARGS__, , , , , , , , , , , )\
-                                                            );
+#ifndef _FCF_TEST__STRINGIFY
+  #define _FCF_TEST__STRINGIFY_2(a_arg) #a_arg
+  #define _FCF_TEST__STRINGIFY_1(a_arg) _FCF_TEST__STRINGIFY_2(a_arg)
+  #define _FCF_TEST__STRINGIFY(a_arg)  _FCF_TEST__STRINGIFY_1(a_arg)
+#endif
+
+
+#ifndef _FCF_TEST__EXPAND
+  #define  _FCF_TEST__EXPAND(...) __VA_ARGS__
+#endif
+
 
 /**
  * @brief Macro to assert a condition and throw an error if it fails.
@@ -2102,19 +2034,82 @@ namespace fcf {
  * @param exp The boolean condition to check.
  * @param ... Variable list of arguments whose values will be included in the error message if 'exp' is false.
  */
-#define FCF_TEST(exp, ...) \
-  if (!(exp)) { \
-    std::list<std::string> names;\
-    _FCF_TEST__APPEND_TO_LIST(names, __VA_ARGS__)\
-    fcf::NTest::Details::PrintArgs<std::list<std::string>::iterator> p;\
-    p.begin = names.begin();\
-    p.end = names.end();\
-    std::string messge = std::string() + \
-                         "Test error: " + #exp + "  [FILE: " + __FILE__ + ":" + _FCF_TEST__STRINGIFY(__LINE__) + "]\n" + \
-                         p(__VA_ARGS__);\
-    throw std::runtime_error(messge);\
-  }
 
+#ifndef FCF_TEST
+
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_A20(am_a1, am_a2, am_a3, am_a4, am_a5, am_a6, am_a7, am_a8, am_a9, am_a10, \
+                                               am_a11, am_a12, am_a13, am_a14, am_a15, am_a16, am_a17, am_a18, am_a19, am_a20, \
+                                               ...) am_a20
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_LIST(...) \
+            _FCF_TEST__EXPAND(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_A20(__VA_ARGS__, CM, CM, CM, CM, CM, CM, CM, CM, CM, \
+                                                              CM, CM, CM, CM, CM, CM, CM, CM, CM, CM))
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__PARENTHESIS(...) , , , , , , , , , , \
+                                                        , , , , , , , , , ,
+
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR(...) \
+            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_LIST ( _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__PARENTHESIS  __VA_ARGS__ ( ))
+
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULT(am_list, ...)
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULTCM(am_list, ...) am_list.push_back(#__VA_ARGS__);
+
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT1(am_macro, am_argument, ...) am_macro(am_argument, __VA_ARGS__)
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT0(am_macro, am_argument, ...) \
+            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT1(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULT##am_macro, am_argument, __VA_ARGS__)
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT(am_macro, am_argument, ...) \
+            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT0(am_macro, am_argument, __VA_ARGS__)
+
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(am_error, ...) \
+            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR(__VA_ARGS__), am_error, __VA_ARGS__)
+
+  #define _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_value) a_list.push_back(a_value);
+
+
+  #define _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, ...) _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(a_list, _FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__))
+  #define _FCF_TEST__APPEND_TO_LIST__EXPAND1(expand1, ...) expand1
+  #define _FCF_TEST__APPEND_TO_LIST__EXPAND2(expand1, expand2, ...) expand2
+  #define _FCF_TEST__APPEND_TO_LIST__EXPAND3(expand1, expand2, expand3, ...) expand3
+  #define _FCF_TEST__APPEND_TO_LIST__EXPAND4(expand1, expand2, expand3, expand4, ...) expand4
+  #define _FCF_TEST__APPEND_TO_LIST__EXPAND5(expand1, expand2, expand3, expand4, expand5, ...) expand5
+  #define _FCF_TEST__APPEND_TO_LIST__EXPAND6(expand1, expand2, expand3, expand4, expand5, expand6, ...) expand6
+  #define _FCF_TEST__APPEND_TO_LIST__EXPAND7(expand1, expand2, expand3, expand4, expand5, expand6, expand7, ...) expand7
+  #define _FCF_TEST__APPEND_TO_LIST__EXPAND8(expand1, expand2, expand3, expand4, expand5, expand6, expand7, expand8, ...) expand8
+  #define _FCF_TEST__APPEND_TO_LIST__EXPAND9(expand1, expand2, expand3, expand4, expand5, expand6, expand7, expand8, expand9, ...) expand9
+  #define _FCF_TEST__APPEND_TO_LIST__EXPAND10(expand1, expand2, expand3, expand4, expand5, expand6, expand7, expand8, expand9, expand10, ...) expand10
+  #define _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, a_a1, a_a2, a_a3, a_a4, a_a5, a_a6, a_a7, a_a8, a_a9, a_a10, ...) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a1) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a2) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a3) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a4) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a5) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a6) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a7) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a8) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a9) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a10)
+  #define _FCF_TEST__APPEND_TO_LIST(a_list, ...)  _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, \
+                                                              _FCF_TEST__APPEND_TO_LIST__EXPAND1(__VA_ARGS__, , , , , , , , , , , ),\
+                                                              _FCF_TEST__APPEND_TO_LIST__EXPAND2(__VA_ARGS__, , , , , , , , , , , ),\
+                                                              _FCF_TEST__APPEND_TO_LIST__EXPAND3(__VA_ARGS__, , , , , , , , , , , ),\
+                                                              _FCF_TEST__APPEND_TO_LIST__EXPAND4(__VA_ARGS__, , , , , , , , , , , ),\
+                                                              _FCF_TEST__APPEND_TO_LIST__EXPAND5(__VA_ARGS__, , , , , , , , , , , ),\
+                                                              _FCF_TEST__APPEND_TO_LIST__EXPAND6(__VA_ARGS__, , , , , , , , , , , ),\
+                                                              _FCF_TEST__APPEND_TO_LIST__EXPAND7(__VA_ARGS__, , , , , , , , , , , ),\
+                                                              _FCF_TEST__APPEND_TO_LIST__EXPAND8(__VA_ARGS__, , , , , , , , , , , ),\
+                                                              _FCF_TEST__APPEND_TO_LIST__EXPAND9(__VA_ARGS__, , , , , , , , , , , ),\
+                                                              _FCF_TEST__APPEND_TO_LIST__EXPAND10(__VA_ARGS__, , , , , , , , , , , )\
+                                                              )
+
+  #define FCF_TEST(exp, ...) \
+    if (!(exp)) { \
+      std::list<std::string> _fcf_test_names;\
+      _FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
+      fcf::NTest::Details::PrintArgs<std::list<std::string>::iterator> p{_fcf_test_names.begin(), _fcf_test_names.end()};\
+      std::string messge = std::string() + \
+                           "Test error: " + _FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)) + "  [FILE: " + __FILE__ + ":" + _FCF_TEST__STRINGIFY(__LINE__) + "]\n" + \
+                           p(__VA_ARGS__);\
+      throw std::runtime_error(messge);\
+    }
+#endif
 
 
 namespace fcf {
