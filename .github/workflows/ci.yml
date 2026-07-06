@@ -20,7 +20,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux & macOS
           - os: ubuntu-latest
             runner_os: ubuntu-latest
             cpp_std: 11
@@ -67,17 +66,17 @@ jobs:
             runner_os: windows-2022
             cpp_std: 11
             msvc_suffix: " (MSVC12)"
+            is_legacy_msvc: true
             install_cmd: "choco install microsoft-build-tools-2013 -y"
-            cmake_flags: '-G "NMake Makefiles"'
-            vcvars_path: '"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" amd64'
+            vcvars_path: 'C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat'
 
           - os: windows-2022
             runner_os: windows-2022
             cpp_std: 14
             msvc_suffix: " (MSVC14)"
+            is_legacy_msvc: true
             install_cmd: "choco install microsoft-visual-cpp-build-tools -y --allow-empty-checksums"
-            cmake_flags: '-G "NMake Makefiles"'
-            vcvars_path: '"C:\Program Files (x86)\Microsoft Visual C++ Build Tools\vcbuildtools.bat" amd64'
+            vcvars_path: 'C:\Program Files (x86)\Microsoft Visual C++ Build Tools\vcbuildtools.bat'
 
     steps:
     - name: Checkout repository
@@ -88,16 +87,30 @@ jobs:
       shell: powershell
       run: ${{ matrix.install_cmd }}
 
-    - name: Configure CMake
-      shell: cmd
-      run: |
-        if not "${{ matrix.vcvars_path }}"=="" call ${{ matrix.vcvars_path }}
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }} -DCMAKE_CXX_STANDARD_REQUIRED=ON ${{ matrix.cmake_flags }}
+    - name: Configure CMake (Modern OS)
+      if: matrix.is_legacy_msvc != true
+      run: >
+        cmake -B ${{github.workspace}}/build
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }}
+        -DCMAKE_CXX_STANDARD_REQUIRED=ON
 
-    - name: Build Project
+    - name: Configure CMake (Legacy MSVC)
+      if: matrix.is_legacy_msvc == true
       shell: cmd
       run: |
-        if not "${{ matrix.vcvars_path }}"=="" call ${{ matrix.vcvars_path }}
+        call "${{ matrix.vcvars_path }}" amd64
+        cmake -B ${{github.workspace}}/build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }} -DCMAKE_CXX_STANDARD_REQUIRED=ON
+
+    - name: Build Project (Modern OS)
+      if: matrix.is_legacy_msvc != true
+      run: cmake --build ${{github.workspace}}/build --config Release
+
+    - name: Build Project (Legacy MSVC)
+      if: matrix.is_legacy_msvc == true
+      shell: cmd
+      run: |
+        call "${{ matrix.vcvars_path }}" amd64
         cmake --build ${{github.workspace}}/build --config Release
 
     - name: Run Tests
