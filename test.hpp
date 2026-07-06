@@ -1,6 +1,16 @@
 #ifndef _FCF_TEST__TEST_HPP___
 #define _FCF_TEST__TEST_HPP___
 
+/*
+ * fcfTest is a lightweight C++ (>= C++11) unit testing framework. 
+ * Modern, zero-dependency, header-only cpp unittest library for TDD. 
+ * It provides a simple single-macro interface (FCF_TEST) for seamless 
+ * assertion checks and automatic variable tracking using standard library components. 
+ * Designed as an easy-to-integrate, standalone C++ test library, 
+ * it includes built-in test registration, a comprehensive command-line test runner (CLI), 
+ * a native logger, and benchmarking tools for precise execution time measurement.
+ * */
+
 #include <stdexcept>
 #include <algorithm>
 #include <string>
@@ -8,6 +18,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <iomanip>
 #include <cstring>
 #include <streambuf>
 #include <cctype>
@@ -379,19 +390,18 @@ namespace fcf {
          * @return Formatted string matching "SEC.MIL`MICRO`NS".
          */
         static std::string nsToStr(unsigned long long a_ns, bool a_friendly) {
-          char buf[64];
+          std::stringstream ss;
           if (a_friendly) {
-            snprintf(buf, sizeof(buf), "%u.%03u`%03u`%03u",
-                     (unsigned int)(a_ns / 1000000000),
-                     (unsigned int)((a_ns / 1000000) % 1000),
-                     (unsigned int)((a_ns / 1000) % 1000),
-                     (unsigned int)(a_ns % 1000));
+            ss << (a_ns / 1000000000) << '.'
+               << std::setfill('0') << std::setw(3) << ((a_ns / 1000000) % 1000) << '`'
+               << std::setw(3) << ((a_ns / 1000) % 1000) << '`'
+               << std::setw(3) << (a_ns % 1000);
           } else {
-            snprintf(buf, sizeof(buf), "%u.%09u",
-                     (unsigned int)(a_ns / 1000000000),
-                     (unsigned int)(a_ns % 1000000000));
+            ss << (a_ns / 1000000000) << '.'
+               << std::setfill('0') << std::setw(9)
+               << (a_ns % 1000000000);
           }
-          return buf;
+          return ss.str();
         }
 
       private:
