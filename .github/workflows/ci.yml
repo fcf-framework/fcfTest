@@ -19,8 +19,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Разделяем отображаемое имя (runner_os) и реальную ОС (os), 
-        # чтобы для старых компиляторов принудительно зафиксировать windows-2022.
         include:
           # Linux & macOS
           - os: ubuntu-latest
@@ -55,7 +53,6 @@ jobs:
             runner_os: macos-latest
             cpp_std: 23
 
-          # Современные стандарты для Windows (используют дефолтный windows-latest)
           - os: windows-latest
             runner_os: windows-latest
             cpp_std: 17
@@ -66,20 +63,21 @@ jobs:
             runner_os: windows-latest
             cpp_std: 23
 
-          # Специфичные конфигурации старых компиляторов MSVC на базе Windows 2022
           - os: windows-2022
             runner_os: windows-2022
             cpp_std: 11
             msvc_suffix: " (MSVC12)"
             install_cmd: "choco install microsoft-build-tools-2013 -y"
-            cmake_flags: '-G "Visual Studio 17 2022" -A x64 -T v120'
+            cmake_flags: '-G "NMake Makefiles"'
+            vcvars_path: '"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" amd64'
 
           - os: windows-2022
             runner_os: windows-2022
             cpp_std: 14
             msvc_suffix: " (MSVC14)"
             install_cmd: "choco install microsoft-visual-cpp-build-tools -y --allow-empty-checksums"
-            cmake_flags: '-G "Visual Studio 17 2022" -A x64 -T v140'
+            cmake_flags: '-G "NMake Makefiles"'
+            vcvars_path: '"C:\Program Files (x86)\Microsoft Visual C++ Build Tools\vcbuildtools.bat" amd64'
 
     steps:
     - name: Checkout repository
@@ -91,22 +89,27 @@ jobs:
       run: ${{ matrix.install_cmd }}
 
     - name: Configure CMake
-      run: >
-        cmake -B ${{github.workspace}}/build
-        -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }}
-        -DCMAKE_CXX_STANDARD_REQUIRED=ON
-        ${{ matrix.cmake_flags }}
+      shell: cmd
+      run: |
+        if not "${{ matrix.vcvars_path }}"=="" call ${{ matrix.vcvars_path }}
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }} -DCMAKE_CXX_STANDARD_REQUIRED=ON ${{ matrix.cmake_flags }}
 
     - name: Build Project
-      run: cmake --build ${{github.workspace}}/build --config Release
+      shell: cmd
+      run: |
+        if not "${{ matrix.vcvars_path }}"=="" call ${{ matrix.vcvars_path }}
+        cmake --build ${{github.workspace}}/build --config Release
 
     - name: Run Tests
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
-          ./test/Release/fcf-test-test.exe --test-file-junit junit-report.xml
+          if [ -f "./test/Release/fcf-test-test.exe" ]; then
+            ./test/Release/fcf-test-test.exe --test-file-junit junit-report.xml
+          else
+            ./test/fcf-test-test.exe --test-file-junit junit-report.xml
+          fi
         else
           ./test/fcf-test-test --test-file-junit junit-report.xml
         fi
