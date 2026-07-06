@@ -27,13 +27,13 @@ jobs:
             cpp_std: 11
             msvc_suffix: " (MSVC12)"
             install_cmd: "choco install microsoft-build-tools-2013 -y"
-            cmake_flags: '-G "Visual Studio 12 2013" -A x64'
+            cmake_flags: '-G "Visual Studio 12 2013" -A x64 -T v120'
 
           - os: windows-latest
             cpp_std: 14
             msvc_suffix: " (MSVC14)"
-            install_cmd: "choco install visualstudio2015buildtools -y"
-            cmake_flags: '-G "Visual Studio 14 2015" -A x64'
+            install_cmd: "choco install microsoft-visual-cpp-build-tools -y --allow-empty-checksums"
+            cmake_flags: '-G "Visual Studio 14 2015" -A x64 -T v140'
 
     steps:
     - name: Checkout repository
