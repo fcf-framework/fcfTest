@@ -1,4 +1,3 @@
-
 name: C++ Multi-Standard CI
 
 on:
@@ -14,22 +13,69 @@ permissions:
 
 jobs:
   build_and_test:
-    name: ${{ matrix.os }} | C++${{ matrix.cpp_std }}${{ matrix.msvc_suffix }}
+    name: ${{ matrix.runner_os }} | C++${{ matrix.cpp_std }}${{ matrix.msvc_suffix }}
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        cpp_std: [11, 14, 17, 20, 23]
+        # Разделяем отображаемое имя (runner_os) и реальную ОС (os), 
+        # чтобы для старых компиляторов принудительно зафиксировать windows-2022.
         include:
+          # Linux & macOS
+          - os: ubuntu-latest
+            runner_os: ubuntu-latest
+            cpp_std: 11
+          - os: ubuntu-latest
+            runner_os: ubuntu-latest
+            cpp_std: 14
+          - os: ubuntu-latest
+            runner_os: ubuntu-latest
+            cpp_std: 17
+          - os: ubuntu-latest
+            runner_os: ubuntu-latest
+            cpp_std: 20
+          - os: ubuntu-latest
+            runner_os: ubuntu-latest
+            cpp_std: 23
+
+          - os: macos-latest
+            runner_os: macos-latest
+            cpp_std: 11
+          - os: macos-latest
+            runner_os: macos-latest
+            cpp_std: 14
+          - os: macos-latest
+            runner_os: macos-latest
+            cpp_std: 17
+          - os: macos-latest
+            runner_os: macos-latest
+            cpp_std: 20
+          - os: macos-latest
+            runner_os: macos-latest
+            cpp_std: 23
+
+          # Современные стандарты для Windows (используют дефолтный windows-latest)
           - os: windows-latest
+            runner_os: windows-latest
+            cpp_std: 17
+          - os: windows-latest
+            runner_os: windows-latest
+            cpp_std: 20
+          - os: windows-latest
+            runner_os: windows-latest
+            cpp_std: 23
+
+          # Специфичные конфигурации старых компиляторов MSVC на базе Windows 2022
+          - os: windows-2022
+            runner_os: windows-2022
             cpp_std: 11
             msvc_suffix: " (MSVC12)"
             install_cmd: "choco install microsoft-build-tools-2013 -y"
             cmake_flags: '-G "Visual Studio 17 2022" -A x64 -T v120'
 
-          - os: windows-latest
+          - os: windows-2022
+            runner_os: windows-2022
             cpp_std: 14
             msvc_suffix: " (MSVC14)"
             install_cmd: "choco install microsoft-visual-cpp-build-tools -y --allow-empty-checksums"
