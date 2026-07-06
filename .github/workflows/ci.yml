@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build_and_test:
-    name: ${{ matrix.os }} | C++${{ matrix.cpp_std }}
+    name: ${{ matrix.os }} | ${{ matrix.arch }} | C++${{ matrix.cpp_std }}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -21,16 +21,41 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2022, windows-2025]
         cpp_std: [11, 14, 17, 20, 23]
+        arch: [x64, x86]
+        exclude:
+          - os: macos-latest
+            arch: x86
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Install x86 multilib (Ubuntu)
+      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x86'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-multilib g++-multilib
+
     - name: Configure CMake
-      run: >
-        cmake -B ${{github.workspace}}/build
-        -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }}
-        -DCMAKE_CXX_STANDARD_REQUIRED=ON
+      shell: bash
+      run: |
+        CMAKE_FLAGS=(
+          "-B" "${{github.workspace}}/build"
+          "-DCMAKE_BUILD_TYPE=Release"
+          "-DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }}"
+          "-DCMAKE_CXX_STANDARD_REQUIRED=ON"
+        )
+
+        if [ "${{ matrix.os }}" == "windows-2022" ] || [ "${{ matrix.os }}" == "windows-2025" ]; then
+          if [ "${{ matrix.arch }}" == "x86" ]; then
+            CMAKE_FLAGS+=("-A" "Win32")
+          else
+            CMAKE_FLAGS+=("-A" "x64")
+          fi
+        elif [ "${{ matrix.os }}" == "ubuntu-latest" ] && [ "${{ matrix.arch }}" == "x86" ]; then
+          CMAKE_FLAGS+=("-DCMAKE_CXX_FLAGS=-m32" "-DCMAKE_C_FLAGS=-m32")
+        fi
+
+        cmake "${CMAKE_FLAGS[@]}"
 
     - name: Build Project
       run: cmake --build ${{github.workspace}}/build --config Release
