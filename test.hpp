@@ -2066,7 +2066,7 @@ namespace fcf {
 
 
   #define _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, ...) _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(a_list, _FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__))
-  #define _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, a_a1, a_a2, a_a3, a_a4, a_a5, a_a6, a_a7, a_a8, a_a9, a_a10, ...) \
+  #define _FCF_TEST__APPEND_TO_LIST__EXECUTOR_0(a_list, a_a1, a_a2, a_a3, a_a4, a_a5, a_a6, a_a7, a_a8, a_a9, a_a10, ...) \
                         _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a1) \
                         _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a2) \
                         _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a3) \
@@ -2077,6 +2077,7 @@ namespace fcf {
                         _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a8) \
                         _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a9) \
                         _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a10)
+  #define _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, ...)  _FCF_TEST__EXPAND(_FCF_TEST__APPEND_TO_LIST__EXECUTOR_0(a_list,  __VA_ARGS__))
   #define _FCF_TEST__APPEND_TO_LIST(a_list, ...)  _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, __VA_ARGS__, , , , , , , , , , , )
 
   #define FCF_TEST(exp, ...) \
