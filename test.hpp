@@ -1981,13 +1981,19 @@ namespace fcf {
        *
        * @tparam TIterator Iterator type for the name list.
        */
-      template <typename TIterator>
-      struct PrintArgs {
-        TIterator     begin; ///< Iterator pointing to the beginning of the names.
-        TIterator     end;   ///< Iterator pointing to the end of the names.
-        std::string   expr;
-        const char*   file;
-        const char*   line;
+      struct Printer {
+        std::string             expr;
+        const char*             file;
+        const char*             line;
+        std::list<const char*>  values;
+
+        template <typename ...TPack>
+        Printer(const char* a_expr, const char* a_file, const char* a_line, TPack... a_argPack)
+          : expr (a_expr)
+          , file(a_file)
+          , line(a_line) {
+          _appendValue(a_argPack...);
+        }
 
         /**
          * @brief Executes the print operation for a pack of arguments.
@@ -2001,12 +2007,21 @@ namespace fcf {
           expr = expr.length() && (unsigned char)expr[0] <= (unsigned char)' ' ? expr.substr(1, std::string::npos) : expr;\
           std::string result = std::string() + \
                                "Test error: " + expr + "  [FILE: " + file + ":" + line + "]\n";
-          if (sizeof...(TArgPack) && begin != end) {
+          if (sizeof...(TArgPack) && values.size()) {
             result += "  Values:\n";
           }
-          result += PrintPack<TArgPack...>()(begin, end, a_pack...);
+          result += PrintPack<TArgPack...>()(values.begin(), values.end(), a_pack...);
           return result;
         }
+
+        private:
+          template <typename TValue, typename ...TPack>
+          void _appendValue(TValue a_value, TPack... a_valuePack) {
+            values.push_back(a_value);
+            _appendValue(a_valuePack...);
+          }
+          void _appendValue() {
+          }
       };
     } // Details namespace
   } // NTest namespace
@@ -2056,7 +2071,7 @@ namespace fcf {
             _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_LIST ( _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__PARENTHESIS  __VA_ARGS__ ( ))
 
   #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULT(am_list, ...)
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULTCM(am_list, ...) am_list.push_back(#__VA_ARGS__);
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULTCM(am_list, ...) , #__VA_ARGS__
 
   #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT1(am_macro, am_argument, ...) am_macro(am_argument, __VA_ARGS__)
   #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT0(am_macro, am_argument, ...) \
@@ -2087,15 +2102,12 @@ namespace fcf {
 
   #define FCF_TEST(exp, ...) \
     if (!(exp)) { \
-      std::list<std::string> _fcf_test_names;\
-      _FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
-      fcf::NTest::Details::PrintArgs<std::list<std::string>::iterator> p{_fcf_test_names.begin(), \
-                                                                         _fcf_test_names.end(), \
-                                                                         _FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
-                                                                         __FILE__, \
-                                                                         _FCF_TEST__STRINGIFY(__LINE__)\
-                                                                        };\
-      throw std::runtime_error(p(__VA_ARGS__));\
+      fcf::NTest::Details::Printer _fcf_test_error_printer(_FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+                                       __FILE__, \
+                                       _FCF_TEST__STRINGIFY(__LINE__)\
+                                       _FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
+                                       );\
+      throw std::runtime_error(_fcf_test_error_printer(__VA_ARGS__));\
     }
 #endif
 

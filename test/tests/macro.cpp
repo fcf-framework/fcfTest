@@ -14,26 +14,26 @@ FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST"){
   }
   {
     std::string macro = STR(_FCF_TEST__APPEND_TO_LIST(list, a));
-    std::string expeced = "list.push_back(\"a\");";
-    std::string expecedMSVC = "list.push_back(\" a\");";
+    std::string expeced = ", \"a\"";
+    std::string expecedMSVC = ", \" a\"";
     FCF_TEST(macro == expeced || macro == expecedMSVC, macro, expeced, expecedMSVC);
   }
   {
     std::string macro   = STR(_FCF_TEST__APPEND_TO_LIST(list, "1"));
-    std::string expeced = "list.push_back(\"\\\"1\\\"\");";
-    std::string expecedMSVC = "list.push_back(\" \\\"1\\\"\");";
+    std::string expeced = ", \"\\\"1\\\"\"";
+    std::string expecedMSVC = ", \" \\\"1\\\"\"";
     FCF_TEST(macro == expeced || macro == expecedMSVC, macro, expeced, expecedMSVC);
   }
   {
     std::string macro   = STR(_FCF_TEST__APPEND_TO_LIST(list,1,2));
-    std::string expeced = "list.push_back(\"1\"); list.push_back(\"2\");";
-    std::string expecedMSVC = "list.push_back(\" 1\"); list.push_back(\" 2\");";
+    std::string expeced = ", \"1\" , \"2\"";
+    std::string expecedMSVC = ", \" 1\" , \" 2\");";
     FCF_TEST(macro == expeced || macro == expecedMSVC, macro, expeced, expecedMSVC);
   }
   {
     std::string macro   = STR(_FCF_TEST__APPEND_TO_LIST(list, (some<i,1>), 2));
-    std::string expeced = "list.push_back(\"some<i,1>\"); list.push_back(\"2\");";
-    std::string expecedMSVC = "list.push_back(\" some<i,1>\"); list.push_back(\" 2\");";
+    std::string expeced = ", \"some<i,1>\" , \"2\"";
+    std::string expecedMSVC = ", \" some<i,1>\" , \" 2\"";
     FCF_TEST(macro == expeced || macro == expecedMSVC, macro, expeced, expecedMSVC);
   }
   
