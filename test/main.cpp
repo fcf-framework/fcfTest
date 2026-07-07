@@ -32,9 +32,11 @@ std::string uniout(std::string a_string, bool a_wrap = false){
   std::regex pattern1(R"(\d+\.\d+`\d+`\d+)");
   std::regex pattern2(R"(time=\"\d+\.\d+\")");
   std::regex pattern3(R"(\[FILE:[^\]]*)");
+  std::regex pattern4(R"(\x1b\[[0-9;]*m)");
   result = std::regex_replace(a_string, pattern1, "XXX");
   result = std::regex_replace(result, pattern2, "time=\"XXX\"");
   result = std::regex_replace(result, pattern3, "[FILE: XXX");
+  result = std::regex_replace(result, pattern4, "");
   if (a_wrap) {
     return std::string() + "<<<" + result + ">>>";
   } else {
@@ -72,9 +74,9 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
     InnerTestRunner()(options, ss, 0, 0);
     std::string expected = std::string()+
                           "Performing the test: \"subrun\" -> \"default\" -> \"subrun ok\" ...\n"+
-                          "  Test completed successfully (XXX sec)\n"+
+                          "  [SUCCESS] Test completed successfully (XXX sec)\n"+
                           "\n"+
-                          "All tests were completed.\n"+
+                          "[SUCCESS] All tests were completed.\n"+
                           "Tests: 1 passed, 0 failed, 0 skiped, 1 total\n"+
                           "Duration: XXX sec\n";
     FCF_TEST(expected == uniout(ss.str()), uniout(ss.str(), true));
@@ -104,9 +106,9 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
     std::string expected = std::string()+
                             "Performing the test: \"subrun\" -> \"default\" -> \"subrun error 0\" ...\n"+
                             "  Test error: v1 == v2  [FILE: XXX]\n"+
-                            "  Test failed (XXX sec)\n"+
+                            "  [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
-                            "Testing completed with failures.\n"+
+                            "[FAILED] Testing completed with failures.\n"+
                             "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
                             "Duration: XXX sec\n";
     FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
@@ -122,9 +124,9 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
                             "  Test error: v1 == v2  [FILE: XXX]\n"+
                             "    Values:\n"+
                             "      v1: 1\n"+
-                            "  Test failed (XXX sec)\n"+
+                            "  [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
-                            "Testing completed with failures.\n"+
+                            "[FAILED] Testing completed with failures.\n"+
                             "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
                             "Duration: XXX sec\n";
     FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
@@ -141,9 +143,9 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
                             "    Values:\n"+
                             "      v1: 1\n"+
                             "      v2: 2\n"+
-                            "  Test failed (XXX sec)\n"+
+                            "  [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
-                            "Testing completed with failures.\n"+
+                            "[FAILED] Testing completed with failures.\n"+
                             "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
                             "Duration: XXX sec\n";
     FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));

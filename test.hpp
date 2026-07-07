@@ -276,6 +276,10 @@
   }
 
 
+#define _FCF_TEST_ANSI_RESET    "\033[0m"
+#define _FCF_TEST_ANSI_SUCCESS  "\033[1;32m"
+#define _FCF_TEST_ANSI_FAILED   "\033[1;31m"
+
 namespace fcf {
   namespace NTest {
 
@@ -2386,7 +2390,7 @@ namespace fcf {
                 std::string errorMesssage = e.what();
                 errorMesssage = errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
                 sys(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
-                sys(LMC_TEST_ERROR) << "Test failed (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
+                sys(LMC_TEST_ERROR) << _FCF_TEST_ANSI_FAILED << "[FAILED]" << _FCF_TEST_ANSI_RESET << " Test failed (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
                 sys(LMC_TEST_END);
                 if (a_options.noBreak) {
                   continue;
@@ -2395,7 +2399,7 @@ namespace fcf {
                 }
               }
               bench.end();
-              sys(LMC_TEST_COMPLETE) << "Test completed successfully (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
+              sys(LMC_TEST_COMPLETE) << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET << " Test completed successfully (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
               sys(LMC_TEST_END);
             }
 
@@ -2403,10 +2407,10 @@ namespace fcf {
 
             if (!errorCounter) {
               sys(LMC_COMPLETE) << std::endl
-                                << "All tests were completed." << std::endl;
+                                << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET << " All tests were completed." << std::endl;
             } else {
               sys(LMC_ERROR) << std::endl
-                             << "Testing completed with failures." << std::endl;
+                             << _FCF_TEST_ANSI_FAILED << "[FAILED]" << _FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
             }
 
             sys(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skipedCounter << " skiped, " << tests.size() << " total" << std::endl;
