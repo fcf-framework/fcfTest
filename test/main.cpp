@@ -9,12 +9,23 @@ FCF_TEST_DECLARE("subrun", "default", "subrun ok"){
 
 }
 
+FCF_TEST_DECLARE("subrun", "default", "subrun error 0"){
+  int v1 = 1;
+  int v2 = 2;
+  FCF_TEST(v1 == v2);
+}
+
 FCF_TEST_DECLARE("subrun", "default", "subrun error 1"){
   int v1 = 1;
   int v2 = 2;
   FCF_TEST(v1 == v2, v1);
 }
 
+FCF_TEST_DECLARE("subrun", "default", "subrun error 2"){
+  int v1 = 1;
+  int v2 = 2;
+  FCF_TEST(v1 == v2, v1, v2);
+}
 
 std::string uniout(std::string a_string, bool a_wrap = false){
   std::string result;
@@ -87,6 +98,22 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
   {
     std::stringstream ss;
     fcf::NTest::Options options;
+    options.tests   = {"subrun error 0"};
+    const char* argv[] = {""};
+    InnerTestRunner()(options, ss, 1, &argv[0]);
+    std::string expected = std::string()+
+                            "Performing the test: \"subrun\" -> \"default\" -> \"subrun error 0\" ...\n"+
+                            "  Test error: v1 == v2  [FILE: XXX]\n"+
+                            "  Test failed (XXX sec)\n"+
+                            "\n"+
+                            "Testing completed with failures.\n"+
+                            "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
+                            "Duration: XXX sec\n";
+    FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
+  }
+  {
+    std::stringstream ss;
+    fcf::NTest::Options options;
     options.tests   = {"subrun error 1"};
     const char* argv[] = {""};
     InnerTestRunner()(options, ss, 1, &argv[0]);
@@ -100,7 +127,26 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
                             "Testing completed with failures.\n"+
                             "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
                             "Duration: XXX sec\n";
-     FCF_TEST(expected == uniout(ss.str()), uniout(ss.str(), true));
+    FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
+  }
+  {
+    std::stringstream ss;
+    fcf::NTest::Options options;
+    options.tests   = {"subrun error 2"};
+    const char* argv[] = {""};
+    InnerTestRunner()(options, ss, 1, &argv[0]);
+    std::string expected = std::string()+
+                            "Performing the test: \"subrun\" -> \"default\" -> \"subrun error 2\" ...\n"+
+                            "  Test error: v1 == v2  [FILE: XXX]\n"+
+                            "    Values:\n"+
+                            "      v1: 1\n"+
+                            "      v2: 2\n"+
+                            "  Test failed (XXX sec)\n"+
+                            "\n"+
+                            "Testing completed with failures.\n"+
+                            "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
+                            "Duration: XXX sec\n";
+    FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
   }
 
 }
