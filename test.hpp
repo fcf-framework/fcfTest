@@ -13,6 +13,10 @@
 
 #include <stdexcept>
 #include <algorithm>
+#include <utility>
+#include <atomic>
+#include <cstddef>
+#include <typeinfo>
 #include <string>
 #include <functional>
 #include <iostream>
@@ -150,6 +154,91 @@
 #define FCF_TEST_DECLARE(am_part, am_group, am_test)\
   _FCF_TEST_DECLARE_IMPL(_FCF_TEST_DECLARE_CC(fcf_test_,__COUNTER__), am_part,  am_group, am_test)
 
+
+
+#ifndef _FCF_TEST__REMOVE_PARENTHESIS
+  #define _FCF_TEST__REMOVE_PARENTHESIS_SELECTOR_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT
+  #define _FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT(...) _FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__
+  #define _FCF_TEST__REMOVE_PARENTHESIS_0(...) _FCF_TEST__REMOVE_PARENTHESIS_SELECTOR##__VA_ARGS__
+  #define _FCF_TEST__REMOVE_PARENTHESIS(...) _FCF_TEST__REMOVE_PARENTHESIS_0(__VA_ARGS__)
+#endif
+
+
+#ifndef _FCF_TEST__STRINGIFY
+  #define _FCF_TEST__STRINGIFY_2(a_arg) #a_arg ""
+  #define _FCF_TEST__STRINGIFY_1(a_arg) _FCF_TEST__STRINGIFY_2(a_arg)
+  #define _FCF_TEST__STRINGIFY(a_arg)  _FCF_TEST__STRINGIFY_1(a_arg)
+#endif
+
+
+#ifndef _FCF_TEST__EXPAND
+  #define  _FCF_TEST__EXPAND(...) __VA_ARGS__
+#endif
+
+
+/**
+ * @brief Macro to assert a condition and throw an error if it fails.
+ * Generates a detailed error message including the failing expression and failed arguments.
+ *
+ * @param exp The boolean condition to check.
+ * @param ... Variable list of arguments whose values will be included in the error message if 'exp' is false.
+ */
+
+#ifndef FCF_TEST
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_A20(am_a1, am_a2, am_a3, am_a4, am_a5, am_a6, am_a7, am_a8, am_a9, am_a10, \
+                                               am_a11, am_a12, am_a13, am_a14, am_a15, am_a16, am_a17, am_a18, am_a19, am_a20, \
+                                               ...) am_a20
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_LIST(...) \
+            _FCF_TEST__EXPAND(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_A20(__VA_ARGS__, CM, CM, CM, CM, CM, CM, CM, CM, CM, \
+                                                              CM, CM, CM, CM, CM, CM, CM, CM, CM, CM))
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__PARENTHESIS(...) , , , , , , , , , , \
+                                                        , , , , , , , , , ,
+
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR(...) \
+            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_LIST ( _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__PARENTHESIS  __VA_ARGS__ ( ))
+
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULT(am_list, ...)
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULTCM(am_list, ...) , #__VA_ARGS__
+
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT1(am_macro, am_argument, ...) am_macro(am_argument, __VA_ARGS__)
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT0(am_macro, am_argument, ...) \
+            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT1(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULT##am_macro, am_argument, __VA_ARGS__)
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT(am_macro, am_argument, ...) \
+            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT0(am_macro, am_argument, __VA_ARGS__)
+
+  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(am_error, ...) \
+            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR(__VA_ARGS__), am_error, __VA_ARGS__)
+
+  #define _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_value) a_list.push_back(a_value);
+
+
+  #define _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, ...) _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(a_list, _FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__))
+  #define _FCF_TEST__APPEND_TO_LIST__EXECUTOR_0(a_list, a_a1, a_a2, a_a3, a_a4, a_a5, a_a6, a_a7, a_a8, a_a9, a_a10, ...) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a1) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a2) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a3) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a4) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a5) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a6) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a7) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a8) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a9) \
+                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a10)
+  #define _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, ...)  _FCF_TEST__EXPAND(_FCF_TEST__APPEND_TO_LIST__EXECUTOR_0(a_list,  __VA_ARGS__))
+  #define _FCF_TEST__APPEND_TO_LIST(a_list, ...)  _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, __VA_ARGS__, , , , , , , , , , , )
+
+  #define FCF_TEST(exp, ...) \
+    if (!(exp)) { \
+      fcf::NTest::Details::Printer _fcf_test_error_printer(_FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+                                       __FILE__, \
+                                       _FCF_TEST__STRINGIFY(__LINE__)\
+                                       _FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
+                                       );\
+      throw std::runtime_error(_fcf_test_error_printer(__VA_ARGS__));\
+    }
+#endif
+
+
 /**
  * @brief Macro to register the order of a test part.
  * Ensures deterministic execution order for parts.
@@ -186,12 +275,191 @@
     ::fcf::NTest::TestOrderRegisrator _FCF_TEST_DECLARE_CC(fcf_test_order_registrator_, __COUNTER__)(am_test, am_order);\
   }
 
+
 namespace fcf {
   namespace NTest {
 
-#include <chrono>
-#include <string>
-#include <cstdio>
+    struct Options;
+
+    /**
+     * @brief Enumerates command modes for the test runner.
+     */
+    enum ECmdMode {
+      CM_NONE,   ///< No specific mode set.
+      CM_RUN,    ///< Run tests mode.
+      CM_LIST,   ///< List tests mode.
+      CM_HELP,   ///< Help mode.
+    };
+
+    /**
+     * @brief Enumerates modes for command line argument parsing and execution.
+     */
+    enum ECmdRunMode {
+      CRM_PARSE,    ///< cmdRun() only parses the command line.
+      CRM_EXECUTE,  ///< cmdRun() parses the command line and runs tests if the --test-run flag was passed.
+      CRM_RUN,      ///< cmdRun() parses the command line and runs the tests unless the --test-help or --test-list run flags were specified on the command line.
+    };
+
+   /**
+     * @brief Enumerates the available log levels.
+     */
+    enum ELogLevel {
+      LL_DEF = -1,  ///< is used to indicate the use of the meaning by default.
+      LL_OFF = 0,   ///< No logging.
+      LL_FTL = 1,   ///< Fatal level.
+      LL_ERR = 2,   ///< Error level.
+      LL_WRN = 3,   ///< Warning level.
+      LL_ATT = 4,   ///< Attention level.
+      LL_LOG = 5,   ///< Log level.
+      LL_INF = 6,   ///< Information level.
+      LL_DBG = 7,   ///< Debug level.
+      LL_TRC = 8,   ///< Trace level.
+      LL_ALL = 9,   ///< All levels.
+    };
+
+    enum ELogMessageCategory {
+      LMC_USER                  = 0x0001,
+      LMC_START                 = 0x0002,
+      LMC_END                   = 0x0004,
+      LMC_COMPLETE              = 0x0008,
+      LMC_ERROR                 = 0x0010,
+      LMC_RESULT                = 0x0020,
+      LMC_DURATION              = 0x0040,
+      LMC_TEST_START            = 0x0080,
+      LMC_TEST_START_MESSAGE    = 0x0100,
+      LMC_TEST_COMPLETE         = 0x0200,
+      LMC_TEST_ERROR            = 0x0400,
+      LMC_TEST_ERROR_MESSAGE    = 0x0800,
+      LMC_TEST_END              = 0x1000,
+      LMC_TEST                  = LMC_USER | LMC_TEST_COMPLETE | LMC_TEST_ERROR | LMC_TEST_ERROR_MESSAGE,
+      LMC_ALL                   = 0xFFFF,
+    };
+
+  } // NTest namespace
+} // fcf namespace
+
+namespace fcf {
+  namespace NTest {
+    namespace NDetails {
+      _FCF_TEST_DECL_EXPORT ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr);
+      _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+    } // NDetails namespace
+  } // NTest namespace
+} // fcf namespace
+
+
+
+/* ========================================================= */
+/* ===                                                   === */
+/* === Declaration of the main functions of unit testing === */
+/* ===                                                   === */
+/* ========================================================= */
+namespace fcf {
+  namespace NTest {
+
+    /**
+     * @brief Parses command line arguments and executes the appropriate action.
+     *
+     * @param a_dstOptions Reference to the options structure to populate with parsed arguments.
+     * @param a_argc Number of command line arguments.
+     * @param a_argv Array of command line arguments.
+     * @param a_runMode Current mode of execution (parse, execute, or run).
+     )* @param a_errorPtr (default = (bool*)0) A pointer to a variable that receives information about a test error.
+     *                                        If an error occurs, the value is set to true.
+     *                                        If a null pointer is passed, the function throws an exception.
+     * @return The determined command mode after processing.
+     */
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr);
+
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode);
+
+    template <typename Ty>
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr);
+
+    template <typename Ty>
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode);
+
+    template <typename Ty>
+    inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr);
+
+    template <typename Ty>
+    inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode);
+
+
+    /**
+     * @brief Declaration for displaying a list of all registered tests.
+     */
+    _FCF_TEST_DECL_EXPORT void cmdHelp();
+
+
+    /**
+     * @brief Declaration for displaying a list of all registered tests.
+     */
+    _FCF_TEST_DECL_EXPORT void cmdList();
+
+
+    /**
+     * @brief Executes the selected tests based on provided options.
+     *
+     * @param a_options Configuration options specifying which tests to run and logging level.
+     * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information.
+     *                                        If an error occurs, the value is set to true.
+     *                                        If a null pointer is passed, the function throws an exception.
+     */
+    inline void run(const Options& a_options, bool* a_errorPtr);
+
+    inline void run(const Options& a_options);
+
+  } // NTest namespace
+} // fcf namespace
+
+
+/* ============================================================ */
+/* ===                                                      === */
+/* === Declaration of the basic structures of unit testing. === */
+/* ===                                                      === */
+/* ============================================================ */
+namespace fcf {
+  namespace NTest {
+
+    /**
+     * @brief Configuration options for running tests.
+     */
+    struct Options {
+      struct FileType {
+        std::string  file;
+        std::string  format;
+      };
+
+      std::vector<std::string> parts;         ///< List of part names to run (empty means all).
+      std::vector<std::string> groups;        ///< List of group names to run (empty means all).
+      std::vector<std::string> tests;         ///< List of specific test names to run (empty means all).
+      std::vector<std::string> ignoreParts;   ///< List of ignore part names.
+      std::vector<std::string> ignoreGroups;  ///< List of ignore group names to run.
+      std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
+      ELogLevel                logLevel;      ///< Desired logging level.
+      std::string              format;
+      bool                     noBreak;
+      std::list<FileType>      files;
+
+      Options()
+        : logLevel(LL_DEF)
+        , format("default")
+        , noBreak(false) {
+      }
+    };
+
+  } // NTest namespace
+} // fcf namespace
+
+
+/* ============================== */
+/* ===                        === */
+/* ===   Benchmarking class   === */
+/* ===                        === */
+/* ============================== */
+namespace fcf {
+  namespace NTest {
 
     /**
      * @class Duration
@@ -412,82 +680,252 @@ namespace fcf {
         std::chrono::steady_clock::time_point _lastEnd;     ///< Ending time point of the last completed interval segment.
     };
 
-   /**
-     * @brief Enumerates the available log levels.
-     */
-    enum ELogLevel {
-      LL_DEF = -1,  ///< is used to indicate the use of the meaning by default.
-      LL_OFF = 0,   ///< No logging.
-      LL_FTL = 1,   ///< Fatal level.
-      LL_ERR = 2,   ///< Error level.
-      LL_WRN = 3,   ///< Warning level.
-      LL_ATT = 4,   ///< Attention level.
-      LL_LOG = 5,   ///< Log level.
-      LL_INF = 6,   ///< Information level.
-      LL_DBG = 7,   ///< Debug level.
-      LL_TRC = 8,   ///< Trace level.
-      LL_ALL = 9,   ///< All levels.
+  } // NTest namespace
+} // fcf namespace
+
+
+/* ============================================== */
+/* ===                                        === */
+/* ===   Helper types for storing user data   === */
+/* ===                                        === */
+/* ============================================== */
+
+namespace fcf {
+  namespace NTest {
+
+    class SharedPtrAny {
+      private:
+        struct ControlBlockBaseType {
+          std::atomic<int> refCount;
+
+          ControlBlockBaseType();
+          virtual ~ControlBlockBaseType() = default; 
+
+          virtual void* ptr() = 0;
+          virtual const std::type_info& type() const noexcept = 0;
+        };
+
+        template <typename Ty>
+        struct ControlBlockDerivedType : public ControlBlockBaseType {
+          Ty data;
+
+          template <typename... ArgPack>
+          ControlBlockDerivedType(ArgPack&&... args);
+
+          void* ptr() override;
+
+          const std::type_info& type() const noexcept override;
+        };
+
+      public:
+        template <typename Ty, typename... ArgPack>
+        static SharedPtrAny make(ArgPack&&... a_args);
+
+        SharedPtrAny() noexcept;
+        SharedPtrAny(std::nullptr_t) noexcept;
+        SharedPtrAny(const SharedPtrAny& a_source) noexcept;
+        SharedPtrAny(SharedPtrAny&& a_source) noexcept;
+
+        ~SharedPtrAny();
+
+        SharedPtrAny& operator=(const SharedPtrAny& a_source) noexcept;
+        SharedPtrAny& operator=(SharedPtrAny&& a_source) noexcept;
+
+        template <typename Ty>
+        Ty* cast() const noexcept;
+
+        int count() const noexcept;
+
+        explicit operator bool() const noexcept;
+
+      private:
+        explicit SharedPtrAny(ControlBlockBaseType* a_block) noexcept;
+
+        void _release();
+
+        ControlBlockBaseType* _block;
     };
 
-    struct Test;
+  } // NTest namespace
+} // fcf namespace
 
-    enum ELogMessageCategory {
-      LMC_USER                  = 0x0001,
-      LMC_START                 = 0x0002,
-      LMC_END                   = 0x0004,
-      LMC_COMPLETE              = 0x0008,
-      LMC_ERROR                 = 0x0010,
-      LMC_RESULT                = 0x0020,
-      LMC_DURATION              = 0x0040,
-      LMC_TEST_START            = 0x0080,
-      LMC_TEST_START_MESSAGE    = 0x0100,
-      LMC_TEST_COMPLETE         = 0x0200,
-      LMC_TEST_ERROR            = 0x0400,
-      LMC_TEST_ERROR_MESSAGE    = 0x0800,
-      LMC_TEST_END              = 0x1000,
-      LMC_TEST                  = LMC_USER | LMC_TEST_COMPLETE | LMC_TEST_ERROR | LMC_TEST_ERROR_MESSAGE,
-      LMC_ALL                   = 0xFFFF,
-    };
 
-    struct LogFormatContextWrapperBase {
-      virtual ~LogFormatContextWrapperBase();
-      virtual void* get() = 0;
-    };
+
+/* ============================================== */
+/* ===                                        === */
+/* ===             Implementation             === */
+/* ===                                        === */
+/* ===   Helper types for storing user data   === */
+/* ===                                        === */
+/* ============================================== */
+
+namespace fcf {
+  namespace NTest {
+    #ifdef FCF_TEST_IMPLEMENTATION
+      SharedPtrAny::ControlBlockBaseType::ControlBlockBaseType()
+        : refCount(1) 
+      {
+      }
+    #endif
+
+
+
+    template <typename Ty>
+    template <typename... ArgPack>
+    SharedPtrAny::ControlBlockDerivedType<Ty>::ControlBlockDerivedType(ArgPack&&... a_args)
+      : ControlBlockBaseType(), data(std::forward<ArgPack>(a_args)...) {
+    }
+
+    template <typename Ty>
+    void* SharedPtrAny::ControlBlockDerivedType<Ty>::ptr() {
+      return &data;
+    }
+
+    template <typename Ty>
+    const std::type_info& SharedPtrAny::ControlBlockDerivedType<Ty>::type() const noexcept {
+      return typeid(Ty);
+    }
+
+
+
+    template <typename Ty, typename... ArgPack>
+    SharedPtrAny SharedPtrAny::make(ArgPack&&... a_args) {
+      return SharedPtrAny(new ControlBlockDerivedType<Ty>(std::forward<ArgPack>(a_args)...));
+    }
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogFormatContextWrapperBase::~LogFormatContextWrapperBase() {
+      SharedPtrAny::SharedPtrAny() noexcept
+        : _block(nullptr) 
+      {
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      SharedPtrAny::SharedPtrAny(std::nullptr_t) noexcept 
+        : _block(nullptr) 
+      {
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      SharedPtrAny::SharedPtrAny(const SharedPtrAny& a_source) noexcept
+        : _block(a_source._block)
+      {
+        if (_block) {
+          _block->refCount.fetch_add(1, std::memory_order_relaxed);
+        }
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      SharedPtrAny::SharedPtrAny(SharedPtrAny&& a_source) noexcept
+        : _block(a_source._block) 
+      {
+        a_source._block = nullptr;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      SharedPtrAny::~SharedPtrAny() {
+        _release();
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      SharedPtrAny& SharedPtrAny::operator=(const SharedPtrAny& a_source) noexcept {
+        if (this != &a_source) {
+          _release();
+          _block = a_source._block;
+          if (_block) {
+            _block->refCount.fetch_add(1, std::memory_order_relaxed);
+          }
+        }
+        return *this;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      SharedPtrAny& SharedPtrAny::operator=(SharedPtrAny&& a_source) noexcept {
+        if (this != &a_source) {
+          _release();
+          _block = a_source._block;
+          a_source._block = nullptr;
+        }
+        return *this;
       }
     #endif
 
     template <typename Ty>
-    struct LogFormatContextWrapper : public LogFormatContextWrapperBase {
-      template <typename ...TPack>
-      LogFormatContextWrapper(TPack... a_argPack)
-        : data(a_argPack...) {
+    Ty* SharedPtrAny::cast() const noexcept {
+      if (_block && _block->type() == typeid(Ty)) {
+        return static_cast<Ty*>(_block->ptr());
       }
-      virtual void* get() {
-        return &data;
-      };
-      Ty data;
-    };
+      return nullptr; 
+    }
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      int SharedPtrAny::count() const noexcept { 
+        return _block ? _block->refCount.load(std::memory_order_relaxed) : 0; 
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      SharedPtrAny::operator bool() const noexcept {
+        return _block != nullptr; 
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      SharedPtrAny::SharedPtrAny(ControlBlockBaseType* a_block) noexcept 
+        : _block(a_block) {
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void SharedPtrAny::_release() {
+        if (_block) {
+          if (_block->refCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+            std::atomic_thread_fence(std::memory_order_acquire);
+            delete _block;
+          }
+          _block = nullptr;
+        }
+      }
+    #endif
+
+  } // NTest namespace
+} // fcf namespace
+
+
+/* ================================== */
+/* ===                            === */
+/* ===   Logging and formatting   === */
+/* ===                            === */
+/* ================================== */
+
+
+namespace fcf {
+  namespace NTest {
+
+    struct Test;
 
 
     class LogFormatContext {
       public:
         struct ValueType {
-          std::string                                   strValue;
-          unsigned long long                            ullValue;
-          void*                                         ptrValue;
-          std::shared_ptr<LogFormatContextWrapperBase>  sptrValue;
+          std::string         strValue;
+          unsigned long long  ullValue;
+          void*               ptrValue;
+          SharedPtrAny        sptrValue;
         };
         typedef std::map<std::string, ValueType> ItemType;
         typedef std::list< ItemType >            ItemsType;
 
-        ItemsType& items() {
+        inline ItemsType& items() {
           return _items;
         }
 
-        void append(const ItemType& a_item) {
+        inline void append(const ItemType& a_item) {
           _items.push_back(a_item);
         }
 
@@ -583,37 +1021,6 @@ namespace fcf {
         std::map<Test, ProcessedInfoType> _processed;
     };
 
-    /**
-     * @brief Configuration options for running tests.
-     */
-    struct Options {
-      struct FileType {
-        std::string  file;
-        std::string  format;
-      };
-
-      std::vector<std::string> parts;         ///< List of part names to run (empty means all).
-      std::vector<std::string> groups;        ///< List of group names to run (empty means all).
-      std::vector<std::string> tests;         ///< List of specific test names to run (empty means all).
-      std::vector<std::string> ignoreParts;   ///< List of ignore part names.
-      std::vector<std::string> ignoreGroups;  ///< List of ignore group names to run.
-      std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
-      ELogLevel                logLevel;      ///< Desired logging level.
-      std::string              format;
-      bool                     noBreak;
-      std::list<FileType>      files;
-
-      Options()
-        : logLevel(LL_DEF)
-        , format("default")
-        , noBreak(false) {
-      }
-    };
-
-    namespace NDetails {
-      _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
-    }
-
     typedef std::map<std::string, LogFormatContext> LogFormatContextStorageType;
 
     struct LogOutputTarget {
@@ -635,11 +1042,11 @@ namespace fcf {
         typedef std::map<std::string, LogFormatContext> HandlerDataStorageType;
 
       public:
-        typedef std::function<std::string(Logger&, LogMessageContext&)> PrefixFunctionType;
-        typedef std::function<void(Logger&, LogMessageContext&)>        FormatFunctionType;
+        typedef std::function<std::string(Logger&, LogMessageContext&)> LogPrefixFunction;
+        typedef std::function<void(Logger&, LogMessageContext&)>        LogFormatFunction;
 
         struct FormatType {
-          FormatFunctionType  func;
+          LogFormatFunction  func;
           LogFormatSettings options;
         };
 
@@ -647,7 +1054,7 @@ namespace fcf {
 
         struct PrefixType {
           std::string         str;
-          PrefixFunctionType  func;
+          LogPrefixFunction  func;
           LogPrefixSettings options;
         };
 
@@ -859,13 +1266,13 @@ namespace fcf {
           appendPrefix(prefix);
         }
 
-        void appendPrefixFunc(const PrefixFunctionType& a_prefix) {
+        void appendPrefixFunc(const LogPrefixFunction& a_prefix) {
           PrefixType prefix;
           prefix.func = a_prefix;
           appendPrefix(prefix);
         }
 
-        void appendPrefixFunc(const PrefixFunctionType& a_prefix, const LogPrefixSettings& a_options) {
+        void appendPrefixFunc(const LogPrefixFunction& a_prefix, const LogPrefixSettings& a_options) {
           PrefixType prefix;
           prefix.func = a_prefix;
           prefix.options = a_options;
@@ -916,7 +1323,7 @@ namespace fcf {
           }
         }
 
-        void appendFormatFunc(const FormatFunctionType& a_prefix, const LogFormatSettings& a_options) {
+        void appendFormatFunc(const LogFormatFunction& a_prefix, const LogFormatSettings& a_options) {
           FormatType format;
           format.func = a_prefix;
           format.options = a_options;
@@ -991,7 +1398,7 @@ namespace fcf {
             std::string messageStr(a_message);
 
             LogMessageContext lms;
-            lms.category   = a_messageCategory;
+            lms.category      = a_messageCategory;
             lms.origin        = &a_message;
             lms.message       = &messageStr;
             lms.line          = 0;
@@ -1390,11 +1797,6 @@ namespace fcf {
         std::cout << "  1. The --test-part, --test-group, --test-test commands are combined using the OR operation" << std::endl;
         std::cout << "  2. The --test-ignore-part, --test-ignore-group, --test-ignore-test commands are combined using the OR operation" << std::endl;
       }
-    #else
-      /**
-       * @brief Declaration for displaying a list of all registered tests.
-       */
-      _FCF_TEST_DECL_EXPORT void cmdHelp();
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
@@ -1410,11 +1812,6 @@ namespace fcf {
           std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.name  << "\""<< std::endl;
         }
       }
-    #else
-      /**
-       * @brief Declaration for displaying a list of all registered tests.
-       */
-      _FCF_TEST_DECL_EXPORT void cmdList();
     #endif
 
     namespace NDetails {
@@ -1545,14 +1942,6 @@ namespace fcf {
       #endif
     } // NDetails namespace
 
-    /**
-     * @brief Executes the selected tests based on provided options.
-     *
-     * @param a_options Configuration options specifying which tests to run and logging level.
-     * @param a_errorPtr (default = (bool*)0) A pointer to a variable receiving error information.
-     *                                        If an error occurs, the value is set to true.
-     *                                        If a null pointer is passed, the function throws an exception.
-     */
     inline void run(const Options& a_options, bool* a_errorPtr) {
       NDetails::runImpl(a_options, false, a_errorPtr);
     }
@@ -1560,25 +1949,6 @@ namespace fcf {
     inline void run(const Options& a_options) {
       NDetails::runImpl(a_options, true, 0);
     }
-
-    /**
-     * @brief Enumerates command modes for the test runner.
-     */
-    enum ECmdMode {
-      CM_NONE,   ///< No specific mode set.
-      CM_RUN,    ///< Run tests mode.
-      CM_LIST,   ///< List tests mode.
-      CM_HELP,   ///< Help mode.
-    };
-
-    /**
-     * @brief Enumerates modes for command line argument parsing and execution.
-     */
-    enum ECmdRunMode {
-      CRM_PARSE,    ///< cmdRun() only parses the command line.
-      CRM_EXECUTE,  ///< cmdRun() parses the command line and runs tests if the --test-run flag was passed.
-      CRM_RUN,      ///< cmdRun() parses the command line and runs the tests unless the --test-help or --test-list run flags were specified on the command line.
-    };
 
     namespace NDetails {
 
@@ -1656,10 +2026,6 @@ namespace fcf {
           return mode;
         }
 
-      #else
-
-        _FCF_TEST_DECL_EXPORT ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr);
-
       #endif
 
     } // NDetails namespace
@@ -1685,27 +2051,15 @@ namespace fcf {
     }
 
     template <typename Ty>
-    ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
       return cmdRun(a_dstOptions, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
     }
 
     template <typename Ty>
-    ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode) {
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode) {
       return cmdRun(a_dstOptions, a_argc, (const char* const*)a_argv, a_runMode);
     }
 
-    /**
-     * @brief Parses command line arguments and executes the appropriate action.
-     *
-     * @param a_argc Number of command line arguments.
-     * @param a_argv Array of command line arguments.
-     * @param a_runMode Current mode of execution (parse, execute, or run).
-     * @param a_errorPtr (default = (bool*)0) A pointer to a variable that receives information about a test error.
-     *                                        If an error occurs, the value is set to true.
-     *                                        If a null pointer is passed, the function throws an exception.
-     *                                       If an error occurs, the value is set to true.
-     * @return The determined command mode after processing.
-     */
     template <typename Ty>
     inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
       Options options;
@@ -1786,15 +2140,13 @@ namespace fcf {
         switch (a_messageContext.category) {
           case LMC_START:
             {
-              std::shared_ptr<LogFormatContextWrapperBase> formatHandler(new LogFormatContextWrapper<LoggerJunitFormat>());
-              a_messageContext.data->append({ { "handler", {"", 0, 0, formatHandler} } });
+              a_messageContext.data->append({ { "handler", {"", 0, 0, SharedPtrAny::make<LoggerJunitFormat>()} } });
             }
             break;
           case LMC_TEST_COMPLETE:
           case LMC_TEST_ERROR_MESSAGE:
             {
-              LogFormatContextWrapperBase* formatHandlerWrapper = (LogFormatContextWrapperBase*)getContextValue(a_messageContext.data->items(), "handler").sptrValue.get();
-              LoggerJunitFormat* formatHandler = formatHandlerWrapper ? (LoggerJunitFormat*)formatHandlerWrapper->get() : (LoggerJunitFormat*)0;
+              LoggerJunitFormat* formatHandler = getContextValue(a_messageContext.data->items(), "handler").sptrValue.cast<LoggerJunitFormat>();
               if (formatHandler) {
                 ProcessedInfoType pi;
                 pi.error = a_messageContext.category == LMC_TEST_ERROR_MESSAGE;
@@ -1806,8 +2158,7 @@ namespace fcf {
             break;
           case LMC_END:
             {
-              LogFormatContextWrapperBase* formatHandlerWrapper = (LogFormatContextWrapperBase*)getContextValue(a_messageContext.data->items(), "handler").sptrValue.get();
-              LoggerJunitFormat* formatHandler = formatHandlerWrapper ? (LoggerJunitFormat*)formatHandlerWrapper->get() : (LoggerJunitFormat*)0;
+              LoggerJunitFormat* formatHandler = getContextValue(a_messageContext.data->items(), "handler").sptrValue.cast<LoggerJunitFormat>();
               if (formatHandler) {
 
                 size_t totalTestCount   = a_messageContext.tests->size();
@@ -2026,90 +2377,6 @@ namespace fcf {
     } // Details namespace
   } // NTest namespace
 } // fcf namespace
-
-
-#ifndef _FCF_TEST__REMOVE_PARENTHESIS
-  #define _FCF_TEST__REMOVE_PARENTHESIS_SELECTOR_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT
-  #define _FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT(...) _FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__
-  #define _FCF_TEST__REMOVE_PARENTHESIS_0(...) _FCF_TEST__REMOVE_PARENTHESIS_SELECTOR##__VA_ARGS__
-  #define _FCF_TEST__REMOVE_PARENTHESIS(...) _FCF_TEST__REMOVE_PARENTHESIS_0(__VA_ARGS__)
-#endif
-
-
-#ifndef _FCF_TEST__STRINGIFY
-  #define _FCF_TEST__STRINGIFY_2(a_arg) #a_arg ""
-  #define _FCF_TEST__STRINGIFY_1(a_arg) _FCF_TEST__STRINGIFY_2(a_arg)
-  #define _FCF_TEST__STRINGIFY(a_arg)  _FCF_TEST__STRINGIFY_1(a_arg)
-#endif
-
-
-#ifndef _FCF_TEST__EXPAND
-  #define  _FCF_TEST__EXPAND(...) __VA_ARGS__
-#endif
-
-
-/**
- * @brief Macro to assert a condition and throw an error if it fails.
- * Generates a detailed error message including the failing expression and failed arguments.
- *
- * @param exp The boolean condition to check.
- * @param ... Variable list of arguments whose values will be included in the error message if 'exp' is false.
- */
-
-#ifndef FCF_TEST
-
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_A20(am_a1, am_a2, am_a3, am_a4, am_a5, am_a6, am_a7, am_a8, am_a9, am_a10, \
-                                               am_a11, am_a12, am_a13, am_a14, am_a15, am_a16, am_a17, am_a18, am_a19, am_a20, \
-                                               ...) am_a20
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_LIST(...) \
-            _FCF_TEST__EXPAND(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_A20(__VA_ARGS__, CM, CM, CM, CM, CM, CM, CM, CM, CM, \
-                                                              CM, CM, CM, CM, CM, CM, CM, CM, CM, CM))
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__PARENTHESIS(...) , , , , , , , , , , \
-                                                        , , , , , , , , , ,
-
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR(...) \
-            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_LIST ( _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__PARENTHESIS  __VA_ARGS__ ( ))
-
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULT(am_list, ...)
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULTCM(am_list, ...) , #__VA_ARGS__
-
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT1(am_macro, am_argument, ...) am_macro(am_argument, __VA_ARGS__)
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT0(am_macro, am_argument, ...) \
-            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT1(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULT##am_macro, am_argument, __VA_ARGS__)
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT(am_macro, am_argument, ...) \
-            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT0(am_macro, am_argument, __VA_ARGS__)
-
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(am_error, ...) \
-            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR(__VA_ARGS__), am_error, __VA_ARGS__)
-
-  #define _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_value) a_list.push_back(a_value);
-
-
-  #define _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, ...) _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(a_list, _FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__))
-  #define _FCF_TEST__APPEND_TO_LIST__EXECUTOR_0(a_list, a_a1, a_a2, a_a3, a_a4, a_a5, a_a6, a_a7, a_a8, a_a9, a_a10, ...) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a1) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a2) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a3) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a4) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a5) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a6) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a7) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a8) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a9) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a10)
-  #define _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, ...)  _FCF_TEST__EXPAND(_FCF_TEST__APPEND_TO_LIST__EXECUTOR_0(a_list,  __VA_ARGS__))
-  #define _FCF_TEST__APPEND_TO_LIST(a_list, ...)  _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, __VA_ARGS__, , , , , , , , , , , )
-
-  #define FCF_TEST(exp, ...) \
-    if (!(exp)) { \
-      fcf::NTest::Details::Printer _fcf_test_error_printer(_FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
-                                       __FILE__, \
-                                       _FCF_TEST__STRINGIFY(__LINE__)\
-                                       _FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
-                                       );\
-      throw std::runtime_error(_fcf_test_error_printer(__VA_ARGS__));\
-    }
-#endif
 
 
 namespace fcf {
