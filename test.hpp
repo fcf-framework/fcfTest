@@ -738,10 +738,10 @@ namespace fcf {
 
         explicit operator bool() const noexcept;
 
+        void release();
+
       private:
         explicit SharedPtrAny(ControlBlockBaseType* a_block) noexcept;
-
-        void _release();
 
         ControlBlockBaseType* _block;
     };
@@ -750,6 +750,61 @@ namespace fcf {
 } // fcf namespace
 
 
+/* ================================== */
+/* ===                            === */
+/* ===   Logging and formatting   === */
+/* ===                            === */
+/* ================================== */
+
+namespace fcf {
+  namespace NTest {
+
+    struct LogFormatContext {
+      std::string         strValue;
+      unsigned long long  ullValue;
+      void*               ptrValue;
+      SharedPtrAny        sptrValue;
+    };
+
+    struct Test;
+
+    struct LogMessageContext {
+      ELogMessageCategory   category;
+      const std::string     origin;
+      std::string           message;
+      size_t                line;
+      ELogLevel             level;
+      Duration*             duration;
+      const Test*           test;
+      const std::set<Test>* tests;
+      std::ostream*         stream;
+      LogFormatContext*     data;
+
+      LogMessageContext() = delete;
+      LogMessageContext(const LogMessageContext&) = delete;
+      LogMessageContext& operator=(const LogMessageContext&) = delete;
+      LogMessageContext(std::string&& a_message)
+        : origin(std::move(a_message)) {
+      }
+    };
+
+    struct LogPrefixSettings {
+      std::string         name;
+      bool                multiLine;
+      unsigned int        messageCategories;
+      LogPrefixSettings()
+        : name("")
+        , multiLine(false)
+        , messageCategories(LMC_USER)
+      {}
+    };
+
+    struct LogFormatSettings {
+      std::string         name;
+    };
+
+  } // NTest namespace
+} // fcf namespace
 
 /* ============================================== */
 /* ===                                        === */
@@ -827,14 +882,14 @@ namespace fcf {
 
     #ifdef FCF_TEST_IMPLEMENTATION
       SharedPtrAny::~SharedPtrAny() {
-        _release();
+        release();
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
       SharedPtrAny& SharedPtrAny::operator=(const SharedPtrAny& a_source) noexcept {
         if (this != &a_source) {
-          _release();
+          release();
           _block = a_source._block;
           if (_block) {
             _block->refCount.fetch_add(1, std::memory_order_relaxed);
@@ -847,7 +902,7 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       SharedPtrAny& SharedPtrAny::operator=(SharedPtrAny&& a_source) noexcept {
         if (this != &a_source) {
-          _release();
+          release();
           _block = a_source._block;
           a_source._block = nullptr;
         }
@@ -882,7 +937,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void SharedPtrAny::_release() {
+      void SharedPtrAny::release() {
         if (_block) {
           if (_block->refCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
             std::atomic_thread_fence(std::memory_order_acquire);
@@ -897,69 +952,9 @@ namespace fcf {
 } // fcf namespace
 
 
-/* ================================== */
-/* ===                            === */
-/* ===   Logging and formatting   === */
-/* ===                            === */
-/* ================================== */
-
 
 namespace fcf {
   namespace NTest {
-
-    struct Test;
-
-
-    class LogFormatContext {
-      public:
-        struct ValueType {
-          std::string         strValue;
-          unsigned long long  ullValue;
-          void*               ptrValue;
-          SharedPtrAny        sptrValue;
-        };
-        typedef std::map<std::string, ValueType> ItemType;
-        typedef std::list< ItemType >            ItemsType;
-
-        inline ItemsType& items() {
-          return _items;
-        }
-
-        inline void append(const ItemType& a_item) {
-          _items.push_back(a_item);
-        }
-
-      private:
-        ItemsType     _items;
-    };
-
-    struct LogMessageContext {
-      ELogMessageCategory   category;
-      const std::string*    origin;
-      std::string*          message;
-      size_t                line;
-      ELogLevel             level;
-      Duration*             duration;
-      const Test*           test;
-      const std::set<Test>* tests;
-      std::ostream*         stream;
-      LogFormatContext*     data;
-    };
-
-    struct LogPrefixSettings {
-      std::string         name;
-      bool                multiLine;
-      unsigned int        messageCategories;
-      LogPrefixSettings()
-        : name("")
-        , multiLine(false)
-        , messageCategories(LMC_USER)
-      {}
-    };
-
-    struct LogFormatSettings {
-      std::string         name;
-    };
 
     struct Logger;
 
@@ -1006,8 +1001,6 @@ namespace fcf {
     class LoggerJunitFormat {
       public:
         static void format(Logger& a_logger, LogMessageContext& a_messageContext);
-        static const LogFormatContext::ValueType& getContextValue(const LogFormatContext::ItemType& a_item, const char* a_key);
-        static const LogFormatContext::ValueType& getContextValue(const LogFormatContext::ItemsType& a_items, const char* a_key);
         static std::string suiteName(const Test& a_test);
         static std::string xmlAttribute(const std::string& a_string);
         static std::string xmlText(const std::string& a_string);
@@ -1039,7 +1032,6 @@ namespace fcf {
     struct Logger {
         friend LogWriter;
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
-        typedef std::map<std::string, LogFormatContext> HandlerDataStorageType;
 
       public:
         typedef std::function<std::string(Logger&, LogMessageContext&)> LogPrefixFunction;
@@ -1390,17 +1382,14 @@ namespace fcf {
           _environment.test = a_test;
         }
 
-        void _write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, const std::string& a_message) {
+        void _write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, std::string&& a_message) {
           std::lock_guard<std::recursive_mutex> lock(_mutex);
 
           for(LogOutputTarget& stream : _environment.targets) {
 
-            std::string messageStr(a_message);
-
-            LogMessageContext lms;
+            LogMessageContext lms(std::move(a_message));
             lms.category      = a_messageCategory;
-            lms.origin        = &a_message;
-            lms.message       = &messageStr;
+            lms.message       = lms.origin;
             lms.line          = 0;
             lms.level         = a_level;
             lms.duration      = _environment.bench;
@@ -1413,7 +1402,7 @@ namespace fcf {
                                                     ? stream.format
                                                     : _environment.format;
 
-            if (messageStr.length()) {
+            if (lms.origin.length()) {
               for(PrefixType prefix : _prefixes) {
                 if (!(a_messageCategory & prefix.options.messageCategories)) {
                   continue;
@@ -1422,21 +1411,21 @@ namespace fcf {
                   continue;
                 }
                 size_t lastPos = 0;
+                std::string currentMessage = lms.message;
                 std::string resultMessage;
-                while(lastPos < messageStr.length()) {
-                  size_t pos = prefix.options.multiLine ? messageStr.find("\n", lastPos)
-                                                        : messageStr.length()-1;
+                while(lastPos < currentMessage.length()) {
+                  size_t pos = prefix.options.multiLine ? currentMessage.find("\n", lastPos)
+                                                        : currentMessage.length()-1;
                   if (pos == std::string::npos) {
-                    pos = messageStr.length();
+                    pos = currentMessage.length();
                   } else {
                     ++pos;
                   }
-                  std::string line = messageStr.substr(lastPos, pos - lastPos);
-                  lms.message = &line;
+                  lms.message = currentMessage.substr(lastPos, pos - lastPos);
 
                   if (prefix.func) {
                     const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
-                    HandlerDataStorageType::iterator dataIt = stream.prefixData.find(prefixName);
+                    LogFormatContextStorageType::iterator dataIt = stream.prefixData.find(prefixName);
                     if (dataIt == stream.prefixData.end()) {
                       dataIt = stream.prefixData.insert({prefixName, LogFormatContext()}).first;
                     }
@@ -1444,23 +1433,22 @@ namespace fcf {
 
                     std::string prefixPart = prefix.func(*this, lms);
                     if (prefixPart.length()) {
-                      *lms.message = prefixPart + *lms.message;
+                      lms.message = prefixPart + lms.message;
                     }
                   } else {
-                    *lms.message = prefix.str + *lms.message;
+                    lms.message = prefix.str + lms.message;
                   }
-                  resultMessage += *lms.message;
+                  resultMessage += lms.message;
                   lastPos = pos;
                 }
-                std::swap(messageStr,resultMessage);
-                lms.message = &messageStr;
+                std::swap(lms.message, resultMessage);
               }
             }
 
             for(FormatType format : _formats) {
               const char* formatName = format.options.name.empty() ? "default" : format.options.name.c_str();
               if (formatName == currentFormatName) {
-                HandlerDataStorageType::iterator dataIt = stream.formatData.find(formatName);
+                LogFormatContextStorageType::iterator dataIt = stream.formatData.find(formatName);
                 if (dataIt == stream.formatData.end()) {
                   dataIt = stream.formatData.insert({formatName, LogFormatContext()}).first;
                 }
@@ -1469,8 +1457,8 @@ namespace fcf {
               }
             }
 
-            if (lms.message->length()) {
-              (*lms.stream) << *lms.message;
+            if (lms.message.length()) {
+              (*lms.stream) << lms.message;
             }
 
             if (a_message.length()) {
@@ -2073,28 +2061,6 @@ namespace fcf {
     }
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      const LogFormatContext::ValueType& LoggerJunitFormat::getContextValue(const LogFormatContext::ItemType& a_item, const char* a_key) {
-        const static LogFormatContext::ValueType empty = {"", 0, nullptr, nullptr};
-        LogFormatContext::ItemType::const_iterator it = a_item.find(a_key);
-        if (it != a_item.end()) {
-          return it->second;
-        } else  {
-          return empty;
-        }
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      const LogFormatContext::ValueType& LoggerJunitFormat::getContextValue(const LogFormatContext::ItemsType& a_items, const char* a_key) {
-        const static LogFormatContext::ValueType empty = {"", 0, nullptr, nullptr};
-        if (!a_items.size()) {
-          return empty;
-        }
-        return getContextValue(a_items.front(), a_key);
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
       std::string LoggerJunitFormat::suiteName(const Test& a_test) {
         return a_test.part + "/" + a_test.group;
       }
@@ -2140,17 +2106,17 @@ namespace fcf {
         switch (a_messageContext.category) {
           case LMC_START:
             {
-              a_messageContext.data->append({ { "handler", {"", 0, 0, SharedPtrAny::make<LoggerJunitFormat>()} } });
+              a_messageContext.data->sptrValue = SharedPtrAny::make<LoggerJunitFormat>();
             }
             break;
           case LMC_TEST_COMPLETE:
           case LMC_TEST_ERROR_MESSAGE:
             {
-              LoggerJunitFormat* formatHandler = getContextValue(a_messageContext.data->items(), "handler").sptrValue.cast<LoggerJunitFormat>();
+              LoggerJunitFormat* formatHandler = a_messageContext.data->sptrValue.cast<LoggerJunitFormat>();
               if (formatHandler) {
                 ProcessedInfoType pi;
                 pi.error = a_messageContext.category == LMC_TEST_ERROR_MESSAGE;
-                pi.message = *a_messageContext.origin;
+                pi.message = a_messageContext.origin;
                 pi.duration = a_messageContext.duration->lastTotalDuration().count();
                 formatHandler->_processed.insert({*a_messageContext.test, pi});
               }
@@ -2158,7 +2124,7 @@ namespace fcf {
             break;
           case LMC_END:
             {
-              LoggerJunitFormat* formatHandler = getContextValue(a_messageContext.data->items(), "handler").sptrValue.cast<LoggerJunitFormat>();
+              LoggerJunitFormat* formatHandler = a_messageContext.data->sptrValue.cast<LoggerJunitFormat>();
               if (formatHandler) {
 
                 size_t totalTestCount   = a_messageContext.tests->size();
@@ -2255,13 +2221,13 @@ namespace fcf {
                 }
                 output << "</testsuites>\n";
 
-                a_messageContext.data->items().clear();
+                a_messageContext.data->sptrValue.release();
               }
             }
             break;
         }
 
-        *a_messageContext.message = output.str();
+        a_messageContext.message = output.str();
       }
     #endif
 

@@ -90,7 +90,7 @@ int main(int a_argc, char* a_argv[]) {
 
     // Register a functional prefix that dynamically generates a timestamp and log level string.
     // This function is called by the logger every time a message is written.
-    fcf::NTest::logger().appendPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::LogMessageContext a_status){
+    fcf::NTest::logger().appendPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::LogMessageContext& a_status){
         // Get current system time
         auto time = std::time(nullptr);
         // Format the output as: "YYYY-MM-DD HH:MM:SS [LEVEL]: "
