@@ -1,17 +1,20 @@
-# fcfTest
+# fcfTest — Lightweight C++ Unit Testing Library (C++ Unittest Framework)
 
-**fcfTest** is a lightweight, header-only unit testing framework for C++. It provides a simple macro, FCF_TEST, which implements all possible checks and displays the current values ​​of variables. The framework also includes test registration, command-line execution, a built-in simple logger, and tools for measuring execution time.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-%2300599C.svg?style=for-the-badge)](https://github.com/fcf-framework/fcfTest/blob/main/LICENSE)
+[![C++11](https://img.shields.io/badge/>=c++11-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white)](https://github.com/fcf-framework/fcfTest)
+[![GitHub release](https://img.shields.io/badge/GitHub-release-%2300599C.svg?style=for-the-badge&logo=github)](https://github.com/fcf-framework/fcfTest/releases)
+
+
+**fcfTest** is a lightweight C++ (>= C++11) unit testing framework. Modern, zero-dependency, header-only cpp unittest library for TDD. It provides a simple single-macro interface (FCF_TEST) for seamless assertion checks and automatic variable tracking using standard library components. Designed as an easy-to-integrate, standalone C++ test library, it includes built-in test registration, a comprehensive command-line test runner (CLI), a native logger, and benchmarking tools for precise execution time measurement.
 
 The library is distributed as a single header file: `fcfTest/test.hpp`.
 
 To use the library, you must define the `FCF_TEST_IMPLEMENTATION` macro before including the header file in your application's main cpp file to avoid errors due to multiple definitions.
 
-### Liniks:
-(New section of the site dedicated to the description of this library.)
+### Links:
 
 Official page with documentation: https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest 
-
-Usage article on dev.to: https://dev.to/vladimirm/fcftest-unit-test-library-3cgg
 
 ### Friendly:
 If something doesn't work for you, please report it quickly in Issues and we'll fix it!
