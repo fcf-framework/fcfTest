@@ -1983,8 +1983,11 @@ namespace fcf {
        */
       template <typename TIterator>
       struct PrintArgs {
-        TIterator begin; ///< Iterator pointing to the beginning of the names.
-        TIterator end;   ///< Iterator pointing to the end of the names.
+        TIterator     begin; ///< Iterator pointing to the beginning of the names.
+        TIterator     end;   ///< Iterator pointing to the end of the names.
+        std::string   expr;
+        const char*   file;
+        const char*   line;
 
         /**
          * @brief Executes the print operation for a pack of arguments.
@@ -1995,7 +1998,9 @@ namespace fcf {
          */
         template <typename... TArgPack>
         std::string operator()(const TArgPack&... a_pack) {
-          std::string result;
+          expr = expr.length() && (unsigned char)expr[0] <= (unsigned char)' ' ? expr.substr(1, std::string::npos) : expr;\
+          std::string result = std::string() + \
+                               "Test error: " + expr + "  [FILE: " + file + ":" + line + "]\n";
           if (sizeof...(TArgPack) && begin != end) {
             result += "  Values:\n";
           }
@@ -2084,13 +2089,13 @@ namespace fcf {
     if (!(exp)) { \
       std::list<std::string> _fcf_test_names;\
       _FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
-      fcf::NTest::Details::PrintArgs<std::list<std::string>::iterator> p{_fcf_test_names.begin(), _fcf_test_names.end()};\
-      std::string _fcf_test_expstr = _FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp));\
-      _fcf_test_expstr = _fcf_test_expstr.length() && (unsigned char)_fcf_test_expstr[0] <= (unsigned char)' ' ? _fcf_test_expstr.substr(1, std::string::npos) : _fcf_test_expstr;\
-      std::string _fcf_test_messge = std::string() + \
-                           "Test error: " + _fcf_test_expstr + "  [FILE: " + __FILE__ + ":" + _FCF_TEST__STRINGIFY(__LINE__) + "]\n" + \
-                           p(__VA_ARGS__);\
-      throw std::runtime_error(_fcf_test_messge);\
+      fcf::NTest::Details::PrintArgs<std::list<std::string>::iterator> p{_fcf_test_names.begin(), \
+                                                                         _fcf_test_names.end(), \
+                                                                         _FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+                                                                         __FILE__, \
+                                                                         _FCF_TEST__STRINGIFY(__LINE__)\
+                                                                        };\
+      throw std::runtime_error(p(__VA_ARGS__));\
     }
 #endif
 
