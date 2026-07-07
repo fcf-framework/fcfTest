@@ -27,7 +27,7 @@ FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST"){
   {
     std::string macro   = STR(_FCF_TEST__APPEND_TO_LIST(list,1,2));
     std::string expeced = ", \"1\" , \"2\"";
-    std::string expecedMSVC = ", \" 1\" , \" 2\");";
+    std::string expecedMSVC = ", \" 1\" , \" 2\"";
     FCF_TEST(macro == expeced || macro == expecedMSVC, macro, expeced, expecedMSVC);
   }
   {
