@@ -1,5 +1,5 @@
-#ifndef _FCF_TEST__TEST_HPP___
-#define _FCF_TEST__TEST_HPP___
+#ifndef Z__FCF_TEST__TEST_HPP___
+#define Z__FCF_TEST__TEST_HPP___
 
 /*
  * fcfTest is a lightweight C++ (>= C++11) unit testing framework.
@@ -73,46 +73,46 @@
  * Automatically set to empty when implementing the library (internal use)
  * and set to `extern` when only declaring it (header-only usage).
  */
-#ifndef _FCF_TEST_DELC_EXTERN
+#ifndef FCF_TEST_LINKAGE
   #ifdef FCF_TEST_IMPLEMENTATION
-    #define _FCF_TEST_DELC_EXTERN
+    #define FCF_TEST_LINKAGE
   #else
-    #define _FCF_TEST_DELC_EXTERN extern
+    #define FCF_TEST_LINKAGE extern
   #endif // #ifdef FCF_TEST_IMPLEMENTATION
-#endif // #ifndef _FCF_TEST_DELC_EXTERN
+#endif // #ifndef FCF_TEST_LINKAGE
 
 /**
  * @brief Defines the export/declaration macro for Windows environments.
  * Uses `__declspec(dllexport)` or `__declspec(dllimport)` based on
  * whether symbols are being exported or imported, otherwise defaults to empty.
  */
-#ifndef _FCF_TEST_DECL_EXPORT
+#ifndef FCF_TEST_API
   #ifdef WIN32
     #if defined(FCF_TEST_EXPORT)
-      #define _FCF_TEST_DECL_EXPORT __declspec(dllexport)
+      #define FCF_TEST_API __declspec(dllexport)
     #elif defined(FCF_TEST_IMPORT)
-      #define _FCF_TEST_DECL_EXPORT __declspec(dllimport)
+      #define FCF_TEST_API __declspec(dllimport)
     #else
-      #define _FCF_TEST_DECL_EXPORT
+      #define FCF_TEST_API
     #endif // #if defined(FCF_TEST_EXPORT)
   #else
-    #define _FCF_TEST_DECL_EXPORT
+    #define FCF_TEST_API
   #endif // #ifdef WIN32
-#endif // #ifndef _FCF_TEST_DECL_EXPORT
+#endif // #ifndef FCF_TEST_API
 
 
-#ifndef _FCF_TEST__CONCAT3
-  #define _FCF_TEST__CONCAT3_2(am_x, am_y, am_z)\
+#ifndef Z__FCF_TEST__CONCAT3
+  #define Z__FCF_TEST__CONCAT3_2(am_x, am_y, am_z)\
               am_x##am_y##am_z
-  #define _FCF_TEST__CONCAT3(am_x, am_y, am_z)\
-              _FCF_TEST__CONCAT3_2(am_x, am_y, am_z)
+  #define Z__FCF_TEST__CONCAT3(am_x, am_y, am_z)\
+              Z__FCF_TEST__CONCAT3_2(am_x, am_y, am_z)
 #endif
 
-#ifndef _FCF_TEST__CONCAT2
-  #define _FCF_TEST__CONCAT2_2(am_x, am_y)\
+#ifndef Z__FCF_TEST__CONCAT2
+  #define Z__FCF_TEST__CONCAT2_2(am_x, am_y)\
               am_x##am_y
-  #define _FCF_TEST__CONCAT2(am_x, am_y)\
-              _FCF_TEST__CONCAT2_2(am_x, am_y)
+  #define Z__FCF_TEST__CONCAT2(am_x, am_y)\
+              Z__FCF_TEST__CONCAT2_2(am_x, am_y)
 #endif
 
 
@@ -125,7 +125,7 @@
  * @param am_test The name or identifier of the test function.
  */
 #ifndef FCF_TEST_DECLARE
-  #define _FCF_TEST_DECLARE_IMPL(am_className, am_part, am_group, am_test)\
+  #define Z__FCF_TEST_DECLARE_IMPL(am_className, am_part, am_group, am_test)\
     namespace {\
     struct am_className { \
       am_className() {\
@@ -133,32 +133,32 @@
       }\
       static void test();\
     };\
-    am_className _FCF_TEST__CONCAT3(am_className, _reg_, __COUNTER__);\
+    am_className Z__FCF_TEST__CONCAT3(am_className, _reg_, __COUNTER__);\
     }\
     void am_className::test()
 
   #define FCF_TEST_DECLARE(am_part, am_group, am_test)\
-    _FCF_TEST_DECLARE_IMPL(_FCF_TEST__CONCAT2(fcf_test_,__COUNTER__), am_part,  am_group, am_test)
+    Z__FCF_TEST_DECLARE_IMPL(Z__FCF_TEST__CONCAT2(fcf_test_,__COUNTER__), am_part,  am_group, am_test)
 #endif
 
 
-#ifndef _FCF_TEST__REMOVE_PARENTHESIS
-  #define _FCF_TEST__REMOVE_PARENTHESIS_SELECTOR_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT
-  #define _FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT(...) _FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__
-  #define _FCF_TEST__REMOVE_PARENTHESIS_0(...) _FCF_TEST__REMOVE_PARENTHESIS_SELECTOR##__VA_ARGS__
-  #define _FCF_TEST__REMOVE_PARENTHESIS(...) _FCF_TEST__REMOVE_PARENTHESIS_0(__VA_ARGS__)
+#ifndef Z__FCF_TEST__REMOVE_PARENTHESIS
+  #define Z__FCF_TEST__REMOVE_PARENTHESIS_SELECTORZ__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT
+  #define Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT(...) Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__
+  #define Z__FCF_TEST__REMOVE_PARENTHESIS_0(...) Z__FCF_TEST__REMOVE_PARENTHESIS_SELECTOR##__VA_ARGS__
+  #define Z__FCF_TEST__REMOVE_PARENTHESIS(...) Z__FCF_TEST__REMOVE_PARENTHESIS_0(__VA_ARGS__)
 #endif
 
 
-#ifndef _FCF_TEST__STRINGIFY
-  #define _FCF_TEST__STRINGIFY_2(a_arg) #a_arg ""
-  #define _FCF_TEST__STRINGIFY_1(a_arg) _FCF_TEST__STRINGIFY_2(a_arg)
-  #define _FCF_TEST__STRINGIFY(a_arg)  _FCF_TEST__STRINGIFY_1(a_arg)
+#ifndef Z__FCF_TEST__STRINGIFY
+  #define Z__FCF_TEST__STRINGIFY_2(a_arg) #a_arg ""
+  #define Z__FCF_TEST__STRINGIFY_1(a_arg) Z__FCF_TEST__STRINGIFY_2(a_arg)
+  #define Z__FCF_TEST__STRINGIFY(a_arg)  Z__FCF_TEST__STRINGIFY_1(a_arg)
 #endif
 
 
-#ifndef _FCF_TEST__EXPAND
-  #define  _FCF_TEST__EXPAND(...) __VA_ARGS__
+#ifndef Z__FCF_TEST__EXPAND
+  #define  Z__FCF_TEST__EXPAND(...) __VA_ARGS__
 #endif
 
 
@@ -170,51 +170,51 @@
  * @param ... Variable list of arguments whose values will be included in the error message if 'exp' is false.
  */
 #ifndef FCF_TEST
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_A20(am_a1, am_a2, am_a3, am_a4, am_a5, am_a6, am_a7, am_a8, am_a9, am_a10, \
+  #define Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_A20(am_a1, am_a2, am_a3, am_a4, am_a5, am_a6, am_a7, am_a8, am_a9, am_a10, \
                                                am_a11, am_a12, am_a13, am_a14, am_a15, am_a16, am_a17, am_a18, am_a19, am_a20, \
                                                ...) am_a20
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_LIST(...) \
-            _FCF_TEST__EXPAND(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_A20(__VA_ARGS__, CM, CM, CM, CM, CM, CM, CM, CM, CM, \
+  #define Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_LIST(...) \
+            Z__FCF_TEST__EXPAND(Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_A20(__VA_ARGS__, CM, CM, CM, CM, CM, CM, CM, CM, CM, \
                                                               CM, CM, CM, CM, CM, CM, CM, CM, CM, CM))
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__PARENTHESIS(...) , , , , , , , , , , \
+  #define Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__PARENTHESIS(...) , , , , , , , , , , \
                                                         , , , , , , , , , ,
 
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR(...) \
-            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_LIST ( _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__PARENTHESIS  __VA_ARGS__ ( ))
+  #define Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR(...) \
+            Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_LIST ( Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__PARENTHESIS  __VA_ARGS__ ( ))
 
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULT(am_list, ...)
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULTCM(am_list, ...) , #__VA_ARGS__
+  #define Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULT(am_list, ...)
+  #define Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULTCM(am_list, ...) , #__VA_ARGS__
 
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT1(am_macro, am_argument, ...) am_macro(am_argument, __VA_ARGS__)
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT0(am_macro, am_argument, ...) \
-            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT1(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULT##am_macro, am_argument, __VA_ARGS__)
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT(am_macro, am_argument, ...) \
-            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT0(am_macro, am_argument, __VA_ARGS__)
+  #define Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT1(am_macro, am_argument, ...) am_macro(am_argument, __VA_ARGS__)
+  #define Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT0(am_macro, am_argument, ...) \
+            Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT1(Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__RESULT##am_macro, am_argument, __VA_ARGS__)
+  #define Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT(am_macro, am_argument, ...) \
+            Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT0(am_macro, am_argument, __VA_ARGS__)
 
-  #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(am_error, ...) \
-            _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR(__VA_ARGS__), am_error, __VA_ARGS__)
+  #define Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(am_error, ...) \
+            Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT(Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR(__VA_ARGS__), am_error, __VA_ARGS__)
 
-  #define _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, ...) _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(a_list, _FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__))
-  #define _FCF_TEST__APPEND_TO_LIST__EXECUTOR_0(a_list, a_a1, a_a2, a_a3, a_a4, a_a5, a_a6, a_a7, a_a8, a_a9, a_a10, ...) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a1) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a2) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a3) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a4) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a5) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a6) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a7) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a8) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a9) \
-                        _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a10)
-  #define _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, ...)  _FCF_TEST__EXPAND(_FCF_TEST__APPEND_TO_LIST__EXECUTOR_0(a_list,  __VA_ARGS__))
-  #define _FCF_TEST__APPEND_TO_LIST(a_list, ...)  _FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, __VA_ARGS__, , , , , , , , , , , )
+  #define Z__FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, ...) Z__FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(a_list, Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__))
+  #define Z__FCF_TEST__APPEND_TO_LIST__EXECUTOR_0(a_list, a_a1, a_a2, a_a3, a_a4, a_a5, a_a6, a_a7, a_a8, a_a9, a_a10, ...) \
+                        Z__FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a1) \
+                        Z__FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a2) \
+                        Z__FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a3) \
+                        Z__FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a4) \
+                        Z__FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a5) \
+                        Z__FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a6) \
+                        Z__FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a7) \
+                        Z__FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a8) \
+                        Z__FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a9) \
+                        Z__FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a10)
+  #define Z__FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, ...)  Z__FCF_TEST__EXPAND(Z__FCF_TEST__APPEND_TO_LIST__EXECUTOR_0(a_list,  __VA_ARGS__))
+  #define Z__FCF_TEST__APPEND_TO_LIST(a_list, ...)  Z__FCF_TEST__APPEND_TO_LIST__EXECUTOR(a_list, __VA_ARGS__, , , , , , , , , , , )
 
   #define FCF_TEST(exp, ...) \
     if (!(exp)) { \
-      ::fcf::NTest::Details::Printer _fcf_test_error_printer(_FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+      ::fcf::NTest::Details::Printer _fcf_test_error_printer(Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
                                          __FILE__, \
-                                         _FCF_TEST__STRINGIFY(__LINE__)\
-                                         _FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
+                                         Z__FCF_TEST__STRINGIFY(__LINE__)\
+                                         Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
                                          );\
       std::runtime_error exception(_fcf_test_error_printer(__VA_ARGS__));\
       ::fcf::NTest::state().error(exception.what(), false);\
@@ -223,10 +223,10 @@
 
   #define FCF_TEST_CHECK(exp, ...) \
     if (!(exp)) { \
-      ::fcf::NTest::Details::Printer _fcf_test_error_printer(_FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+      ::fcf::NTest::Details::Printer _fcf_test_error_printer(Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
                                          __FILE__, \
-                                         _FCF_TEST__STRINGIFY(__LINE__)\
-                                         _FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
+                                         Z__FCF_TEST__STRINGIFY(__LINE__)\
+                                         Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
                                          );\
       std::runtime_error exception(_fcf_test_error_printer(__VA_ARGS__));\
       ::fcf::NTest::state().error(exception.what(), false);\
@@ -243,7 +243,7 @@
  */
 #define FCF_TEST_PART_ORDER(am_part, am_order)\
   namespace {\
-    ::fcf::NTest::NDetails::PartOrderRegistrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_part, am_order);\
+    ::fcf::NTest::NDetails::PartOrderRegistrator Z__FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_part, am_order);\
   }
 
 /**
@@ -255,7 +255,7 @@
  */
 #define FCF_TEST_GROUP_ORDER(am_group, am_order)\
   namespace {\
-    ::fcf::NTest::NDetails::GroupOrderRegistrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_group, am_order);\
+    ::fcf::NTest::NDetails::GroupOrderRegistrator Z__FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_group, am_order);\
   }
 
 /**
@@ -267,17 +267,17 @@
  */
 #define FCF_TEST_TEST_ORDER(am_test, am_order)\
   namespace {\
-    ::fcf::NTest::NDetails::TestOrderRegistrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_test, am_order);\
+    ::fcf::NTest::NDetails::TestOrderRegistrator Z__FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_test, am_order);\
   }
 
-#ifndef _FCF_TEST_ANSI_SUCCESS
-  #define _FCF_TEST_ANSI_SUCCESS  "\033[1;32m"
+#ifndef Z__FCF_TEST_ANSI_SUCCESS
+  #define Z__FCF_TEST_ANSI_SUCCESS  "\033[1;32m"
 #endif
-#ifndef _FCF_TEST_ANSI_FAILED
-  #define _FCF_TEST_ANSI_FAILED   "\033[1;31m"
+#ifndef Z__FCF_TEST_ANSI_FAILED
+  #define Z__FCF_TEST_ANSI_FAILED   "\033[1;31m"
 #endif
-#ifndef _FCF_TEST_ANSI_RESET
-  #define _FCF_TEST_ANSI_RESET    "\033[0m"
+#ifndef Z__FCF_TEST_ANSI_RESET
+  #define Z__FCF_TEST_ANSI_RESET    "\033[0m"
 #endif
 
 namespace fcf {
@@ -384,13 +384,13 @@ namespace fcf {
     /**
      * @brief Declaration for displaying a list of all registered tests.
      */
-    _FCF_TEST_DECL_EXPORT void cmdHelp();
+    FCF_TEST_API void cmdHelp();
 
 
     /**
      * @brief Declaration for displaying a list of all registered tests.
      */
-    _FCF_TEST_DECL_EXPORT void cmdList();
+    FCF_TEST_API void cmdList();
 
 
 
@@ -412,7 +412,7 @@ namespace fcf {
      * @brief Declaration for the global storage instance.
      * @return Reference to the Storage instance.
      */
-    _FCF_TEST_DECL_EXPORT Storage& getStorage();
+    FCF_TEST_API Storage& getStorage();
 
   } // NTest namespace
 } // fcf namespace
@@ -519,7 +519,7 @@ namespace fcf {
     /**
      * @brief Central storage for registered tests, parts, and groups.
      */
-    class _FCF_TEST_DECL_EXPORT Storage {
+    class FCF_TEST_API Storage {
       public:
 
         void partOrder(const char* a_name, int a_order);
@@ -838,10 +838,10 @@ namespace fcf {
   namespace NTest {
 
     namespace NDetails {
-      _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+      FCF_TEST_API void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
     } // NDetails namespace
 
-    class _FCF_TEST_DECL_EXPORT State {
+    class FCF_TEST_API State {
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
 
       public:
@@ -866,7 +866,7 @@ namespace fcf {
         std::mutex             _mutex;
     };
 
-    _FCF_TEST_DECL_EXPORT State& state();
+    FCF_TEST_API State& state();
 
   } // NTest namespace
 } // fcf namespace
@@ -880,7 +880,7 @@ namespace fcf {
 namespace fcf {
   namespace NTest {
 
-    class _FCF_TEST_DECL_EXPORT SharedPtrAny {
+    class FCF_TEST_API SharedPtrAny {
       private:
         struct ControlBlockBaseType {
           std::atomic<int> refCount;
@@ -946,7 +946,7 @@ namespace fcf {
 namespace fcf {
   namespace NTest {
 
-    class _FCF_TEST_DECL_EXPORT Logger;
+    class FCF_TEST_API Logger;
     struct LogMessageContext;
     struct LogFormatContext;
     typedef std::function<std::string(Logger&, LogMessageContext&)> LogPrefixFunction;
@@ -959,13 +959,13 @@ namespace fcf {
     typedef std::list<LogPrefix> LogPrefixes;
     struct LogOutputTarget;
     typedef std::list<LogOutputTarget> LogOutputTargets;
-    class _FCF_TEST_DECL_EXPORT LogWriter;
+    class FCF_TEST_API LogWriter;
 
     /**
     * @brief Declaration for the global logger instance.
     * @return Reference to the Logger instance.
     */
-    _FCF_TEST_DECL_EXPORT Logger& logger();
+    FCF_TEST_API Logger& logger();
 
     /**
      * @brief Returns the output stream for fatal messages (global shortcut).
@@ -1021,7 +1021,7 @@ namespace fcf {
      */
     inline LogWriter sys(ELogMessageCategory a_messageCategory);
 
-    class _FCF_TEST_DECL_EXPORT Logger {
+    class FCF_TEST_API Logger {
         friend LogWriter;
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
 
@@ -1119,7 +1119,7 @@ namespace fcf {
     };
 
 
-    class _FCF_TEST_DECL_EXPORT LogWriter {
+    class FCF_TEST_API LogWriter {
       public:
         LogWriter();
 
@@ -1196,7 +1196,7 @@ namespace fcf {
     };
 
 
-    class _FCF_TEST_DECL_EXPORT LogJunitFormatter {
+    class FCF_TEST_API LogJunitFormatter {
       public:
         static void format(Logger& a_logger, LogMessageContext& a_messageContext);
         static std::string suiteName(const Test& a_test);
@@ -1283,11 +1283,11 @@ namespace fcf {
   namespace NTest {
 
     namespace NDetails {
-      _FCF_TEST_DECL_EXPORT ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr);
+      FCF_TEST_API ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr);
     } // NDetails namespace
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      _FCF_TEST_DECL_EXPORT void cmdHelp() {
+      FCF_TEST_API void cmdHelp() {
         std::cout << "Test options:" << std::endl;
         std::cout << "  --test-run  - Run tests" << std::endl;
         std::cout << "  --test-list - Displays a list of all tests" << std::endl;
@@ -1321,7 +1321,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      _FCF_TEST_DECL_EXPORT void cmdList() {
+      FCF_TEST_API void cmdList() {
         Options options;
         std::set<Test> tests;
         getStorage().select(tests, options);
@@ -1384,7 +1384,7 @@ namespace fcf {
     }
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      _FCF_TEST_DECL_EXPORT Storage& getStorage() {
+      FCF_TEST_API Storage& getStorage() {
         static Storage* storage = nullptr;
         static std::once_flag flag;
 
@@ -1487,7 +1487,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      _FCF_TEST_DECL_EXPORT State& state(){
+      FCF_TEST_API State& state(){
         static State* state = nullptr;
         static std::once_flag flag;
 
@@ -1505,7 +1505,7 @@ namespace fcf {
 
         inline std::vector<std::string> parseArgs(int a_argc, const char* const* a_argv);
 
-        _FCF_TEST_DECL_EXPORT ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr) {
+        FCF_TEST_API ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr) {
           ECmdMode mode = CM_NONE;
 
           std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);
@@ -1579,13 +1579,13 @@ namespace fcf {
 
     namespace NDetails {
       #ifdef FCF_TEST_IMPLEMENTATION
-        _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr) {
+        FCF_TEST_API void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr) {
           static std::recursive_mutex mutex;
           static bool globalRunState = false;
 
           {
             std::lock_guard<std::recursive_mutex> lock(mutex);
-            #ifndef _FCF_TEST_RECURCIVE_RUN_DISABLE
+            #ifndef Z__FCF_TEST_RECURCIVE_RUN_DISABLE
               if (globalRunState) {
                 if (a_enableThrow) {
                   throw std::runtime_error("The tests have already been launched");
@@ -1652,7 +1652,7 @@ namespace fcf {
               state()._endDuration();
               std::list<std::string> errors = state().errors();
               if (!errors.size()) {
-                sys(LMC_TEST_COMPLETE) << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET 
+                sys(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET 
                                        << " Test completed successfully (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
                 sys(LMC_TEST_END);
               } else {
@@ -1662,7 +1662,7 @@ namespace fcf {
                   errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
                   sys(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
                 }
-                sys(LMC_TEST_ERROR) << _FCF_TEST_ANSI_FAILED << "[FAILED]" << _FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
+                sys(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
                 sys(LMC_TEST_END);
                 if (a_options.noBreak) {
                   continue;
@@ -1676,10 +1676,10 @@ namespace fcf {
 
             if (!errorCounter) {
               sys(LMC_COMPLETE) << std::endl
-                                << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET << " All tests were completed." << std::endl;
+                                << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET << " All tests were completed." << std::endl;
             } else {
               sys(LMC_ERROR) << std::endl
-                             << _FCF_TEST_ANSI_FAILED << "[FAILED]" << _FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
+                             << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
             }
 
             sys(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skippedCounter << " skipped, " << tests.size() << " total" << std::endl;
@@ -2825,7 +2825,7 @@ namespace fcf {
   namespace NTest {
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      _FCF_TEST_DECL_EXPORT Logger& logger() {
+      FCF_TEST_API Logger& logger() {
         static Logger* logger = nullptr;
         static std::once_flag flag;
 
@@ -2875,4 +2875,4 @@ namespace fcf {
   } // NTest namespace
 } // fcf namespace
 
-#endif // #ifndef _FCF_TEST__TEST_HPP___
+#endif // #ifndef Z__FCF_TEST__TEST_HPP___

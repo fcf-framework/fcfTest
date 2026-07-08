@@ -1,7 +1,7 @@
 #include <sstream>
 #include <regex>
 
-#define _FCF_TEST_RECURCIVE_RUN_DISABLE
+#define Z__FCF_TEST_RECURCIVE_RUN_DISABLE
 #define FCF_TEST_IMPLEMENTATION
 #include <fcfTest/test.hpp>
 
@@ -85,9 +85,9 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
                           "   [SUCCESS] Test completed successfully (XXX sec)\n"+
                           "\n"+
                           "[SUCCESS] All tests were completed.\n"+
-                          "Tests: 1 passed, 0 failed, 0 skiped, 1 total\n"+
+                          "Tests: 1 passed, 0 failed, 0 skipped, 1 total\n"+
                           "Duration: XXX sec\n";
-    FCF_TEST(expected == uniout(ss.str()), uniout(ss.str(), true));
+    FCF_TEST(expected == uniout(ss.str()), uniout(ss.str(), true), uniout(expected, true));
   }
   {
     std::stringstream ss;
@@ -117,7 +117,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
                             "   [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
                             "[FAILED] Testing completed with failures.\n"+
-                            "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
+                            "Tests: 1 passed, 1 failed, 0 skipped, 1 total\n"+
                             "Duration: XXX sec\n";
     FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
   }
@@ -135,7 +135,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
                             "   [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
                             "[FAILED] Testing completed with failures.\n"+
-                            "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
+                            "Tests: 1 passed, 1 failed, 0 skipped, 1 total\n"+
                             "Duration: XXX sec\n";
     FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
   }
@@ -154,7 +154,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
                             "   [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
                             "[FAILED] Testing completed with failures.\n"+
-                            "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
+                            "Tests: 1 passed, 1 failed, 0 skipped, 1 total\n"+
                             "Duration: XXX sec\n";
     FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
   }
