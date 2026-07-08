@@ -2,8 +2,11 @@ cmake_minimum_required(VERSION 3.0...${CMAKE_VERSION})
 
 project(fcfTestLoggerFunctionPrefixExample)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
 
 add_executable(logger-function-prefix-example
                            logger-function-prefix-example.cpp
