@@ -194,9 +194,6 @@
   #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(am_error, ...) \
             _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__CALL_RESULT(_FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR(__VA_ARGS__), am_error, __VA_ARGS__)
 
-  #define _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_value) a_list.push_back(a_value);
-
-
   #define _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, ...) _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS(a_list, _FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__))
   #define _FCF_TEST__APPEND_TO_LIST__EXECUTOR_0(a_list, a_a1, a_a2, a_a3, a_a4, a_a5, a_a6, a_a7, a_a8, a_a9, a_a10, ...) \
                         _FCF_TEST__APPEND_TO_LIST__APPEND_ITEM(a_list, a_a1) \
