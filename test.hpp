@@ -2137,7 +2137,7 @@ namespace fcf {
           lpo.name          = "offset";
           lpo.multiLine     = true;
           lpo.messageCategories  = LMC_TEST;
-          appendPrefixStr("  ", lpo);
+          appendPrefixStr("   ", lpo);
         }
       }
     #endif
