@@ -332,16 +332,6 @@ namespace fcf {
   } // NTest namespace
 } // fcf namespace
 
-namespace fcf {
-  namespace NTest {
-    namespace NDetails {
-      _FCF_TEST_DECL_EXPORT ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr);
-      _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
-    } // NDetails namespace
-  } // NTest namespace
-} // fcf namespace
-
-
 
 /* ========================================================== */
 /* ===                                                    === */
@@ -905,6 +895,10 @@ namespace fcf {
 namespace fcf {
   namespace NTest {
 
+    namespace NDetails {
+      _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+    } // NDetails namespace
+
     class _FCF_TEST_DECL_EXPORT Logger;
     struct LogMessageContext;
     struct LogFormatContext;
@@ -1250,8 +1244,8 @@ namespace fcf {
   namespace NTest {
 
     namespace NDetails {
-      _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
-    }
+      _FCF_TEST_DECL_EXPORT ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr);
+    } // NDetails namespace
 
     #ifdef FCF_TEST_IMPLEMENTATION
       _FCF_TEST_DECL_EXPORT void cmdHelp() {
