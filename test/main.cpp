@@ -5,6 +5,14 @@
 #define FCF_TEST_IMPLEMENTATION
 #include <fcfTest/test.hpp>
 
+
+FCF_TEST_DECLARE("fcfTest", "some", "asd"){
+
+  //FCF_TEST_CHECK(1==2, 2);
+
+}
+
+
 FCF_TEST_DECLARE("subrun", "default", "subrun ok"){
 
 }

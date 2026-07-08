@@ -129,7 +129,7 @@
     namespace {\
     struct am_className { \
       am_className() {\
-        ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ 0, am_test, 0, am_group, 0, am_part, test } );\
+        ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ 1000000, am_test, 1000000, am_group, 1000000, am_part, test } );\
       }\
       static void test();\
     };\
@@ -211,12 +211,25 @@
 
   #define FCF_TEST(exp, ...) \
     if (!(exp)) { \
-      fcf::NTest::Details::Printer _fcf_test_error_printer(_FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
-                                       __FILE__, \
-                                       _FCF_TEST__STRINGIFY(__LINE__)\
-                                       _FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
-                                       );\
-      throw std::runtime_error(_fcf_test_error_printer(__VA_ARGS__));\
+      ::fcf::NTest::Details::Printer _fcf_test_error_printer(_FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+                                         __FILE__, \
+                                         _FCF_TEST__STRINGIFY(__LINE__)\
+                                         _FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
+                                         );\
+      std::runtime_error exception(_fcf_test_error_printer(__VA_ARGS__));\
+      ::fcf::NTest::state().error(exception.what(), false);\
+      throw exception;\
+    }
+
+  #define FCF_TEST_CHECK(exp, ...) \
+    if (!(exp)) { \
+      ::fcf::NTest::Details::Printer _fcf_test_error_printer(_FCF_TEST__STRINGIFY(_FCF_TEST__REMOVE_PARENTHESIS(_FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+                                         __FILE__, \
+                                         _FCF_TEST__STRINGIFY(__LINE__)\
+                                         _FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
+                                         );\
+      std::runtime_error exception(_fcf_test_error_printer(__VA_ARGS__));\
+      ::fcf::NTest::state().error(exception.what(), false);\
     }
 #endif
 
@@ -414,7 +427,6 @@ namespace fcf {
 
 namespace fcf {
   namespace NTest {
-
     /**
      * @brief Represents a single test case with metadata.
      */
@@ -816,6 +828,42 @@ namespace fcf {
 } // fcf namespace
 
 
+/* ========================================================== */
+/* ===                                                    === */
+/* ===                    Testing status                  === */
+/* ===                                                    === */
+/* ========================================================== */
+
+namespace fcf {
+  namespace NTest {
+
+    class _FCF_TEST_DECL_EXPORT State {
+      public:
+        Test                    test();
+        void                    test(const Test& a_test);
+        std::set<Test>          tests();
+        size_t                  testsSize();
+        void                    tests(const std::set<Test>& a_tests);
+        Duration                duration();
+        void                    duration(const Duration& a_duration);
+        void                    durationResume();
+        void                    durationEnd();
+        void                    error(const char* a_error, bool a_ignoreExists);
+        std::list<std::string>  errors();
+        void                    errors(const std::list<std::string>& a_errors);
+
+      private:
+        Test                   _test;
+        std::set<Test>         _tests;
+        Duration               _duration;
+        std::list<std::string> _errors;
+        std::mutex             _mutex;
+    };
+
+    _FCF_TEST_DECL_EXPORT State& state();
+
+  } // NTest namespace
+} // fcf namespace
 
 /* ========================================================== */
 /* ===                                                    === */
@@ -976,11 +1024,8 @@ namespace fcf {
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
 
         struct EnvironmentType {
-          ELogLevel               level;
-          const Test*             test;
-          const std::set<Test>*   tests;
-          Duration*               bench;
-          std::string             format;
+          ELogLevel           level;
+          std::string         format;
           LogOutputTargets    targets;
         };
 
@@ -1060,8 +1105,6 @@ namespace fcf {
 
         void _setEnvironment(const EnvironmentType& a_environment);
 
-        void _setTest(const Test* a_test);
-
         void _write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, std::string&& a_message);
 
         LogWriter _log(ELogLevel a_level, ELogMessageCategory a_messageCategory);
@@ -1105,9 +1148,6 @@ namespace fcf {
       std::string           message;
       size_t                line;
       ELogLevel             level;
-      Duration*             duration;
-      const Test*           test;
-      const std::set<Test>* tests;
       std::ostream*         stream;
       LogFormatContext*     data;
 
@@ -1355,6 +1395,109 @@ namespace fcf {
     #endif
 
 
+    #ifdef FCF_TEST_IMPLEMENTATION
+      Test State::test(){
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _test;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::test(const Test& a_test){
+        std::lock_guard<std::mutex> lock(_mutex);
+        _test = a_test;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      std::set<Test> State::tests(){
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _tests;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      size_t State::testsSize(){
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _tests.size();
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::tests(const std::set<Test>& a_tests){
+        std::lock_guard<std::mutex> lock(_mutex);
+        _tests = a_tests;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      Duration State::duration(){
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _duration;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::duration(const Duration& a_duration){
+        std::lock_guard<std::mutex> lock(_mutex);
+        _duration = a_duration;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::durationResume(){
+        std::lock_guard<std::mutex> lock(_mutex);
+        _duration.resume();
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::durationEnd(){
+        std::lock_guard<std::mutex> lock(_mutex);
+        _duration.end();
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::error(const char* a_error, bool a_ignoreExists){
+        std::lock_guard<std::mutex> lock(_mutex);
+        if (a_ignoreExists) {
+          if (std::find(_errors.begin(), _errors.end(), a_error) != _errors.end()){
+            return;
+          }
+        }
+        _errors.push_back(a_error);
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      std::list<std::string> State::errors(){
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _errors;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::errors(const std::list<std::string>& a_errors){
+        std::lock_guard<std::mutex> lock(_mutex);
+        _errors = a_errors;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      _FCF_TEST_DECL_EXPORT State& state(){
+        static State* state = nullptr;
+        static std::once_flag flag;
+
+        std::call_once(flag, []() {
+          state = new State();
+        });
+
+        return *state;
+      }
+    #endif
+
+
     namespace NDetails {
       #ifdef FCF_TEST_IMPLEMENTATION
 
@@ -1455,15 +1598,11 @@ namespace fcf {
 
           bool totalErrorFlag = false;
 
-          Duration bench;
           std::set<Test> tests;
 
           Logger::EnvironmentType lastEnv = logger()._getEnvironment();
           Logger::EnvironmentType newEnv {
                                 a_options.logLevel != LL_DEF ? a_options.logLevel : lastEnv.level,
-                                0,
-                                &tests,
-                                &bench,
                                 a_options.format.length() ? a_options.format : lastEnv.format,
                                 lastEnv.targets
                               };
@@ -1475,32 +1614,53 @@ namespace fcf {
             Logger::_appendTarget({streamName, &ofstreams.back(), file.format, {}, {}}, newEnv);
           }
 
+          std::set<Test>          lastTests = state().tests();
+          Test                    lastTest = state().test();
+          Duration                lastDuration = state().duration();
+          std::list<std::string>  lastErrors = state().errors();
+
           try {
+            std::set<Test> tests;
+            getStorage().select(tests, a_options);
+
+            state().duration({});
+            state().tests(tests);
+            state().test({});
+            state().errors({});
+
             logger()._setEnvironment(newEnv);
 
-
             sys(LMC_START);
-
-            getStorage().select(tests, a_options);
 
             unsigned int errorCounter = 0;
             unsigned int passedCounter = 0;
             for(const Test& test : tests) {
+              state().test(test);
+              state().durationResume();
+              state().errors({});
               sys(LMC_TEST_START);
               sys(LMC_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
-              logger()._setTest(&test);
-              bench.resume();
               ++passedCounter;
               try {
                 test.testFunction();
               } catch(std::exception& e) {
-                bench.end();
+                state().error(e.what(), true);
+              }
+
+              state().durationEnd();
+              std::list<std::string> errors = state().errors();
+              if (!errors.size()) {
+                sys(LMC_TEST_COMPLETE) << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET 
+                                       << " Test completed successfully (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
+                sys(LMC_TEST_END);
+              } else {
                 totalErrorFlag = true;
                 ++errorCounter;
-                std::string errorMesssage = e.what();
-                errorMesssage = errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
-                sys(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
-                sys(LMC_TEST_ERROR) << _FCF_TEST_ANSI_FAILED << "[FAILED]" << _FCF_TEST_ANSI_RESET << " Test failed (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
+                for(std::string errorMesssage : errors) {
+                  errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
+                  sys(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
+                }
+                sys(LMC_TEST_ERROR) << _FCF_TEST_ANSI_FAILED << "[FAILED]" << _FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
                 sys(LMC_TEST_END);
                 if (a_options.noBreak) {
                   continue;
@@ -1508,9 +1668,6 @@ namespace fcf {
                   break;
                 }
               }
-              bench.end();
-              sys(LMC_TEST_COMPLETE) << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET << " Test completed successfully (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
-              sys(LMC_TEST_END);
             }
 
             unsigned int skipedCounter = tests.size() - passedCounter;
@@ -1524,7 +1681,7 @@ namespace fcf {
             }
 
             sys(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skipedCounter << " skiped, " << tests.size() << " total" << std::endl;
-            sys(LMC_DURATION) << "Duration: " << bench.totalDurationStr(true) << " sec" << std::endl;
+            sys(LMC_DURATION) << "Duration: " << state().duration().totalDurationStr(true) << " sec" << std::endl;
 
             sys(LMC_END);
 
@@ -1533,7 +1690,16 @@ namespace fcf {
               std::lock_guard<std::recursive_mutex> lock(mutex);
               globalRunState = false;
             }
+
+            state().tests(lastTests);
+            state().test(lastTest);
+            state().duration(lastDuration);
+            state().errors(lastErrors);
           } catch(const std::exception&) {
+            state().tests(lastTests);
+            state().test(lastTest);
+            state().duration(lastDuration);
+            state().errors(lastErrors);
             logger()._setEnvironment(lastEnv);
             {
               std::lock_guard<std::recursive_mutex> lock(mutex);
@@ -1993,7 +2159,7 @@ namespace fcf {
 
     #ifdef FCF_TEST_IMPLEMENTATION
       Logger::Logger()
-        : _environment{LL_LOG, nullptr, nullptr, nullptr, "default"}
+        : _environment{LL_LOG, "default", {}}
         , _newLine(true)
       {
         clearPrefixes(true);
@@ -2308,12 +2474,6 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::_setTest(const Test* a_test) {
-        _environment.test = a_test;
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
       void Logger::_write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, std::string&& a_message) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
 
@@ -2324,9 +2484,6 @@ namespace fcf {
           lms.message       = lms.origin;
           lms.line          = 0;
           lms.level         = a_level;
-          lms.duration      = _environment.bench;
-          lms.test          = _environment.test;
-          lms.tests         = _environment.tests;
           lms.stream        = stream.stream ? stream.stream : &std::cout;
           lms.data          = nullptr;
 
@@ -2536,8 +2693,8 @@ namespace fcf {
                 ProcessedInfoType pi;
                 pi.error = a_messageContext.category == LMC_TEST_ERROR_MESSAGE;
                 pi.message = a_messageContext.origin;
-                pi.duration = a_messageContext.duration->lastTotalDuration().count();
-                formatHandler->_processed.insert({*a_messageContext.test, pi});
+                pi.duration = state().duration().lastTotalDuration().count();
+                formatHandler->_processed.insert({state().test(), pi});
               }
             }
             break;
@@ -2546,16 +2703,17 @@ namespace fcf {
               LogJunitFormatter* formatHandler = a_messageContext.data->sptrValue.cast<LogJunitFormatter>();
               if (formatHandler) {
 
-                size_t totalTestCount   = a_messageContext.tests->size();
+                size_t totalTestCount   = state().testsSize();
                 size_t totalTestFailure = std::count_if(formatHandler->_processed.begin(),
                                                         formatHandler->_processed.end(),
                                                         [](const std::pair<Test, ProcessedInfoType>& a_item) {
                                                           return a_item.second.error;
                                                         });
-                size_t totalTestSkipped  = a_messageContext.tests->size() - formatHandler->_processed.size();
+                size_t totalTestSkipped  = totalTestCount - formatHandler->_processed.size();
 
                 std::map<std::string, std::set<Test> > suites;
-                for(const Test& test : *a_messageContext.tests) {
+                std::set<Test>                         tests( state().tests() );
+                for(const Test& test : tests) {
                   std::string currentSuiteName = suiteName(test);
                   std::map<std::string, std::set<Test> >::iterator it = suites.find(currentSuiteName);
                   if (it == suites.end()) {
@@ -2569,7 +2727,7 @@ namespace fcf {
                        << "tests=\"" << totalTestCount << "\" "
                        << "failure=\"" << totalTestFailure << "\" "
                        << "skipped=\"" << totalTestSkipped << "\" "
-                       << "time=\"" << a_messageContext.duration->totalDurationStr(false) << "\""
+                       << "time=\"" << state().duration().totalDurationStr(false) << "\""
                        << ">\n";
                 for(const std::pair< std::string, std::set<Test> >& currentSuite : suites ) {
                   const std::string& currentSuiteName = currentSuite.first;
@@ -2615,10 +2773,11 @@ namespace fcf {
                       output << "      <skipped message=\"The test was skipped because the fail-on-error mode was enabled.\"/>\n";
                       output << "    </testcase>\n";
                     } else if (processedIt->second.error) {
-                      std::string message = processedIt->second.message.erase(processedIt->second.message.find_last_not_of(" \t\n\r\f\v") + 1);
+                      std::string message = processedIt->second.message;
+                      message.erase(message.find_last_not_of(" \t\n\r\f\v") + 1);
                       std::string shortMessage = message.substr(0, message.find("\n"));
                       shortMessage = shortMessage.substr(0, shortMessage.find("[FILE:"));
-                      shortMessage = shortMessage.erase(shortMessage.find_last_not_of(" \t\n\r\f\v") + 1);
+                      shortMessage.erase(shortMessage.find_last_not_of(" \t\n\r\f\v") + 1);
                       output << "    <testcase "
                              << "classname=\"" << xmlAttribute(currentSuiteName) << "\" "
                              << "name=\"" << xmlAttribute(currentTest.name) << "\" "
