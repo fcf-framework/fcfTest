@@ -842,12 +842,12 @@ namespace fcf {
         Test                    test();
         void                    test(const Test& a_test);
         std::set<Test>          tests();
-        size_t                  testsSize();
+        size_t                  testsCount();
         void                    tests(const std::set<Test>& a_tests);
         Duration                duration();
         void                    duration(const Duration& a_duration);
-        void                    durationResume();
-        void                    durationEnd();
+        void                    resumeDuration();
+        void                    endDuration();
         void                    error(const char* a_error, bool a_ignoreExists);
         std::list<std::string>  errors();
         void                    errors(const std::list<std::string>& a_errors);
@@ -1417,7 +1417,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      size_t State::testsSize(){
+      size_t State::testsCount(){
         std::lock_guard<std::mutex> lock(_mutex);
         return _tests.size();
       }
@@ -1445,14 +1445,14 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void State::durationResume(){
+      void State::resumeDuration(){
         std::lock_guard<std::mutex> lock(_mutex);
         _duration.resume();
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void State::durationEnd(){
+      void State::endDuration(){
         std::lock_guard<std::mutex> lock(_mutex);
         _duration.end();
       }
@@ -1636,7 +1636,7 @@ namespace fcf {
             unsigned int passedCounter = 0;
             for(const Test& test : tests) {
               state().test(test);
-              state().durationResume();
+              state().resumeDuration();
               state().errors({});
               sys(LMC_TEST_START);
               sys(LMC_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
@@ -1647,7 +1647,7 @@ namespace fcf {
                 state().error(e.what(), true);
               }
 
-              state().durationEnd();
+              state().endDuration();
               std::list<std::string> errors = state().errors();
               if (!errors.size()) {
                 sys(LMC_TEST_COMPLETE) << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET 
@@ -2703,7 +2703,7 @@ namespace fcf {
               LogJunitFormatter* formatHandler = a_messageContext.data->sptrValue.cast<LogJunitFormatter>();
               if (formatHandler) {
 
-                size_t totalTestCount   = state().testsSize();
+                size_t totalTestCount   = state().testsCount();
                 size_t totalTestFailure = std::count_if(formatHandler->_processed.begin(),
                                                         formatHandler->_processed.end(),
                                                         [](const std::pair<Test, ProcessedInfoType>& a_item) {
