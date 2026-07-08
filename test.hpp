@@ -1,5 +1,5 @@
-#ifndef Z__FCF_TEST__TEST_HPP___
-#define Z__FCF_TEST__TEST_HPP___
+#ifndef Z___FCF_TEST__TEST_HPP___
+#define Z___FCF_TEST__TEST_HPP___
 
 /*
  * fcfTest is a lightweight C++ (>= C++11) unit testing framework.
@@ -2875,4 +2875,4 @@ namespace fcf {
   } // NTest namespace
 } // fcf namespace
 
-#endif // #ifndef Z__FCF_TEST__TEST_HPP___
+#endif // #ifndef Z___FCF_TEST__TEST_HPP___
