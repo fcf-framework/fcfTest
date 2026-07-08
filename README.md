@@ -87,14 +87,14 @@ This macro is used to import symbols from the test library when using it as a cl
 - **Usage**: Defined by the main FCF library macros (`FCF_IMPORT`) if applicable, otherwise empty.
 - **Purpose**: Ensures consistent symbol visibility for functions and variables defined in external shared libraries when they are imported into the client process without multiple definition errors.
 
-### `FCF_TEST`
+### `FCF_TEST(am_expression, ...am_observedVariablePack)`
 
 The primary macro for performing checks in unit tests.
-- **Behavior**: Evaluates `(a_expression)`. If the result is false (non-zero), it throws a `std::runtime_error`.
+- **Behavior**: Evaluates `(am_expression)`. If the result is false (non-zero), it throws a `std::runtime_error`.
 - **Error Message**: The exception message includes:
   - The failing expression (`#exp`).
   - The file name and line number where the macro was called.
-  - Values of all additional arguments provided in `a_observedVariables`.
+  - Values of all additional arguments provided in `am_observedVariablePack`.
 
 **Example:**
 ```c++
@@ -105,10 +105,42 @@ FCF_TEST(x == 4, x);
 //    x: 5
 ```
 
-### `FCF_TEST_CHECK`
+### `bool FCF_TEST_CHECK(am_expression, ...am_observedVariablePack)`
 
 A non-throwing version of the assertion macro.
-- **Behavior**: Evaluates `(a_expression)`. If the result is false, it logs the error to the internal state but **does not** throw an exception. This is useful when using the `--test-no-break` flag to continue testing after failures.
+- **Behavior**: Evaluates `(am_expression)`. If the result is false, it logs the error to the internal state but **does not** throw an exception. This is useful if you need to continue the test after a failure or if the execution is performed in a separate thread.
+- **Returns**: `bool` returns the result of am_expression
+
+**Example:**
+```c++
+FCF_TEST_DECLARE("MyLib", "Base", "Simple test"){
+  fcf::NTest::log() << "Test started" << std::endl;
+  int v1 = 1;
+  int v2 = 2;
+  if (!FCF_TEST_CHECK(v1 == v2, v1)) {
+    fcf::NTest::err() << "Simple comparison failed" << std::endl;
+  }
+  fcf::NTest::log() << "Test resumed" << std::endl;
+}
+```
+
+**Output:**
+
+ ```stdout
+Performing the test: "MyLib" -> "Base" -> "Simple test" ...
+   Test started
+   Simple comparison failed
+   Test resumed
+   Test error: v1 == v2  [FILE: PATH/main.cpp:54]
+     Values:
+       v1: 1
+   [FAILED] Test failed (0.000`053`831 sec)
+
+[FAILED] Testing completed with failures.
+Tests: 0 passed, 1 failed, 0 skipped, 1 total
+Duration: 0.000`053`831 sec
+```
+
 
 ## Testing Organization Macros
 
