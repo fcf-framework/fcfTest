@@ -7,10 +7,15 @@
 
 
 **fcfTest** is a lightweight C++ (>= C++11) unit testing framework. Modern, zero-dependency, header-only cpp unittest library for TDD. 
+
 It provides a simple single-macro interface (FCF_TEST) for seamless assertion checks and automatic variable tracking using standard library components. 
+
 Designed as an easy-to-integrate, standalone C++ test library, it includes built-in test registration, 
 a comprehensive command-line test runner (CLI), a native logger, and benchmarking tools for precise execution time measurement.
+
 Supports separate output to std::cout and files, with selectable formats (default/junit).
+
+It also supports performing checks and logging in multithreaded environments
 
 The library is distributed as a single header file: `fcfTest/test.hpp`.
 
