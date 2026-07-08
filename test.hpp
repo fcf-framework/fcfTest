@@ -469,7 +469,7 @@ namespace fcf {
      * @brief Configuration options for running tests.
      */
     struct Options {
-      struct FileType {
+      struct File {
         std::string  file;
         std::string  format;
       };
@@ -483,7 +483,7 @@ namespace fcf {
       ELogLevel                logLevel;      ///< Desired logging level.
       std::string              format;
       bool                     noBreak;
-      std::list<FileType>      files;
+      std::list<File>          files;
 
       Options()
         : logLevel(LL_DEF)
@@ -496,24 +496,24 @@ namespace fcf {
      * @brief Container for a collection of tests within a group.
      */
     struct Tests {
-      typedef std::map<std::string, Test> MapType;
-      MapType values; ///< Map of test names to Test objects.
+      typedef std::map<std::string, Test> Map;
+      Map values; ///< Map of test names to Test objects.
     };
 
     /**
      * @brief Container for a collection of groups within a part.
      */
     struct Groups {
-      typedef std::map<std::string, Tests> MapType;
-      MapType values; ///< Map of group names to Tests containers.
+      typedef std::map<std::string, Tests> Map;
+      Map values; ///< Map of group names to Tests containers.
     };
 
     /**
      * @brief Container for a collection of groups across all parts.
      */
     struct Parts {
-      typedef std::map<std::string, Groups> MapType;
-      MapType values; ///< Map of part names to Groups containers.
+      typedef std::map<std::string, Groups> Map;
+      Map values; ///< Map of part names to Groups containers.
     };
 
     /**
@@ -544,7 +544,7 @@ namespace fcf {
         void select(std::set<Test>& a_dst, const Options& a_options);
 
       private:
-        typedef std::map<std::string, int> OrderMapType;
+        typedef std::map<std::string, int> OrderMap;
 
         /**
          * @brief Enumerates permission states for allowing or ignoring tests.
@@ -584,9 +584,9 @@ namespace fcf {
         void checkExists(std::map<std::string, bool>& a_state, const TMap& a_map, const TAllowList& a_allowList);
 
         Parts         _parts;           ///< Map of parts to their groups.
-        OrderMapType  _partOrders;      ///< Execution order for each part.
-        OrderMapType  _groupOrders;     ///< Execution order for each group.
-        OrderMapType  _testOrders;      ///< Execution order for each test.
+        OrderMap  _partOrders;      ///< Execution order for each part.
+        OrderMap  _groupOrders;     ///< Execution order for each group.
+        OrderMap  _testOrders;      ///< Execution order for each test.
         std::mutex    _mutex;
 
     };
@@ -882,22 +882,22 @@ namespace fcf {
 
     class FCF_TEST_API SharedPtrAny {
       private:
-        struct ControlBlockBaseType {
+        struct ControlBlockBase {
           std::atomic<int> refCount;
 
-          ControlBlockBaseType();
-          virtual ~ControlBlockBaseType() = default;
+          ControlBlockBase();
+          virtual ~ControlBlockBase() = default;
 
           virtual void* ptr() = 0;
           virtual const std::type_info& type() const noexcept = 0;
         };
 
         template <typename Ty>
-        struct ControlBlockDerivedType : public ControlBlockBaseType {
+        struct ControlBlockDerived : public ControlBlockBase {
           Ty data;
 
           template <typename... ArgPack>
-          ControlBlockDerivedType(ArgPack&&... args);
+          ControlBlockDerived(ArgPack&&... args);
 
           void* ptr() override;
 
@@ -928,9 +928,9 @@ namespace fcf {
         void release();
 
       private:
-        explicit SharedPtrAny(ControlBlockBaseType* a_block) noexcept;
+        explicit SharedPtrAny(ControlBlockBase* a_block) noexcept;
 
-        ControlBlockBaseType* _block;
+        ControlBlockBase* _block;
     };
 
   } // NTest namespace
@@ -1025,7 +1025,7 @@ namespace fcf {
         friend LogWriter;
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
 
-        struct EnvironmentType {
+        struct Environment {
           ELogLevel           level;
           std::string         format;
           LogOutputTargets    targets;
@@ -1101,17 +1101,17 @@ namespace fcf {
 
       protected:
 
-        static void _appendTarget(const LogOutputTarget& a_stream, EnvironmentType& a_environment );
+        static void _appendTarget(const LogOutputTarget& a_stream, Environment& a_environment );
 
-        EnvironmentType _getEnvironment();
+        Environment _getEnvironment();
 
-        void _setEnvironment(const EnvironmentType& a_environment);
+        void _setEnvironment(const Environment& a_environment);
 
         void _write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, std::string&& a_message);
 
         LogWriter _log(ELogLevel a_level, ELogMessageCategory a_messageCategory);
 
-        EnvironmentType _environment;
+        Environment _environment;
         std::list<LogPrefix> _prefixes;
         std::list<LogFormat> _formats;
         std::recursive_mutex    _mutex;
@@ -1127,7 +1127,7 @@ namespace fcf {
 
         LogWriter(LogWriter&& a_output);
 
-        LogWriter(Logger& a_logger, ELogLevel a_level, ELogMessageCategory a_loggerMessageType);
+        LogWriter(Logger& a_logger, ELogLevel a_level, ELogMessageCategory a_loggerMessageCategory);
 
         ~LogWriter();
 
@@ -1139,7 +1139,7 @@ namespace fcf {
       private:
         Logger*             _logger;
         ELogLevel           _level;
-        ELogMessageCategory _loggerMessageType;
+        ELogMessageCategory _loggerMessageCategory;
         std::stringstream   _sstream;
     };
 
@@ -1204,22 +1204,22 @@ namespace fcf {
         static std::string xmlText(const std::string& a_string);
 
       private:
-        struct ProcessedInfoType {
+        struct ProcessedInfo {
           bool                error;
           std::string         message;
           unsigned long long  duration;
         };
-        std::map<Test, ProcessedInfoType> _processed;
+        std::map<Test, ProcessedInfo> _processed;
     };
 
-    typedef std::map<std::string, LogFormatContext> LogFormatContextStorageType;
+    typedef std::map<std::string, LogFormatContext> LogFormatContextStorage;
 
     struct LogOutputTarget {
       std::string                     name;
       std::ostream*                   stream;
       std::string                     format;
-      LogFormatContextStorageType  prefixData;
-      LogFormatContextStorageType  formatData;
+      LogFormatContextStorage  prefixData;
+      LogFormatContextStorage  formatData;
     };
 
 
@@ -1602,14 +1602,14 @@ namespace fcf {
 
           std::set<Test> tests;
 
-          Logger::EnvironmentType lastEnv = logger()._getEnvironment();
-          Logger::EnvironmentType newEnv {
+          Logger::Environment lastEnv = logger()._getEnvironment();
+          Logger::Environment newEnv {
                                 a_options.logLevel != LL_DEF ? a_options.logLevel : lastEnv.level,
                                 a_options.format.length() ? a_options.format : lastEnv.format,
                                 lastEnv.targets
                               };
           std::list<std::ofstream> ofstreams;
-          for(const Options::FileType& file : a_options.files) {
+          for(const Options::File& file : a_options.files) {
             std::string streamName = file.format.length() ? (std::string() + "file-" + file.format)
                                                           : std::string("file");
             ofstreams.push_back(std::ofstream(file.file));
@@ -1879,8 +1879,8 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       void Storage::append(const Test& a_test) {
         std::lock_guard<std::mutex> lock(_mutex);
-        Parts::MapType::iterator partIterator = _parts.values.insert( Parts::MapType::value_type(a_test.part, Groups() )  ).first;
-        Groups::MapType::iterator groupIterator = partIterator->second.values.insert( Groups::MapType::value_type(a_test.group, Tests() )  ).first;
+        Parts::Map::iterator partIterator = _parts.values.insert( Parts::Map::value_type(a_test.part, Groups() )  ).first;
+        Groups::Map::iterator groupIterator = partIterator->second.values.insert( Groups::Map::value_type(a_test.group, Tests() )  ).first;
         groupIterator->second.values[a_test.name] = a_test;
       }
     #endif
@@ -1912,19 +1912,19 @@ namespace fcf {
 
               Test test(testItem.second);
               {
-                Storage::OrderMapType::const_iterator it = _partOrders.find(test.part);
+                Storage::OrderMap::const_iterator it = _partOrders.find(test.part);
                 if (it != _partOrders.end()) {
                   test.partOrder = it->second;
                 }
               }
               {
-                Storage::OrderMapType::const_iterator it = _groupOrders.find(test.group);
+                Storage::OrderMap::const_iterator it = _groupOrders.find(test.group);
                 if (it != _groupOrders.end()) {
                   test.groupOrder = it->second;
                 }
               }
               {
-                Storage::OrderMapType::const_iterator it = _testOrders.find(test.name);
+                Storage::OrderMap::const_iterator it = _testOrders.find(test.name);
                 if (it != _testOrders.end()) {
                   test.nameOrder = it->second;
                 }
@@ -2007,7 +2007,7 @@ namespace fcf {
   namespace NTest {
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      SharedPtrAny::ControlBlockBaseType::ControlBlockBaseType()
+      SharedPtrAny::ControlBlockBase::ControlBlockBase()
         : refCount(1)
       {
       }
@@ -2017,17 +2017,17 @@ namespace fcf {
 
     template <typename Ty>
     template <typename... ArgPack>
-    SharedPtrAny::ControlBlockDerivedType<Ty>::ControlBlockDerivedType(ArgPack&&... a_args)
-      : ControlBlockBaseType(), data(std::forward<ArgPack>(a_args)...) {
+    SharedPtrAny::ControlBlockDerived<Ty>::ControlBlockDerived(ArgPack&&... a_args)
+      : ControlBlockBase(), data(std::forward<ArgPack>(a_args)...) {
     }
 
     template <typename Ty>
-    void* SharedPtrAny::ControlBlockDerivedType<Ty>::ptr() {
+    void* SharedPtrAny::ControlBlockDerived<Ty>::ptr() {
       return &data;
     }
 
     template <typename Ty>
-    const std::type_info& SharedPtrAny::ControlBlockDerivedType<Ty>::type() const noexcept {
+    const std::type_info& SharedPtrAny::ControlBlockDerived<Ty>::type() const noexcept {
       return typeid(Ty);
     }
 
@@ -2035,7 +2035,7 @@ namespace fcf {
 
     template <typename Ty, typename... ArgPack>
     SharedPtrAny SharedPtrAny::make(ArgPack&&... a_args) {
-      return SharedPtrAny(new ControlBlockDerivedType<Ty>(std::forward<ArgPack>(a_args)...));
+      return SharedPtrAny(new ControlBlockDerived<Ty>(std::forward<ArgPack>(a_args)...));
     }
 
     #ifdef FCF_TEST_IMPLEMENTATION
@@ -2121,7 +2121,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      SharedPtrAny::SharedPtrAny(ControlBlockBaseType* a_block) noexcept
+      SharedPtrAny::SharedPtrAny(ControlBlockBase* a_block) noexcept
         : _block(a_block) {
       }
     #endif
@@ -2443,7 +2443,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::_appendTarget(const LogOutputTarget& a_stream, EnvironmentType& a_environment ) {
+      void Logger::_appendTarget(const LogOutputTarget& a_stream, Environment& a_environment ) {
         LogOutputTargets::iterator it = std::find_if(
                                            a_environment.targets.begin(),
                                            a_environment.targets.end(),
@@ -2459,15 +2459,15 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::EnvironmentType Logger::_getEnvironment() {
+      Logger::Environment Logger::_getEnvironment() {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
-        EnvironmentType environment = _environment;
+        Environment environment = _environment;
         return environment;
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::_setEnvironment(const EnvironmentType& a_environment) {
+      void Logger::_setEnvironment(const Environment& a_environment) {
         _environment = a_environment;
         if (_environment.format.empty()) {
           _environment.format = "default";
@@ -2516,7 +2516,7 @@ namespace fcf {
 
                 if (prefix.func) {
                   const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
-                  LogFormatContextStorageType::iterator dataIt = stream.prefixData.find(prefixName);
+                  LogFormatContextStorage::iterator dataIt = stream.prefixData.find(prefixName);
                   if (dataIt == stream.prefixData.end()) {
                     dataIt = stream.prefixData.insert({prefixName, LogFormatContext()}).first;
                   }
@@ -2539,7 +2539,7 @@ namespace fcf {
           for(LogFormat format : _formats) {
             const char* formatName = format.options.name.empty() ? "default" : format.options.name.c_str();
             if (formatName == currentFormatName) {
-              LogFormatContextStorageType::iterator dataIt = stream.formatData.find(formatName);
+              LogFormatContextStorage::iterator dataIt = stream.formatData.find(formatName);
               if (dataIt == stream.formatData.end()) {
                 dataIt = stream.formatData.insert({formatName, LogFormatContext()}).first;
               }
@@ -2592,22 +2592,22 @@ namespace fcf {
       LogWriter::LogWriter(LogWriter&& a_output)
         : _logger((Logger*)a_output._logger)
         , _level(a_output._level)
-        , _loggerMessageType(a_output._loggerMessageType)
+        , _loggerMessageCategory(a_output._loggerMessageCategory)
         , _sstream(std::move(a_output._sstream)) {
             a_output._logger = nullptr;
         }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter::LogWriter(Logger& a_logger, ELogLevel a_level, ELogMessageCategory a_loggerMessageType)
-        : _logger(&a_logger), _level(a_level), _loggerMessageType(a_loggerMessageType) {
+      LogWriter::LogWriter(Logger& a_logger, ELogLevel a_level, ELogMessageCategory a_loggerMessageCategory)
+        : _logger(&a_logger), _level(a_level), _loggerMessageCategory(a_loggerMessageCategory) {
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
       LogWriter::~LogWriter() {
         if (_logger) {
-          _logger->_write(_level, _loggerMessageType, _sstream.str());
+          _logger->_write(_level, _loggerMessageCategory, _sstream.str());
         }
       }
     #endif
@@ -2692,7 +2692,7 @@ namespace fcf {
             {
               LogJunitFormatter* formatHandler = a_messageContext.data->sptrValue.cast<LogJunitFormatter>();
               if (formatHandler) {
-                ProcessedInfoType pi;
+                ProcessedInfo pi;
                 pi.error = a_messageContext.category == LMC_TEST_ERROR_MESSAGE;
                 pi.message = a_messageContext.origin;
                 pi.duration = state().duration().lastTotalDuration().count();
@@ -2708,7 +2708,7 @@ namespace fcf {
                 size_t totalTestCount   = state().testsCount();
                 size_t totalTestFailure = std::count_if(formatHandler->_processed.begin(),
                                                         formatHandler->_processed.end(),
-                                                        [](const std::pair<Test, ProcessedInfoType>& a_item) {
+                                                        [](const std::pair<Test, ProcessedInfo>& a_item) {
                                                           return a_item.second.error;
                                                         });
                 size_t totalTestSkipped  = totalTestCount - formatHandler->_processed.size();
