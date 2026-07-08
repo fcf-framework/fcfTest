@@ -117,7 +117,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
                             "   [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
                             "[FAILED] Testing completed with failures.\n"+
-                            "Tests: 1 passed, 1 failed, 0 skipped, 1 total\n"+
+                            "Tests: 0 passed, 1 failed, 0 skipped, 1 total\n"+
                             "Duration: XXX sec\n";
     FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
   }
@@ -135,7 +135,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
                             "   [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
                             "[FAILED] Testing completed with failures.\n"+
-                            "Tests: 1 passed, 1 failed, 0 skipped, 1 total\n"+
+                            "Tests: 0 passed, 1 failed, 0 skipped, 1 total\n"+
                             "Duration: XXX sec\n";
     FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
   }
@@ -154,7 +154,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
                             "   [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
                             "[FAILED] Testing completed with failures.\n"+
-                            "Tests: 1 passed, 1 failed, 0 skipped, 1 total\n"+
+                            "Tests: 0 passed, 1 failed, 0 skipped, 1 total\n"+
                             "Duration: XXX sec\n";
     FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
   }

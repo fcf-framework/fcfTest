@@ -6,7 +6,11 @@
 [![GitHub release](https://img.shields.io/badge/GitHub-release-%2300599C.svg?style=for-the-badge&logo=github)](https://github.com/fcf-framework/fcfTest/releases)
 
 
-**fcfTest** is a lightweight C++ (>= C++11) unit testing framework. Modern, zero-dependency, header-only cpp unittest library for TDD. It provides a simple single-macro interface (FCF_TEST) for seamless assertion checks and automatic variable tracking using standard library components. Designed as an easy-to-integrate, standalone C++ test library, it includes built-in test registration, a comprehensive command-line test runner (CLI), a native logger, and benchmarking tools for precise execution time measurement.
+**fcfTest** is a lightweight C++ (>= C++11) unit testing framework. Modern, zero-dependency, header-only cpp unittest library for TDD. 
+It provides a simple single-macro interface (FCF_TEST) for seamless assertion checks and automatic variable tracking using standard library components. 
+Designed as an easy-to-integrate, standalone C++ test library, it includes built-in test registration, 
+a comprehensive command-line test runner (CLI), a native logger, and benchmarking tools for precise execution time measurement.
+Supports separate output to std::cout and files, with selectable formats (default/junit).
 
 The library is distributed as a single header file: `fcfTest/test.hpp`.
 
@@ -48,9 +52,14 @@ The program will execute the registered tests. If an assertion fails, it prints 
 
  ```stdout
 Performing the test: "MyLibraryPartName" -> "ExamplesGroupName" -> "VectorSizeTestName" ...
-Test error: vec.size() == 2  [FILE: DIR_PATH/main.cpp:9]
-  Values:
-    vec.size(): 1
+   Test error: vec.size() == 2  [FILE: PATH/readme-example.cpp:11]
+     Values:
+       vec.size(): 1
+   [FAILED] Test failed (0.000`078`894 sec)
+
+[FAILED] Testing completed with failures.
+Tests: 0 passed, 1 failed, 0 skipped, 1 total
+Duration: 0.000`078`894 sec
 ```
 
 ## Core Macros
@@ -90,6 +99,11 @@ FCF_TEST(x == 4, x);
 // Values:
 //    x: 5
 ```
+
+### `FCF_TEST_CHECK`
+
+A non-throwing version of the assertion macro.
+- **Behavior**: Evaluates `(a_expression)`. If the result is false, it logs the error to the internal state but **does not** throw an exception. This is useful when using the `--test-no-break` flag to continue testing after failures.
 
 ## Testing Organization Macros
 
@@ -176,6 +190,12 @@ If the global logger's level is set lower than the requested level, these return
 fcf::NTest::ftl() << "This will only appear if log level is FTL or higher" << std::endl;
 fcf::NTest::dbg() << "This appears only in debug mode" << std::endl;
 ```
+### Advanced Logging Features
+
+The new version of the logger supports:
+- **Multiple Targets**: Redirect logs to multiple streams (e.g., `std::cout` and a file) simultaneously.
+- **Custom Formats**: Apply different formatting rules (like `junit` XML) to different targets.
+- **Prefixes**: Add static strings or functional prefixes (dynamic content) to every log message.
 
 ## Benchmarking: `Duration` Class
 
@@ -190,12 +210,27 @@ The `fcf::NTest::Duration` class provides a simple interface for measuring the e
 - **Methods**:
   - `unsigned long long iterationCount()`: Returns the number of iterations set for this duration.
   - `void begin()`: Records the start time for timing.
+  - `void resume()`: Resumes time measurement after a pause (`end` method).
   - `void end()`: Records the end time for timing.
   - `std::chrono::nanoseconds totalDuration()`: Returns the total duration of all iterations in nanoseconds.
+  - `std::string totalDurationStr(bool a_friendly)`: Returns formatted string. If `a_friendly` is true, uses `SEC.MIL`MICROS`NANOS` format. If false, a floating-point format with nanosecond precision is used.
+    - **Parameters**:
+      - `a_friendly`: Flag to switch between human-readable and raw nanosecond format.
   - `std::chrono::nanoseconds duration()`: Returns the average duration of a single iteration in nanoseconds.
+  - `std::string durationStr(bool a_friendly)`: Returns average duration as a formatted string. If false, a floating-point format with nanosecond precision is used.
+    - **Parameters**:
+      - `a_friendly`: Flag to switch between human-readable and raw nanosecond format.
+  - `std::chrono::nanoseconds lastTotalDuration()`: Returns the duration of the last active execution segment only (the segment is separated by resume/end calls). If the timer is active, returns the time elapsed since the current segment started.
+  - `std::string lastTotalDurationStr(bool a_friendly)`: Returns a string representation of the last active segment duration (the segment is separated by resume/end calls). If `a_friendly` is true, uses `SEC.MIL`MICROS`NANOS` format. If false, a floating-point format with nanosecond precision is used.
+    - **Parameters**:
+      - `a_friendly`: Flag to switch between human-readable and raw nanosecond format.
+  - `std::chrono::nanoseconds lastDuration()`: Calculates the average duration of a single iteration based on the last active segment (the segment is separated by resume/end calls).
+  - `std::string lastDurationStr(bool a_friendly)`: Returns a string representation of the average iteration duration within the last segment (the segment is separated by resume/end calls). If `a_friendly` is true, uses `SEC.MIL`MICROS`NANOS` format. If false, a floating-point format with nanosecond precision is used.
+    - **Parameters**:
+      - `a_friendly`: Flag to switch between human-readable and raw nanosecond format.
   - `void operator()(TFunctor&& a_functor)`: Executes a functor multiple times and measures the total duration.
     - **Parameters**:
-      - `a_functor`: The callable object to execute.
+      - `a_functor`: The callable object to be benchmarked.
 
 **Example:**
 ```c++
@@ -206,8 +241,8 @@ bench([](){
     std::sort(v.begin(), v.end());
 });
 
-std::cout << "Total: " << bench.totalDuration().count() << " ns\n";
-std::cout << "Avg: " << bench.duration().count() << " ns\n";
+std::cout << "Total: " << bench.totalDurationStr(true) << "\n";
+std::cout << "Avg: " << bench.durationStr(true) << "\n";
 ```
 
 ## Command Line Interface
@@ -220,6 +255,10 @@ This structure holds the configuration for running tests. It is populated automa
 
 ```c++
 struct Options {
+  struct File {
+    std::string  file;
+    std::string  format;
+  };
   std::vector<std::string> parts;         ///< List of part names to run (empty means all).
   std::vector<std::string> groups;        ///< List of group names to run (empty means all).
   std::vector<std::string> tests;         ///< List of specific test names to run (empty means all).
@@ -227,6 +266,9 @@ struct Options {
   std::vector<std::string> ignoreGroups;  ///< List of ignore group names to run.
   std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
   ELogLevel                logLevel;      ///< Desired logging level.
+  std::string              format;        ///< Output format (e.g., "junit", "default").
+  bool                     noBreak;       ///< If true, testing continues after a failure.
+  std::list<File>          files;         ///< List of log files to write to.
 };
 ```
 
@@ -234,7 +276,8 @@ struct Options {
 
 The central function for executing the test suite. It parses command-line arguments and determines the action.
 
-**`ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr = 0)`**
+**`ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode)`**
+**`ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr)`**
 
 Parses command line arguments and executes the appropriate action.
 
@@ -243,7 +286,10 @@ Parses command line arguments and executes the appropriate action.
   - `a_argc`: Number of command line arguments.
   - `a_argv`: Array of argument strings.
   - `a_runMode`: Current mode of execution (`CRM_PARSE`, `CRM_EXECUTE`, or `CRM_RUN`).
-  - `a_errorPtr`: A pointer to a variable that receives information about a test error. If an error occurs, the value is set to true. If a null pointer is passed, the function throws an exception.
+  - `a_errorPtr`: A pointer to a variable that receives information about a test error. 
+                  If an error occurs, the value is set to true.
+                  It can be null, in which case the information is simply not recorded.
+                  If the function is called without this argument, an exception is thrown in case of an error.
 - **Returns**: `ECmdMode` returns the selected mode based on the parameters of the command line a_argv.
 
 #### `ECmdMode` Enum
@@ -326,47 +372,96 @@ int main(int a_argc, char* a_argv[]) {
 - `--test-test TEST_NAME`: Filters execution to run only the specific test named. Can be used multiple times.
 - `--test-ignore-part PART_NAME`: Exclude tests in the specified part(s). Can be used multiple times.
 - `--test-ignore-group GROUP_NAME`: Exclude tests in the specified group(s). Can be used multiple times.
-- `--test-ignore-test TEST_NAME`: Exclude the specified test(s). Can be used multiple times.
+- `--test-ignore-test TEST_NAME`: Exclude tests in the specified test(s). Can be used multiple times.
+- `--test-no-break`: In case of an error, testing does not stop.
+- `--test-format FORMAT`: Output format (e.g., `junit`, `default`).
+- `--test-file FILE_PATH`: Log file (uses default format).
+- `--test-file-default FILE_PATH`: Log file (format: `default`).
+- `--test-file-[FORMAT] FILE_PATH`: Log file with a specific format (e.g., `--test-file-junit path/to/log.xml`).
 
+#### Explanatory details:
+  - The --test-part, --test-group, --test-test commands are combined using the OR operation
+  - The --test-ignore-part, --test-ignore-group, --test-ignore-test commands are combined using the OR operation
 
 **Example Command:**
 ```bash
-./my_tests --test-run --test-part Network --test-group HTTP --test-log-level dbg
+./my_tests --test-run --test-part Network --test-group HTTP --test-log-level dbg --test-no-break --test-file-junit results.xml
 ```
 
 ### Helper Functions
 
-- **`cmdHelp()`**: Displays help information and available command-line flags.
-- **`cmdList()`**: Displays a list of all registered tests with their hierarchy structure.
-- **`run(const Options& a_options, bool* a_errorPtr = 0)`**: Executes the selected tests based on an `Options` object.
+- **`void cmdHelp()`**: Displays help information and available command-line flags.
+- **`void cmdList()`**: Displays a list of all registered tests with their hierarchy structure.
+- **`void run(const Options& a_options)`**<br>
+  **`void run(const Options& a_options, bool* a_errorPtr)`**: Executes the selected tests based on an `Options` object.
   - **Parameters**:
     - `a_options`: Configuration options specifying which tests to run and logging level.
-    - `a_errorPtr`: A pointer to a variable receiving error information. If an error occurs, the value is set to true. If a null pointer is passed, the function throws an exception.
-  - **Returns**: void.
+    - `a_errorPtr`: A pointer to a variable receiving information about a test error. If an error occurs, the value is set to true. 
+                    It can be null, in which case the information is simply not recorded.
+                    If the function is called without this argument, an exception is thrown in case of an error.
 
 ## Full Usage Example
 
 ```c++
-#define FCF_TEST_IMPLEMENTATION
-#include <fcfTest/test.hpp>
 #include <vector>
 #include <cmath>
 
-// --- Test Declarations ---
+// It is necessary to define the `FCF_TEST_IMPLEMENTATION` macro so that the 
+// implementations are exposed when the header file is included. 
+// If the `fcfTest/test.hpp` file is included multiple times within a project, 
+// this macro should be defined in only one `.cpp` file.
+//
+// When working with DLLs, you must define both the `FCF_TEST_IMPLEMENTATION` 
+// and `FCF_TEST_EXPORT` macros within the main library that exports 
+// the functions; conversely, in libraries that import these functions, 
+// you need to define only the `FCF_TEST_IMPORT` macro.
+#define FCF_TEST_IMPLEMENTATION
+#include <fcfTest/test.hpp>
 
-FCF_TEST_DECLARE("Math", "BasicArithmetic", "Addition") {
+
+// --- Test Declarations ---
+FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Addition" /*TEST NAME*/) {
+  // We create an object to measure execution duration
+  // over 10,000 iterations.
+  fcf::NTest::Duration bench(10000);
+
+  // Set the starting time point for measuring execution time.
+  bench.begin();
+  for(size_t i = 0; i < bench.iterationCount(); ++i) {
     int a = 2;
     int b = 3;
+    // Performing a check of the unit test execution.
     FCF_TEST(a + b == 5, a, b);
+  }
+  // We set the final time point for measuring execution time.
+  bench.end();
+
+  // Outputting the execution time measurement result at the 'info' logging level.
+  fcf::NTest::inf() << "  Itertion count: " << bench.iterationCount() << std::endl;
+  fcf::NTest::inf() << "  Total: " << bench.totalDuration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "  Avg: " << bench.duration().count() << " ns" << std::endl;
 }
 
-FCF_TEST_DECLARE("Math", "BasicArithmetic", "Subtraction") {
+FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtraction" /*TEST NAME*/) {
+  // We create an object to measure execution duration
+  // over 10,000 iterations.
+  fcf::NTest::Duration bench(10000);
+
+  // We perform the task 10,000 times.
+  bench([](){
     int a = 10;
     int b = 4;
+    // Performing a check of the unit test execution.
     FCF_TEST(a - b == 6, a, b);
+  });
+
+  // Outputting the execution time measurement result at the 'info' logging level.
+  fcf::NTest::inf() << "  Itertion count: " << bench.iterationCount() << std::endl;
+  fcf::NTest::inf() << "  Total: " << bench.totalDuration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "  Avg: " << bench.duration().count() << " ns" << std::endl;
 }
 
-FCF_TEST_DECLARE("Vector", "SizeCheck", "EmptyVector") {
+FCF_TEST_DECLARE("Vector" /*PART NAME*/, "SizeCheck" /*GROUP NAME*/, "EmptyVector" /*TEST NAME*/) {
     std::vector<int> v;
     FCF_TEST(v.size() == 0, v.size());
 }
@@ -383,11 +478,25 @@ FCF_TEST_GROUP_ORDER("BasicArithmetic", 1);
 FCF_TEST_TEST_ORDER("Addition", 1);
 
 int main(int a_argc, char* a_argv[]) {
-    // Use CRM_RUN for standard execution
-    bool error;
-    fcf::NTest::cmdRun(a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
-    return error ? 1 : 0;
+  // Use CRM_RUN for standard execution
+  bool error;
+  fcf::NTest::cmdRun(a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
+  return error ? 1 : 0;
 }
 ```
 
+**Output:**
+
+ ```stdout
+Performing the test: "Math" -> "BasicArithmetic" -> "Addition" ...
+   [SUCCESS] Test completed successfully (0.000`035`417 sec)
+Performing the test: "Math" -> "BasicArithmetic" -> "Subtraction" ...
+   [SUCCESS] Test completed successfully (0.000`006`061 sec)
+Performing the test: "Vector" -> "SizeCheck" -> "EmptyVector" ...
+   [SUCCESS] Test completed successfully (0.000`003`092 sec)
+
+[SUCCESS] All tests were completed.
+Tests: 3 passed, 0 failed, 0 skipped, 3 total
+Duration: 0.000`044`570 sec
+```
 

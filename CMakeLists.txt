@@ -28,6 +28,7 @@ endif()
 
 
 
+add_subdirectory(./examples/readme-example)
 add_subdirectory(./examples/full-example)
 add_subdirectory(./examples/001-simple-example)
 add_subdirectory(./examples/002-logger-and-benchmark-example)
