@@ -74,7 +74,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
     InnerTestRunner()(options, ss, 0, 0);
     std::string expected = std::string()+
                           "Performing the test: \"subrun\" -> \"default\" -> \"subrun ok\" ...\n"+
-                          "  [SUCCESS] Test completed successfully (XXX sec)\n"+
+                          "   [SUCCESS] Test completed successfully (XXX sec)\n"+
                           "\n"+
                           "[SUCCESS] All tests were completed.\n"+
                           "Tests: 1 passed, 0 failed, 0 skiped, 1 total\n"+
@@ -105,8 +105,8 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
     InnerTestRunner()(options, ss, 1, &argv[0]);
     std::string expected = std::string()+
                             "Performing the test: \"subrun\" -> \"default\" -> \"subrun error 0\" ...\n"+
-                            "  Test error: v1 == v2  [FILE: XXX]\n"+
-                            "  [FAILED] Test failed (XXX sec)\n"+
+                            "   Test error: v1 == v2  [FILE: XXX]\n"+
+                            "   [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
                             "[FAILED] Testing completed with failures.\n"+
                             "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
@@ -121,10 +121,10 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
     InnerTestRunner()(options, ss, 1, &argv[0]);
     std::string expected = std::string()+
                             "Performing the test: \"subrun\" -> \"default\" -> \"subrun error 1\" ...\n"+
-                            "  Test error: v1 == v2  [FILE: XXX]\n"+
-                            "    Values:\n"+
-                            "      v1: 1\n"+
-                            "  [FAILED] Test failed (XXX sec)\n"+
+                            "   Test error: v1 == v2  [FILE: XXX]\n"+
+                            "     Values:\n"+
+                            "       v1: 1\n"+
+                            "   [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
                             "[FAILED] Testing completed with failures.\n"+
                             "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
@@ -139,11 +139,11 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
     InnerTestRunner()(options, ss, 1, &argv[0]);
     std::string expected = std::string()+
                             "Performing the test: \"subrun\" -> \"default\" -> \"subrun error 2\" ...\n"+
-                            "  Test error: v1 == v2  [FILE: XXX]\n"+
-                            "    Values:\n"+
-                            "      v1: 1\n"+
-                            "      v2: 2\n"+
-                            "  [FAILED] Test failed (XXX sec)\n"+
+                            "   Test error: v1 == v2  [FILE: XXX]\n"+
+                            "     Values:\n"+
+                            "       v1: 1\n"+
+                            "       v2: 2\n"+
+                            "   [FAILED] Test failed (XXX sec)\n"+
                             "\n"+
                             "[FAILED] Testing completed with failures.\n"+
                             "Tests: 1 passed, 1 failed, 0 skiped, 1 total\n"+
