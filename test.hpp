@@ -1642,7 +1642,7 @@ namespace fcf {
               state().errors({});
               sys(LMC_TEST_START);
               sys(LMC_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
-              ++passedCounter;
+
               try {
                 test.testFunction();
               } catch(std::exception& e) {
@@ -1652,6 +1652,7 @@ namespace fcf {
               state()._endDuration();
               std::list<std::string> errors = state().errors();
               if (!errors.size()) {
+                ++passedCounter;
                 sys(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET 
                                        << " Test completed successfully (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
                 sys(LMC_TEST_END);
@@ -1672,7 +1673,7 @@ namespace fcf {
               }
             }
 
-            unsigned int skippedCounter = tests.size() - passedCounter;
+            unsigned int skippedCounter = tests.size() - passedCounter - errorCounter;
 
             if (!errorCounter) {
               sys(LMC_COMPLETE) << std::endl
