@@ -36,7 +36,7 @@
 #include "VERSION"
 
 /**
- * @brief Defines the implementation macro for FCF test functionality.
+ * @brief FCF_TEST_IMPLEMENTATION/FCF_IMPLEMENTATION. Defines the implementation macro for FCF test functionality.
  * This block ensures that the implementation is only included when the main
  * FCF library is implemented, preventing multiple definition errors.
  */
@@ -47,7 +47,7 @@
 #endif // #ifdef FCF_IMPLEMENTATION
 
 /**
- * @brief Defines the export macro for FCF test symbols.
+ * @brief FCF_EXPORT. Defines the export macro for FCF test symbols.
  * Inherits the behavior of the main library's `FCF_EXPORT` macro to ensure
  * consistent symbol visibility across different build configurations.
  */
@@ -58,7 +58,7 @@
 #endif // #ifdef FCF_EXPORT
 
 /**
- * @brief Defines the import macro for FCF test symbols.
+ * @brief FCF_IMPORT. Defines the import macro for FCF test symbols.
  * Inherits the behavior of the main library's `FCF_IMPORT` macro to ensure
  * consistent symbol visibility when importing from a DLL.
  */
@@ -100,60 +100,46 @@
   #endif // #ifdef WIN32
 #endif // #ifndef _FCF_TEST_DECL_EXPORT
 
-/**
- * @brief Helper macro to generate unique names for internal structures using the COUNTER macro.
- */
-#define _FCF_TEST_DECLARE_CCC2(am_x, am_y, am_z)\
-            am_x##am_y##am_z
-/**
- * @brief Helper macro to generate unique names for internal structures using the COUNTER macro (3 arguments).
- */
-#define _FCF_TEST_DECLARE_CCC(am_x, am_y, am_z)\
-            _FCF_TEST_DECLARE_CCC2(am_x, am_y, am_z)
+
+#ifndef _FCF_TEST__CONCAT3
+  #define _FCF_TEST__CONCAT3_2(am_x, am_y, am_z)\
+              am_x##am_y##am_z
+  #define _FCF_TEST__CONCAT3(am_x, am_y, am_z)\
+              _FCF_TEST__CONCAT3_2(am_x, am_y, am_z)
+#endif
+
+#ifndef _FCF_TEST__CONCAT2
+  #define _FCF_TEST__CONCAT2_2(am_x, am_y)\
+              am_x##am_y
+  #define _FCF_TEST__CONCAT2(am_x, am_y)\
+              _FCF_TEST__CONCAT2_2(am_x, am_y)
+#endif
+
 
 /**
- * @brief Helper macro to generate unique names for internal structures using the COUNTER macro (2 arguments).
- */
-#define _FCF_TEST_DECLARE_CC2(am_x, am_y)\
-            am_x##am_y
-/**
- * @brief Helper macro to generate unique names for internal structures using the COUNTER macro (2 arguments).
- */
-#define _FCF_TEST_DECLARE_CC(am_x, am_y)\
-            _FCF_TEST_DECLARE_CC2(am_x, am_y)
-
-/**
- * @brief Internal implementation helper macro for test declarations.
- * Generates a namespace with a static anonymous class that registers the test upon instantiation.
- *
- * @param am_className Unique identifier for the generated class.
- * @param am_part The part name of the test group.
- * @param am_group The group name of the test.
- * @param am_test The test function name or identifier.
- */
-#define _FCF_TEST_DECLARE_IMPL(am_className, am_part, am_group, am_test)\
-  namespace {\
-  struct am_className { \
-    am_className() {\
-      ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ 0, am_test, 0, am_group, 0, am_part, test } );\
-    }\
-    static void test();\
-  };\
-  am_className _FCF_TEST_DECLARE_CCC(am_className, _reg_, __COUNTER__);\
-  }\
-  void am_className::test()
-
-/**
- * @brief Macro to declare a new test case.
+ * @brief FCF_TEST_DECLARE. Macro to declare a new test case.
  * Registers the test function with the storage system and assigns it to a group and part.
  *
  * @param am_part The name of the part (logical grouping level).
  * @param am_group The name of the group (sub-grouping level).
  * @param am_test The name or identifier of the test function.
  */
-#define FCF_TEST_DECLARE(am_part, am_group, am_test)\
-  _FCF_TEST_DECLARE_IMPL(_FCF_TEST_DECLARE_CC(fcf_test_,__COUNTER__), am_part,  am_group, am_test)
+#ifndef FCF_TEST_DECLARE
+  #define _FCF_TEST_DECLARE_IMPL(am_className, am_part, am_group, am_test)\
+    namespace {\
+    struct am_className { \
+      am_className() {\
+        ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ 0, am_test, 0, am_group, 0, am_part, test } );\
+      }\
+      static void test();\
+    };\
+    am_className _FCF_TEST__CONCAT3(am_className, _reg_, __COUNTER__);\
+    }\
+    void am_className::test()
 
+  #define FCF_TEST_DECLARE(am_part, am_group, am_test)\
+    _FCF_TEST_DECLARE_IMPL(_FCF_TEST__CONCAT2(fcf_test_,__COUNTER__), am_part,  am_group, am_test)
+#endif
 
 
 #ifndef _FCF_TEST__REMOVE_PARENTHESIS
@@ -177,13 +163,12 @@
 
 
 /**
- * @brief Macro to assert a condition and throw an error if it fails.
+ * @brief FCF_TEST. Macro to assert a condition and throw an error if it fails.
  * Generates a detailed error message including the failing expression and failed arguments.
  *
  * @param exp The boolean condition to check.
  * @param ... Variable list of arguments whose values will be included in the error message if 'exp' is false.
  */
-
 #ifndef FCF_TEST
   #define _FCF_TEST__APPEND_TO_LIST__CONCAT_ARGS__COMMA_SELECTOR__ARG_A20(am_a1, am_a2, am_a3, am_a4, am_a5, am_a6, am_a7, am_a8, am_a9, am_a10, \
                                                am_a11, am_a12, am_a13, am_a14, am_a15, am_a16, am_a17, am_a18, am_a19, am_a20, \
@@ -240,7 +225,7 @@
 
 
 /**
- * @brief Macro to register the order of a test part.
+ * @brief FCF_TEST_PART_ORDER. Macro to register the order of a test part.
  * Ensures deterministic execution order for parts.
  *
  * @param am_part The name of the part.
@@ -248,11 +233,11 @@
  */
 #define FCF_TEST_PART_ORDER(am_part, am_order)\
   namespace {\
-    ::fcf::NTest::PartOrderRegisrator _FCF_TEST_DECLARE_CC(fcf_test_order_registrator_, __COUNTER__)(am_part, am_order);\
+    ::fcf::NTest::NDetails::PartOrderRegisrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_part, am_order);\
   }
 
 /**
- * @brief Macro to register the order of a test group.
+ * @brief FCF_TEST_GROUP_ORDER. Macro to register the order of a test group.
  * Ensures deterministic execution order for groups within a part.
  *
  * @param am_group The name of the group.
@@ -260,11 +245,11 @@
  */
 #define FCF_TEST_GROUP_ORDER(am_group, am_order)\
   namespace {\
-    ::fcf::NTest::GroupOrderRegisrator _FCF_TEST_DECLARE_CC(fcf_test_order_registrator_, __COUNTER__)(am_group, am_order);\
+    ::fcf::NTest::NDetails::GroupOrderRegisrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_group, am_order);\
   }
 
 /**
- * @brief Macro to register the order of a specific test.
+ * @brief FCF_TEST_TEST_ORDER. Macro to register the order of a specific test.
  * Ensures deterministic execution order for tests within a group.
  *
  * @param am_test The name of the test.
@@ -272,7 +257,7 @@
  */
 #define FCF_TEST_TEST_ORDER(am_test, am_order)\
   namespace {\
-    ::fcf::NTest::TestOrderRegisrator _FCF_TEST_DECLARE_CC(fcf_test_order_registrator_, __COUNTER__)(am_test, am_order);\
+    ::fcf::NTest::NDetails::TestOrderRegisrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_test, am_order);\
   }
 
 #ifndef _FCF_TEST_ANSI_SUCCESS
@@ -396,7 +381,6 @@ namespace fcf {
     template <typename Ty>
     inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode);
 
-
     /**
      * @brief Declaration for displaying a list of all registered tests.
      */
@@ -407,6 +391,7 @@ namespace fcf {
      * @brief Declaration for displaying a list of all registered tests.
      */
     _FCF_TEST_DECL_EXPORT void cmdList();
+
 
 
     /**
@@ -420,6 +405,14 @@ namespace fcf {
     inline void run(const Options& a_options, bool* a_errorPtr);
 
     inline void run(const Options& a_options);
+
+    class Storage;
+
+    /**
+     * @brief Declaration for the global storage instance.
+     * @return Reference to the Storage instance.
+     */
+    _FCF_TEST_DECL_EXPORT Storage& getStorage();
 
   } // NTest namespace
 } // fcf namespace
@@ -1205,6 +1198,48 @@ namespace fcf {
 
 /* ========================================================== */
 /* ===                                                    === */
+/* ===           Auxiliary elements from NDetails         === */
+/* ===                                                    === */
+/* ===               Logging and formatting               === */
+/* ===                                                    === */
+/* ========================================================== */
+
+namespace fcf {
+  namespace NTest {
+    namespace NDetails {
+
+      struct Regisrator {
+        Regisrator(const Test& a_test) {
+          getStorage().append(a_test);
+        }
+      };
+
+      struct PartOrderRegisrator {
+        PartOrderRegisrator(const char* a_name, int a_order) {
+          getStorage().partOrder(a_name, a_order);
+        }
+      };
+
+      struct GroupOrderRegisrator {
+        GroupOrderRegisrator(const char* a_name, int a_order) {
+          getStorage().groupOrder(a_name, a_order);
+        }
+      };
+
+      struct TestOrderRegisrator {
+        TestOrderRegisrator(const char* a_name, int a_order) {
+          getStorage().testOrder(a_name, a_order);
+        }
+      };
+
+    } // NDetails namespace
+  } // NTest namespace
+} // fcf namespace
+
+
+
+/* ========================================================== */
+/* ===                                                    === */
 /* ===                   Implementation                   === */
 /* ===                                                    === */
 /* ===           Basic functions of unit testing          === */
@@ -1214,11 +1249,9 @@ namespace fcf {
 namespace fcf {
   namespace NTest {
 
-    /**
-     * @brief Declaration for the global storage instance.
-     * @return Reference to the Storage instance.
-     */
-    _FCF_TEST_DECL_EXPORT Storage& getStorage();
+    namespace NDetails {
+      _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+    }
 
     #ifdef FCF_TEST_IMPLEMENTATION
       _FCF_TEST_DECL_EXPORT void cmdHelp() {
@@ -1266,7 +1299,386 @@ namespace fcf {
       }
     #endif
 
+    /**
+     * @brief Parses command line arguments and executes the appropriate action.
+     *
+     * @param a_dstOptions Reference to the options structure to populate with parsed arguments.
+     * @param a_argc Number of command line arguments.
+     * @param a_argv Array of command line arguments.
+     * @param a_runMode Current mode of execution (parse, execute, or run).
+     )* @param a_errorPtr (default = (bool*)0) A pointer to a variable that receives information about a test error.
+     *                                        If an error occurs, the value is set to true.
+     *                                        If a null pointer is passed, the function throws an exception.
+     * @return The determined command mode after processing.
+     */
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
+      return NDetails::cmdRunImpl(a_dstOptions, a_argc, a_argv, a_runMode, false, a_errorPtr);
+    }
 
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode) {
+      return NDetails::cmdRunImpl(a_dstOptions, a_argc, a_argv, a_runMode, true, nullptr);
+    }
+
+    template <typename Ty>
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
+      return cmdRun(a_dstOptions, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
+    }
+
+    template <typename Ty>
+    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode) {
+      return cmdRun(a_dstOptions, a_argc, (const char* const*)a_argv, a_runMode);
+    }
+
+    template <typename Ty>
+    inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
+      Options options;
+      return cmdRun(options, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
+    }
+
+    template <typename Ty>
+    inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode) {
+      Options options;
+      return cmdRun(options, a_argc, (const char* const*)a_argv, a_runMode);
+    }
+
+
+    inline void run(const Options& a_options, bool* a_errorPtr) {
+      NDetails::runImpl(a_options, false, a_errorPtr);
+    }
+
+    inline void run(const Options& a_options) {
+      NDetails::runImpl(a_options, true, 0);
+    }
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      _FCF_TEST_DECL_EXPORT Storage& getStorage() {
+        static Storage* storage = nullptr;
+        static std::once_flag flag;
+
+        std::call_once(flag, []() {
+          storage = new Storage();
+        });
+
+        return *storage;
+      }
+    #endif
+
+
+    namespace NDetails {
+      #ifdef FCF_TEST_IMPLEMENTATION
+
+        inline std::vector<std::string> parseArgs(int a_argc, const char* const* a_argv);
+
+        _FCF_TEST_DECL_EXPORT ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr) {
+          ECmdMode mode = CM_NONE;
+
+          std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);
+
+          for(size_t i = 0; i < args.size(); ++i) {
+            if (args[i] == "--test-run") {
+              mode = CM_RUN;
+            } else if (args[i] == "--test-help") {
+              mode = CM_HELP;
+              if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN) {
+                cmdHelp();
+                return mode;
+              }
+            } else if (args[i] == "--test-log-level" && (i+1) < args.size()) {
+              a_dstOptions.logLevel = Logger::toLevel(args[i+1], logger().level());
+              ++i;
+            } else if (args[i] == "--test-list") {
+              mode = CM_LIST;
+              if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN) {
+                cmdList();
+                return mode;
+              }
+            } else if (args[i] == "--test-format" && (i+1) < args.size()) {
+              a_dstOptions.format = args[i+1];
+              ++i;
+            } else if (args[i] == "--test-part" && (i+1) < args.size()) {
+              a_dstOptions.parts.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-group" && (i+1) < args.size()) {
+              a_dstOptions.groups.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-test" && (i+1) < args.size()) {
+              a_dstOptions.tests.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-ignore-part" && (i+1) < args.size()) {
+              a_dstOptions.ignoreParts.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-ignore-group" && (i+1) < args.size()) {
+              a_dstOptions.ignoreGroups.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-ignore-test" && (i+1) < args.size()) {
+              a_dstOptions.ignoreTests.push_back(args[i+1]);
+              ++i;
+            } else if (args[i] == "--test-no-break") {
+              a_dstOptions.noBreak = true;
+            } else if (args[i] == "--test-file" && (i+1) < args.size()) {
+              a_dstOptions.files.push_back({args[i+1], ""});
+              ++i;
+            } else if (args[i] == "--test-file-default" && (i+1) < args.size()) {
+              a_dstOptions.files.push_back({args[i+1], "default"});
+              ++i;
+            }
+            for(auto format : logger().formats()) {
+              std::string param = "--test-file-" + format.options.name;
+              if (args[i] == param && (i+1) < args.size()) {
+                a_dstOptions.files.push_back({args[i+1], format.options.name});
+                ++i;
+                break;
+              }
+            }
+
+          }
+          if ((mode == CM_RUN && a_runMode == CRM_EXECUTE) || a_runMode == CRM_RUN) {
+            runImpl(a_dstOptions, a_enableThrow, a_errorPtr);
+          }
+
+          return mode;
+        }
+      #endif
+    } // NDetails namespace
+
+    namespace NDetails {
+      #ifdef FCF_TEST_IMPLEMENTATION
+        _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr) {
+          static std::recursive_mutex mutex;
+          static bool globalRunState = false;
+
+          {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            #ifndef _FCF_TEST_RECURCIVE_RUN_DISABLE
+              if (globalRunState) {
+                if (a_enableThrow) {
+                  throw std::runtime_error("The tests have already been launched");
+                } else if (a_errorPtr){
+                  *a_errorPtr = true;
+                }
+                return;
+              }
+            #endif
+            globalRunState = true;
+          }
+
+          bool totalErrorFlag = false;
+
+          Duration bench;
+          std::set<Test> tests;
+
+          Logger::EnvironmentType lastEnv = logger()._getEnvironment();
+          Logger::EnvironmentType newEnv {
+                                a_options.logLevel != LL_DEF ? a_options.logLevel : lastEnv.level,
+                                0,
+                                &tests,
+                                &bench,
+                                a_options.format.length() ? a_options.format : lastEnv.format,
+                                lastEnv.targets
+                              };
+          std::list<std::ofstream> ofstreams;
+          for(const Options::FileType& file : a_options.files) {
+            std::string streamName = file.format.length() ? (std::string() + "file-" + file.format)
+                                                          : std::string("file");
+            ofstreams.push_back(std::ofstream(file.file));
+            Logger::_appendTarget({streamName, &ofstreams.back(), file.format, {}, {}}, newEnv);
+          }
+
+          try {
+            logger()._setEnvironment(newEnv);
+
+
+            sys(LMC_START);
+
+            getStorage().select(tests, a_options);
+
+            unsigned int errorCounter = 0;
+            unsigned int passedCounter = 0;
+            for(const Test& test : tests) {
+              sys(LMC_TEST_START);
+              sys(LMC_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+              logger()._setTest(&test);
+              bench.resume();
+              ++passedCounter;
+              try {
+                test.testFunction();
+              } catch(std::exception& e) {
+                bench.end();
+                totalErrorFlag = true;
+                ++errorCounter;
+                std::string errorMesssage = e.what();
+                errorMesssage = errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
+                sys(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
+                sys(LMC_TEST_ERROR) << _FCF_TEST_ANSI_FAILED << "[FAILED]" << _FCF_TEST_ANSI_RESET << " Test failed (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
+                sys(LMC_TEST_END);
+                if (a_options.noBreak) {
+                  continue;
+                } else {
+                  break;
+                }
+              }
+              bench.end();
+              sys(LMC_TEST_COMPLETE) << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET << " Test completed successfully (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
+              sys(LMC_TEST_END);
+            }
+
+            unsigned int skipedCounter = tests.size() - passedCounter;
+
+            if (!errorCounter) {
+              sys(LMC_COMPLETE) << std::endl
+                                << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET << " All tests were completed." << std::endl;
+            } else {
+              sys(LMC_ERROR) << std::endl
+                             << _FCF_TEST_ANSI_FAILED << "[FAILED]" << _FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
+            }
+
+            sys(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skipedCounter << " skiped, " << tests.size() << " total" << std::endl;
+            sys(LMC_DURATION) << "Duration: " << bench.totalDurationStr(true) << " sec" << std::endl;
+
+            sys(LMC_END);
+
+            logger()._setEnvironment(lastEnv);
+            {
+              std::lock_guard<std::recursive_mutex> lock(mutex);
+              globalRunState = false;
+            }
+          } catch(const std::exception&) {
+            logger()._setEnvironment(lastEnv);
+            {
+              std::lock_guard<std::recursive_mutex> lock(mutex);
+              globalRunState = false;
+            }
+            if (a_enableThrow) {
+              throw;
+            }
+            if (a_errorPtr) {
+              *a_errorPtr = true;
+            }
+            return;
+          }
+
+
+          if (totalErrorFlag && a_enableThrow) {
+            throw std::runtime_error("Testing completed with failures");
+          }
+          if (a_errorPtr) {
+            *a_errorPtr = totalErrorFlag;
+          }
+        }
+
+      #endif
+    } // NDetails namespace
+
+    namespace Details {
+
+      template <typename... TPack>
+      struct PrintPack {
+        template <typename TIterator, typename TArg, typename... TPack2>
+        std::string operator()(TIterator a_begName, TIterator a_endName, const TArg& a_arg, const TPack2&... a_pack) {
+          std::stringstream ss;
+          std::string name = a_begName != a_endName ? *a_begName : "arg";
+          name = name.length() && (unsigned char)name[0] <= (unsigned char)' ' ? name.substr(1, std::string::npos) : name;
+          ss << "    " << name << ": " << a_arg << std::endl;
+          if (a_begName != a_endName) {
+            ++a_begName;
+          }
+          return ss.str() + PrintPack<TPack2...>()(a_begName, a_endName, a_pack...);
+        }
+      };
+
+      template <>
+      struct PrintPack<> {
+        template <typename TIterator>
+        std::string operator()(TIterator /*a_begName*/, TIterator /*a_endName*/) {
+          return std::string();
+        }
+      };
+
+      struct Printer {
+        std::string             expr;
+        const char*             file;
+        const char*             line;
+        std::list<const char*>  values;
+
+        template <typename ...TPack>
+        Printer(const char* a_expr, const char* a_file, const char* a_line, TPack... a_argPack)
+          : expr (a_expr)
+          , file(a_file)
+          , line(a_line) {
+          _appendValue(a_argPack...);
+        }
+
+        template <typename... TArgPack>
+        std::string operator()(const TArgPack&... a_pack) {
+          expr = expr.length() && (unsigned char)expr[0] <= (unsigned char)' ' ? expr.substr(1, std::string::npos) : expr;\
+          std::string result = std::string() + \
+                               "Test error: " + expr + "  [FILE: " + file + ":" + line + "]\n";
+          if (sizeof...(TArgPack) && values.size()) {
+            result += "  Values:\n";
+          }
+          result += PrintPack<TArgPack...>()(values.begin(), values.end(), a_pack...);
+          return result;
+        }
+
+        private:
+          template <typename TValue, typename ...TPack>
+          void _appendValue(TValue a_value, TPack... a_valuePack) {
+            values.push_back(a_value);
+            _appendValue(a_valuePack...);
+          }
+          void _appendValue() {
+          }
+      };
+    } // Details namespace
+  } // NTest namespace
+} // fcf namespace
+
+
+namespace fcf {
+  namespace NTest {
+    namespace NDetails {
+
+      /**
+       * @brief Parses a single string into a vector of arguments (flags and values).
+       * @param a_dstVector The vector to populate with parsed arguments.
+       * @param a_input The input string to parse.
+       */
+      inline void parseArgs(std::vector<std::string>& a_dstVector, std::string a_input) {
+        if (a_input == "=") {
+          return;
+        }
+        if (!a_input.empty()) {
+          size_t pos = a_input.find("=");
+          if (pos != std::string::npos) {
+            size_t len = pos;
+            if (len) {
+              a_dstVector.push_back(a_input.substr(0, len));
+            }
+            len = a_input.length() - (pos+1);
+            if (len) {
+              a_dstVector.push_back(a_input.substr(pos+1, len));
+            }
+            return;
+          }
+        }
+        a_dstVector.push_back(a_input);
+      }
+
+      /**
+       * @brief Parses an array of C-style strings into a vector of strings.
+       * @param a_argc Number of arguments.
+       * @param a_argv Array of argument strings.
+       * @return A vector containing all parsed arguments.
+       */
+      inline std::vector<std::string> parseArgs(int a_argc, const char* const* a_argv) {
+        std::vector<std::string> result;
+        for(int i = 0; i < a_argc; ++i) {
+          parseArgs(result, (std::string)a_argv[i]);
+        }
+        return result;
+      }
+
+    } // NDetails namespace
   } // NTest namespace
 } // fcf namespace
 
@@ -2311,524 +2723,4 @@ namespace fcf {
   } // NTest namespace
 } // fcf namespace
 
-
-
-
-
-
-
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-///---------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-namespace fcf {
-  namespace NTest {
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      /**
-       * @brief Returns a reference to the global storage instance.
-       * Initializes the static storage on first call if not present.
-       * @return Reference to the Storage instance.
-       */
-      _FCF_TEST_DECL_EXPORT Storage& getStorage() {
-        static Storage* storage = nullptr;
-        static std::once_flag flag;
-
-        std::call_once(flag, []() {
-          storage = new Storage();
-        });
-
-        return *storage;
-      }
-    #endif
-
-    /**
-     * @brief Base class for order registration objects.
-     *
-     * @param a_test The test object associated with the registration (used in constructor).
-     */
-    struct Regisrator {
-      Regisrator(const Test& a_test) {
-        getStorage().append(a_test);
-      }
-    };
-
-    /**
-     * @brief Registers an execution order for a specific part.
-     *
-     * @param a_name The name of the part.
-     * @param a_order The desired execution order (integer).
-     */
-    struct PartOrderRegisrator {
-      PartOrderRegisrator(const char* a_name, int a_order) {
-        getStorage().partOrder(a_name, a_order);
-      }
-    };
-
-    /**
-     * @brief Registers an execution order for a specific group.
-     *
-     * @param a_name The name of the group.
-     * @param a_order The desired execution order (integer).
-     */
-    struct GroupOrderRegisrator {
-      GroupOrderRegisrator(const char* a_name, int a_order) {
-        getStorage().groupOrder(a_name, a_order);
-      }
-    };
-
-    /**
-     * @brief Registers an execution order for a specific test.
-     *
-     * @param a_name The name of the test.
-     * @param a_order The desired execution order (integer).
-     */
-    struct TestOrderRegisrator {
-      TestOrderRegisrator(const char* a_name, int a_order) {
-        getStorage().testOrder(a_name, a_order);
-      }
-    };
-
-   namespace NDetails {
-      #ifdef FCF_TEST_IMPLEMENTATION
-        _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr) {
-          static std::recursive_mutex mutex;
-          static bool globalRunState = false;
-
-          {
-            std::lock_guard<std::recursive_mutex> lock(mutex);
-            #ifndef _FCF_TEST_RECURCIVE_RUN_DISABLE
-              if (globalRunState) {
-                if (a_enableThrow) {
-                  throw std::runtime_error("The tests have already been launched");
-                } else if (a_errorPtr){
-                  *a_errorPtr = true;
-                }
-                return;
-              }
-            #endif
-            globalRunState = true;
-          }
-
-          bool totalErrorFlag = false;
-
-          Duration bench;
-          std::set<Test> tests;
-
-          Logger::EnvironmentType lastEnv = logger()._getEnvironment();
-          Logger::EnvironmentType newEnv {
-                                a_options.logLevel != LL_DEF ? a_options.logLevel : lastEnv.level,
-                                0,
-                                &tests,
-                                &bench,
-                                a_options.format.length() ? a_options.format : lastEnv.format,
-                                lastEnv.targets
-                              };
-          std::list<std::ofstream> ofstreams;
-          for(const Options::FileType& file : a_options.files) {
-            std::string streamName = file.format.length() ? (std::string() + "file-" + file.format)
-                                                          : std::string("file");
-            ofstreams.push_back(std::ofstream(file.file));
-            Logger::_appendTarget({streamName, &ofstreams.back(), file.format, {}, {}}, newEnv);
-          }
-
-          try {
-            logger()._setEnvironment(newEnv);
-
-
-            sys(LMC_START);
-
-            getStorage().select(tests, a_options);
-
-            unsigned int errorCounter = 0;
-            unsigned int passedCounter = 0;
-            for(const Test& test : tests) {
-              sys(LMC_TEST_START);
-              sys(LMC_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
-              logger()._setTest(&test);
-              bench.resume();
-              ++passedCounter;
-              try {
-                test.testFunction();
-              } catch(std::exception& e) {
-                bench.end();
-                totalErrorFlag = true;
-                ++errorCounter;
-                std::string errorMesssage = e.what();
-                errorMesssage = errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
-                sys(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
-                sys(LMC_TEST_ERROR) << _FCF_TEST_ANSI_FAILED << "[FAILED]" << _FCF_TEST_ANSI_RESET << " Test failed (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
-                sys(LMC_TEST_END);
-                if (a_options.noBreak) {
-                  continue;
-                } else {
-                  break;
-                }
-              }
-              bench.end();
-              sys(LMC_TEST_COMPLETE) << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET << " Test completed successfully (" << bench.lastTotalDurationStr(true) << " sec)" << std::endl;
-              sys(LMC_TEST_END);
-            }
-
-            unsigned int skipedCounter = tests.size() - passedCounter;
-
-            if (!errorCounter) {
-              sys(LMC_COMPLETE) << std::endl
-                                << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET << " All tests were completed." << std::endl;
-            } else {
-              sys(LMC_ERROR) << std::endl
-                             << _FCF_TEST_ANSI_FAILED << "[FAILED]" << _FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
-            }
-
-            sys(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skipedCounter << " skiped, " << tests.size() << " total" << std::endl;
-            sys(LMC_DURATION) << "Duration: " << bench.totalDurationStr(true) << " sec" << std::endl;
-
-            sys(LMC_END);
-
-            logger()._setEnvironment(lastEnv);
-            {
-              std::lock_guard<std::recursive_mutex> lock(mutex);
-              globalRunState = false;
-            }
-          } catch(const std::exception&) {
-            logger()._setEnvironment(lastEnv);
-            {
-              std::lock_guard<std::recursive_mutex> lock(mutex);
-              globalRunState = false;
-            }
-            if (a_enableThrow) {
-              throw;
-            }
-            if (a_errorPtr) {
-              *a_errorPtr = true;
-            }
-            return;
-          }
-
-
-          if (totalErrorFlag && a_enableThrow) {
-            throw std::runtime_error("Testing completed with failures");
-          }
-          if (a_errorPtr) {
-            *a_errorPtr = totalErrorFlag;
-          }
-        }
-
-      #endif
-    } // NDetails namespace
-
-    inline void run(const Options& a_options, bool* a_errorPtr) {
-      NDetails::runImpl(a_options, false, a_errorPtr);
-    }
-
-    inline void run(const Options& a_options) {
-      NDetails::runImpl(a_options, true, 0);
-    }
-
-    namespace NDetails {
-
-      #ifdef FCF_TEST_IMPLEMENTATION
-
-        inline std::vector<std::string> parseArgs(int a_argc, const char* const* a_argv);
-
-        _FCF_TEST_DECL_EXPORT ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr) {
-          ECmdMode mode = CM_NONE;
-
-          std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);
-
-          for(size_t i = 0; i < args.size(); ++i) {
-            if (args[i] == "--test-run") {
-              mode = CM_RUN;
-            } else if (args[i] == "--test-help") {
-              mode = CM_HELP;
-              if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN) {
-                cmdHelp();
-                return mode;
-              }
-            } else if (args[i] == "--test-log-level" && (i+1) < args.size()) {
-              a_dstOptions.logLevel = Logger::toLevel(args[i+1], logger().level());
-              ++i;
-            } else if (args[i] == "--test-list") {
-              mode = CM_LIST;
-              if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN) {
-                cmdList();
-                return mode;
-              }
-            } else if (args[i] == "--test-format" && (i+1) < args.size()) {
-              a_dstOptions.format = args[i+1];
-              ++i;
-            } else if (args[i] == "--test-part" && (i+1) < args.size()) {
-              a_dstOptions.parts.push_back(args[i+1]);
-              ++i;
-            } else if (args[i] == "--test-group" && (i+1) < args.size()) {
-              a_dstOptions.groups.push_back(args[i+1]);
-              ++i;
-            } else if (args[i] == "--test-test" && (i+1) < args.size()) {
-              a_dstOptions.tests.push_back(args[i+1]);
-              ++i;
-            } else if (args[i] == "--test-ignore-part" && (i+1) < args.size()) {
-              a_dstOptions.ignoreParts.push_back(args[i+1]);
-              ++i;
-            } else if (args[i] == "--test-ignore-group" && (i+1) < args.size()) {
-              a_dstOptions.ignoreGroups.push_back(args[i+1]);
-              ++i;
-            } else if (args[i] == "--test-ignore-test" && (i+1) < args.size()) {
-              a_dstOptions.ignoreTests.push_back(args[i+1]);
-              ++i;
-            } else if (args[i] == "--test-no-break") {
-              a_dstOptions.noBreak = true;
-            } else if (args[i] == "--test-file" && (i+1) < args.size()) {
-              a_dstOptions.files.push_back({args[i+1], ""});
-              ++i;
-            } else if (args[i] == "--test-file-default" && (i+1) < args.size()) {
-              a_dstOptions.files.push_back({args[i+1], "default"});
-              ++i;
-            }
-            for(auto format : logger().formats()) {
-              std::string param = "--test-file-" + format.options.name;
-              if (args[i] == param && (i+1) < args.size()) {
-                a_dstOptions.files.push_back({args[i+1], format.options.name});
-                ++i;
-                break;
-              }
-            }
-
-          }
-          if ((mode == CM_RUN && a_runMode == CRM_EXECUTE) || a_runMode == CRM_RUN) {
-            runImpl(a_dstOptions, a_enableThrow, a_errorPtr);
-          }
-
-          return mode;
-        }
-
-      #endif
-
-    } // NDetails namespace
-
-    /**
-     * @brief Parses command line arguments and executes the appropriate action.
-     *
-     * @param a_dstOptions Reference to the options structure to populate with parsed arguments.
-     * @param a_argc Number of command line arguments.
-     * @param a_argv Array of command line arguments.
-     * @param a_runMode Current mode of execution (parse, execute, or run).
-     )* @param a_errorPtr (default = (bool*)0) A pointer to a variable that receives information about a test error.
-     *                                        If an error occurs, the value is set to true.
-     *                                        If a null pointer is passed, the function throws an exception.
-     * @return The determined command mode after processing.
-     */
-    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
-      return NDetails::cmdRunImpl(a_dstOptions, a_argc, a_argv, a_runMode, false, a_errorPtr);
-    }
-
-    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode) {
-      return NDetails::cmdRunImpl(a_dstOptions, a_argc, a_argv, a_runMode, true, nullptr);
-    }
-
-    template <typename Ty>
-    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
-      return cmdRun(a_dstOptions, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
-    }
-
-    template <typename Ty>
-    inline ECmdMode cmdRun(Options& a_dstOptions, int a_argc, Ty a_argv, ECmdRunMode a_runMode) {
-      return cmdRun(a_dstOptions, a_argc, (const char* const*)a_argv, a_runMode);
-    }
-
-    template <typename Ty>
-    inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode, bool* a_errorPtr) {
-      Options options;
-      return cmdRun(options, a_argc, (const char* const*)a_argv, a_runMode, a_errorPtr);
-    }
-
-    template <typename Ty>
-    inline ECmdMode cmdRun(int a_argc, Ty a_argv, ECmdRunMode a_runMode) {
-      Options options;
-      return cmdRun(options, a_argc, (const char* const*)a_argv, a_runMode);
-    }
-
-  } // NTest namespace
-} // fcf namespace
-
-
-namespace fcf {
-  namespace NTest {
-    namespace Details {
-
-      /**
-       * @brief A template structure to recursively print a pack of arguments with their names.
-       *
-       * @tparam TPack The parameter pack to print.
-       */
-      template <typename... TPack>
-      struct PrintPack {
-        /**
-         * @brief Recursive step to print arguments.
-         *
-         * @tparam TIterator Iterator type for the name list.
-         * @tparam TArg Type of the current argument.
-         * @tparam TPack2 The rest of the parameter pack.
-         * @param a_begName Iterator pointing to the beginning of the names.
-         * @param a_endName Iterator pointing to the end of the names.
-         * @param a_arg The current argument value.
-         * @param a_pack The remaining arguments.
-         * @return Formatted string with names and values.
-         */
-        template <typename TIterator, typename TArg, typename... TPack2>
-        std::string operator()(TIterator a_begName, TIterator a_endName, const TArg& a_arg, const TPack2&... a_pack) {
-          std::stringstream ss;
-          std::string name = a_begName != a_endName ? *a_begName : "arg";
-          name = name.length() && (unsigned char)name[0] <= (unsigned char)' ' ? name.substr(1, std::string::npos) : name;
-          ss << "    " << name << ": " << a_arg << std::endl;
-          if (a_begName != a_endName) {
-            ++a_begName;
-          }
-          return ss.str() + PrintPack<TPack2...>()(a_begName, a_endName, a_pack...);
-        }
-      };
-
-      /**
-       * @brief Specialization of PrintPack for an empty pack.
-       * Returns an empty string as the base case for recursion.
-       *
-       * @tparam TIterator Unused iterator type.
-       */
-      template <>
-      struct PrintPack<> {
-        /**
-         * @brief Base case operator that returns an empty string.
-         *
-         * @tparam TIterator Unused iterator type.
-         * @param a_begName Unused iterator.
-         * @param a_endName Unused iterator.
-         * @return An empty string.
-         */
-        template <typename TIterator>
-        std::string operator()(TIterator /*a_begName*/, TIterator /*a_endName*/) {
-          return std::string();
-        }
-      };
-
-      /**
-       * @brief A helper structure to manage printing of arguments with names.
-       *
-       * @tparam TIterator Iterator type for the name list.
-       */
-      struct Printer {
-        std::string             expr;
-        const char*             file;
-        const char*             line;
-        std::list<const char*>  values;
-
-        template <typename ...TPack>
-        Printer(const char* a_expr, const char* a_file, const char* a_line, TPack... a_argPack)
-          : expr (a_expr)
-          , file(a_file)
-          , line(a_line) {
-          _appendValue(a_argPack...);
-        }
-
-        /**
-         * @brief Executes the print operation for a pack of arguments.
-         *
-         * @tparam ...TArgPack Types of the arguments to print.
-         * @param ...a_pack The arguments to print.
-         * @return Formatted string with names and values.
-         */
-        template <typename... TArgPack>
-        std::string operator()(const TArgPack&... a_pack) {
-          expr = expr.length() && (unsigned char)expr[0] <= (unsigned char)' ' ? expr.substr(1, std::string::npos) : expr;\
-          std::string result = std::string() + \
-                               "Test error: " + expr + "  [FILE: " + file + ":" + line + "]\n";
-          if (sizeof...(TArgPack) && values.size()) {
-            result += "  Values:\n";
-          }
-          result += PrintPack<TArgPack...>()(values.begin(), values.end(), a_pack...);
-          return result;
-        }
-
-        private:
-          template <typename TValue, typename ...TPack>
-          void _appendValue(TValue a_value, TPack... a_valuePack) {
-            values.push_back(a_value);
-            _appendValue(a_valuePack...);
-          }
-          void _appendValue() {
-          }
-      };
-    } // Details namespace
-  } // NTest namespace
-} // fcf namespace
-
-
-namespace fcf {
-  namespace NTest {
-    namespace NDetails {
-
-      /**
-       * @brief Parses a single string into a vector of arguments (flags and values).
-       * @param a_dstVector The vector to populate with parsed arguments.
-       * @param a_input The input string to parse.
-       */
-      inline void parseArgs(std::vector<std::string>& a_dstVector, std::string a_input) {
-        if (a_input == "=") {
-          return;
-        }
-        if (!a_input.empty()) {
-          size_t pos = a_input.find("=");
-          if (pos != std::string::npos) {
-            size_t len = pos;
-            if (len) {
-              a_dstVector.push_back(a_input.substr(0, len));
-            }
-            len = a_input.length() - (pos+1);
-            if (len) {
-              a_dstVector.push_back(a_input.substr(pos+1, len));
-            }
-            return;
-          }
-        }
-        a_dstVector.push_back(a_input);
-      }
-
-      /**
-       * @brief Parses an array of C-style strings into a vector of strings.
-       * @param a_argc Number of arguments.
-       * @param a_argv Array of argument strings.
-       * @return A vector containing all parsed arguments.
-       */
-      inline std::vector<std::string> parseArgs(int a_argc, const char* const* a_argv) {
-        std::vector<std::string> result;
-        for(int i = 0; i < a_argc; ++i) {
-          parseArgs(result, (std::string)a_argv[i]);
-        }
-        return result;
-      }
-
-    } // NDetails namespace
-  } // NTest namespace
-} // fcf namespace
 #endif // #ifndef _FCF_TEST__TEST_HPP___
