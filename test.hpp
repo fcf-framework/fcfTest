@@ -275,10 +275,15 @@
     ::fcf::NTest::TestOrderRegisrator _FCF_TEST_DECLARE_CC(fcf_test_order_registrator_, __COUNTER__)(am_test, am_order);\
   }
 
-
-#define _FCF_TEST_ANSI_RESET    "\033[0m"
-#define _FCF_TEST_ANSI_SUCCESS  "\033[1;32m"
-#define _FCF_TEST_ANSI_FAILED   "\033[1;31m"
+#ifndef _FCF_TEST_ANSI_SUCCESS
+  #define _FCF_TEST_ANSI_SUCCESS  "\033[1;32m"
+#endif
+#ifndef _FCF_TEST_ANSI_FAILED
+  #define _FCF_TEST_ANSI_FAILED   "\033[1;31m"
+#endif
+#ifndef _FCF_TEST_ANSI_RESET
+  #define _FCF_TEST_ANSI_RESET    "\033[0m"
+#endif
 
 namespace fcf {
   namespace NTest {
@@ -353,11 +358,13 @@ namespace fcf {
 
 
 
-/* ========================================================= */
-/* ===                                                   === */
-/* === Declaration of the main functions of unit testing === */
-/* ===                                                   === */
-/* ========================================================= */
+/* ========================================================== */
+/* ===                                                    === */
+/* ===              Declaration of the main               === */
+/* ===             functions of unit testing              === */
+/* ===                                                    === */
+/* ========================================================== */
+
 namespace fcf {
   namespace NTest {
 
@@ -418,11 +425,13 @@ namespace fcf {
 } // fcf namespace
 
 
-/* ============================================================ */
-/* ===                                                      === */
-/* === Declaration of the basic structures of unit testing. === */
-/* ===                                                      === */
-/* ============================================================ */
+/* ========================================================== */
+/* ===                                                    === */
+/* ===              Declaration of the basic              === */
+/* ===             structures of unit testing             === */
+/* ===                                                    === */
+/* ========================================================== */
+
 namespace fcf {
   namespace NTest {
 
@@ -518,24 +527,76 @@ namespace fcf {
     /**
      * @brief Central storage for registered tests, parts, and groups.
      */
-    struct Storage {
-      typedef std::map<std::string, int> OrderMapType;
+    class _FCF_TEST_DECL_EXPORT Storage {
+      public:
 
-      Parts        parts;           ///< Map of parts to their groups.
-      OrderMapType partOrders;      ///< Execution order for each part.
-      OrderMapType groupOrders;     ///< Execution order for each group.
-      OrderMapType testOrders;      ///< Execution order for each test.
+        void partOrder(const char* a_name, int a_order);
 
-      /**
-       * @brief Adds a new test to the storage, organizing it into parts and groups.
-       *
-       * @param a_test The Test object containing metadata and function pointer.
-       */
-      void append(const Test& a_test) {
-        Parts::MapType::iterator partIterator = parts.values.insert( Parts::MapType::value_type(a_test.part, Groups() )  ).first;
-        Groups::MapType::iterator groupIterator = partIterator->second.values.insert( Groups::MapType::value_type(a_test.group, Tests() )  ).first;
-        groupIterator->second.values[a_test.name] = a_test;
-      }
+        void groupOrder(const char* a_name, int a_order);
+
+        void testOrder(const char* a_name, int a_order);
+
+        /**
+         * @brief Adds a new test to the storage, organizing it into parts and groups.
+         *
+         * @param a_test The Test object containing metadata and function pointer.
+         */
+        void append(const Test& a_test);
+
+        /**
+         * @brief Recursively selects tests based on parts.
+         *
+         * @param a_dst Destination set where selected tests will be inserted.
+         * @param a_options Configuration options (filters).
+         */
+        void select(std::set<Test>& a_dst, const Options& a_options);
+
+      private:
+        typedef std::map<std::string, int> OrderMapType;
+
+        /**
+         * @brief Enumerates permission states for allowing or ignoring tests.
+         */
+        enum EAllow {
+          IGNORE,
+          NONE,
+          ALLOW,
+          FORCE_ALLOW
+        };
+
+        /**
+         * @brief Internal state used to validate if all requested elements exist.
+         */
+        struct SearchState {
+          public:
+            std::map<std::string, bool> tests;
+            std::map<std::string, bool> groups;
+            std::map<std::string, bool> parts;
+
+            void check();
+
+          private:
+            void _check(std::map<std::string, bool>& elements, const char* a_typeName);
+        };
+
+        /**
+         * @brief Determines the allowance state of a specific name based on allow and ignore lists.
+         */
+        template <typename TAllowList>
+        EAllow checkAllow(EAllow a_allow, const TAllowList& a_allowList, const TAllowList& a_ignoreList, const std::string& a_name);
+
+        /**
+         * @brief Populates the search state with requested items and marks them as found if they exist.
+         */
+        template <typename TMap, typename TAllowList>
+        void checkExists(std::map<std::string, bool>& a_state, const TMap& a_map, const TAllowList& a_allowList);
+
+        Parts         _parts;           ///< Map of parts to their groups.
+        OrderMapType  _partOrders;      ///< Execution order for each part.
+        OrderMapType  _groupOrders;     ///< Execution order for each group.
+        OrderMapType  _testOrders;      ///< Execution order for each test.
+        std::mutex    _mutex;
+
     };
 
 
@@ -543,11 +604,12 @@ namespace fcf {
 } // fcf namespace
 
 
-/* ============================== */
-/* ===                        === */
-/* ===   Benchmarking class   === */
-/* ===                        === */
-/* ============================== */
+/* ========================================================== */
+/* ===                                                    === */
+/* ===                 Benchmarking class                 === */
+/* ===                                                    === */
+/* ========================================================== */
+
 namespace fcf {
   namespace NTest {
 
@@ -774,16 +836,17 @@ namespace fcf {
 } // fcf namespace
 
 
-/* ============================================== */
-/* ===                                        === */
-/* ===   Helper types for storing user data   === */
-/* ===                                        === */
-/* ============================================== */
+
+/* ========================================================== */
+/* ===                                                    === */
+/* ===         Helper types for storing user data         === */
+/* ===                                                    === */
+/* ========================================================== */
 
 namespace fcf {
   namespace NTest {
 
-    class SharedPtrAny {
+    class _FCF_TEST_DECL_EXPORT SharedPtrAny {
       private:
         struct ControlBlockBaseType {
           std::atomic<int> refCount;
@@ -840,11 +903,11 @@ namespace fcf {
 } // fcf namespace
 
 
-/* ================================== */
-/* ===                            === */
-/* ===   Logging and formatting   === */
-/* ===                            === */
-/* ================================== */
+/* ========================================================== */
+/* ===                                                    === */
+/* ===               Logging and formatting               === */
+/* ===                                                    === */
+/* ========================================================== */
 
 namespace fcf {
   namespace NTest {
@@ -1139,13 +1202,14 @@ namespace fcf {
 } // fcf namespace
 
 
-/* =========================================== */
-/* ===                                     === */
-/* ===            Implementation           === */
-/* ===                                     === */
-/* ===   Basic functions of unit testing   === */
-/* ===                                     === */
-/* =========================================== */
+
+/* ========================================================== */
+/* ===                                                    === */
+/* ===                   Implementation                   === */
+/* ===                                                    === */
+/* ===           Basic functions of unit testing          === */
+/* ===                                                    === */
+/* ========================================================== */
 
 namespace fcf {
   namespace NTest {
@@ -1155,15 +1219,6 @@ namespace fcf {
      * @return Reference to the Storage instance.
      */
     _FCF_TEST_DECL_EXPORT Storage& getStorage();
-
-    namespace NDetails {
-      /**
-       * @brief Selects tests based on the provided options.
-       * @param a_dst Destination set to store selected tests.
-       * @param a_options Configuration options for filtering.
-       */
-      inline void select(std::set<Test>& a_dst, const Options& a_options);
-    }
 
     #ifdef FCF_TEST_IMPLEMENTATION
       _FCF_TEST_DECL_EXPORT void cmdHelp() {
@@ -1203,7 +1258,7 @@ namespace fcf {
       _FCF_TEST_DECL_EXPORT void cmdList() {
         Options options;
         std::set<Test> tests;
-        NDetails::select(tests, options);
+        getStorage().select(tests, options);
         std::cout << "List of tests:" << std::endl;
         for(const Test& test : tests) {
           std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.name  << "\""<< std::endl;
@@ -1212,112 +1267,60 @@ namespace fcf {
     #endif
 
 
-    namespace NDetails {
-      /**
-       * @brief Enumerates permission states for allowing/ignoring tests.
-       */
-      enum EAllow {
-        IGNORE,
-        NONE,
-        ALLOW,
-        FORCE_ALLOW
-      };
+  } // NTest namespace
+} // fcf namespace
 
-      /**
-       * @brief Internal state used to validate if all requested tests/groups/parts exist.
-       */
-      struct SearchState {
-        public:
-          std::map<std::string, bool> tests;
-          std::map<std::string, bool> groups;
-          std::map<std::string, bool> parts;
 
-          /**
-           * @brief Validates that all elements in the state maps were actually found.
-           * @throws std::runtime_error if any requested element is missing.
-           */
-          void check() {
-            _check(parts, "parts ");
-            _check(groups, "groups ");
-            _check(tests, "");
-          }
 
-        private:
-          /**
-           * @brief Helper to iterate through a map and check for missing elements.
-           * @param a_elements The map to check.
-           * @param a_typeName Name of the type for error reporting.
-           */
-          void _check(std::map<std::string, bool>& elements, const char* a_typeName) {
-            for(const auto& item : elements) {
-              if (!item.second) {
-                throw std::runtime_error(std::string() + "The test " + a_typeName + "named '" + item.first + "' cannot be found");
-              }
-            }
-          }
-        };
+/* ========================================================== */
+/* ===                                                    === */
+/* ===                   Implementation                   === */
+/* ===                                                    === */
+/* ===              Declaration of the basic              === */
+/* ===             structures of unit testing             === */
+/* ===                                                    === */
+/* ========================================================== */
 
-      /**
-       * @brief Determines the allowance state of a specific name based on allow and ignore lists.
-       * @param a_allow Current allowance state.
-       * @param a_allowList List of names that are explicitly allowed.
-       * @param a_ignoreList List of names that are explicitly ignored.
-       * @param a_name The name to check.
-       * @return The updated EAllow state.
-       */
-      template <typename TAllowList>
-      EAllow checkAllow(EAllow a_allow, const TAllowList& a_allowList, const TAllowList& a_ignoreList, const std::string& a_name) {
-        if (a_allow == ALLOW) {
-          if (!a_allowList.empty()) {
-            auto it = std::find(a_allowList.begin(), a_allowList.end(), a_name);
-            if (it != a_allowList.end()) {
-              a_allow = FORCE_ALLOW;
-            } else {
-              a_allow = NONE;
-            }
-          }
-        } else if (a_allow == NONE) {
-          if (!a_allowList.empty()) {
-            auto it = std::find(a_allowList.begin(), a_allowList.end(), a_name);
-            if (it != a_allowList.end()) {
-              a_allow = FORCE_ALLOW;
-            }
-          }
-        }
-        auto it = std::find(a_ignoreList.begin(), a_ignoreList.end(), a_name);
-        if (it != a_ignoreList.end()) {
-          a_allow = IGNORE;
-        }
-        return a_allow;
+namespace fcf {
+  namespace NTest {
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::partOrder(const char* a_name, int a_order) {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _partOrders[a_name] = a_order;
       }
+    #endif
 
-      /**
-       * @brief Populates the search state with requested items and marks them as found if they exist in the storage.
-       * @param a_state The search state to update.
-       * @param a_map The actual storage map to check against.
-       * @param a_allowList The list of items to look for.
-       */
-      template <typename TMap, typename TAllowList>
-      void checkExists(std::map<std::string, bool>& a_state, const TMap& a_map, const TAllowList& a_allowList) {
-        for (const auto& allowItem : a_allowList) {
-          auto stateIt = a_state.insert({allowItem, false}).first;
-          if (a_map.find(allowItem) != a_map.end()) {
-            stateIt->second = true;
-          }
-        }
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::groupOrder(const char* a_name, int a_order) {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _groupOrders[a_name] = a_order;
       }
+    #endif
 
-      /**
-       * @brief Recursively selects tests based on parts.
-       *
-       * @param a_dst Destination set where selected tests will be inserted.
-       * @param a_options Configuration options (filters).
-       */
-      inline void select(std::set<Test>& a_dst, const Options& a_options) {
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::testOrder(const char* a_name, int a_order) {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _groupOrders[a_name] = a_order;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::append(const Test& a_test) {
+        std::lock_guard<std::mutex> lock(_mutex);
+        Parts::MapType::iterator partIterator = _parts.values.insert( Parts::MapType::value_type(a_test.part, Groups() )  ).first;
+        Groups::MapType::iterator groupIterator = partIterator->second.values.insert( Groups::MapType::value_type(a_test.group, Tests() )  ).first;
+        groupIterator->second.values[a_test.name] = a_test;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::select(std::set<Test>& a_dst, const Options& a_options) {
+        std::lock_guard<std::mutex> lock(_mutex);
         SearchState state;
-        checkExists(state.parts, getStorage().parts.values, a_options.parts);
+        checkExists(state.parts, _parts.values, a_options.parts);
 
-        for(const auto& partItem : getStorage().parts.values) {
+        for(const auto& partItem : _parts.values) {
 
           checkExists(state.groups, partItem.second.values, a_options.groups);
 
@@ -1338,20 +1341,20 @@ namespace fcf {
 
               Test test(testItem.second);
               {
-                Storage::OrderMapType::const_iterator it = getStorage().partOrders.find(test.part);
-                if (it != getStorage().partOrders.end()) {
+                Storage::OrderMapType::const_iterator it = _partOrders.find(test.part);
+                if (it != _partOrders.end()) {
                   test.partOrder = it->second;
                 }
               }
               {
-                Storage::OrderMapType::const_iterator it = getStorage().groupOrders.find(test.group);
-                if (it != getStorage().groupOrders.end()) {
+                Storage::OrderMapType::const_iterator it = _groupOrders.find(test.group);
+                if (it != _groupOrders.end()) {
                   test.groupOrder = it->second;
                 }
               }
               {
-                Storage::OrderMapType::const_iterator it = getStorage().testOrders.find(test.name);
-                if (it != getStorage().testOrders.end()) {
+                Storage::OrderMapType::const_iterator it = _testOrders.find(test.name);
+                if (it != _testOrders.end()) {
                   test.nameOrder = it->second;
                 }
               }
@@ -1362,22 +1365,76 @@ namespace fcf {
 
         state.check();
       }
-    } // NDetails namespace
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::SearchState::check() {
+        _check(parts, "parts ");
+        _check(groups, "groups ");
+        _check(tests, "");
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::SearchState::_check(std::map<std::string, bool>& elements, const char* a_typeName) {
+        for(const auto& item : elements) {
+          if (!item.second) {
+            throw std::runtime_error(std::string() + "The test " + a_typeName + "named '" + item.first + "' cannot be found");
+          }
+        }
+      }
+    #endif
+
+    template <typename TAllowList>
+    typename Storage::EAllow Storage::checkAllow(EAllow a_allow, const TAllowList& a_allowList, const TAllowList& a_ignoreList, const std::string& a_name) {
+      if (a_allow == ALLOW) {
+        if (!a_allowList.empty()) {
+          auto it = std::find(a_allowList.begin(), a_allowList.end(), a_name);
+          if (it != a_allowList.end()) {
+            a_allow = FORCE_ALLOW;
+          } else {
+            a_allow = NONE;
+          }
+        }
+      } else if (a_allow == NONE) {
+        if (!a_allowList.empty()) {
+          auto it = std::find(a_allowList.begin(), a_allowList.end(), a_name);
+          if (it != a_allowList.end()) {
+            a_allow = FORCE_ALLOW;
+          }
+        }
+      }
+      auto it = std::find(a_ignoreList.begin(), a_ignoreList.end(), a_name);
+      if (it != a_ignoreList.end()) {
+        a_allow = IGNORE;
+      }
+      return a_allow;
+    }
+
+    template <typename TMap, typename TAllowList>
+    void Storage::checkExists(std::map<std::string, bool>& a_state, const TMap& a_map, const TAllowList& a_allowList) {
+      for (const auto& allowItem : a_allowList) {
+        auto stateIt = a_state.insert({allowItem, false}).first;
+        if (a_map.find(allowItem) != a_map.end()) {
+          stateIt->second = true;
+        }
+      }
+    }
 
   } // NTest namespace
 } // fcf namespace
 
-
-/* ============================================== */
-/* ===                                        === */
-/* ===             Implementation             === */
-/* ===                                        === */
-/* ===   Helper types for storing user data   === */
-/* ===                                        === */
-/* ============================================== */
+/* ========================================================== */
+/* ===                                                    === */
+/* ===                   Implementation                   === */
+/* ===                                                    === */
+/* ===         Helper types for storing user data         === */
+/* ===                                                    === */
+/* ========================================================== */
 
 namespace fcf {
   namespace NTest {
+
     #ifdef FCF_TEST_IMPLEMENTATION
       SharedPtrAny::ControlBlockBaseType::ControlBlockBaseType()
         : refCount(1)
@@ -1514,13 +1571,13 @@ namespace fcf {
 } // fcf namespace
 
 
-/* ================================== */
-/* ===                            === */
-/* ===      Implementation        === */
-/* ===                            === */
-/* ===   Logging and formatting   === */
-/* ===                            === */
-/* ================================== */
+/* ========================================================== */
+/* ===                                                    === */
+/* ===                   Implementation                   === */
+/* ===                                                    === */
+/* ===               Logging and formatting               === */
+/* ===                                                    === */
+/* ========================================================== */
 
 
 /* ----------------------------- */
@@ -2254,6 +2311,39 @@ namespace fcf {
   } // NTest namespace
 } // fcf namespace
 
+
+
+
+
+
+
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+///---------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
 namespace fcf {
   namespace NTest {
 
@@ -2294,7 +2384,7 @@ namespace fcf {
      */
     struct PartOrderRegisrator {
       PartOrderRegisrator(const char* a_name, int a_order) {
-        getStorage().partOrders[a_name] = a_order;
+        getStorage().partOrder(a_name, a_order);
       }
     };
 
@@ -2306,7 +2396,7 @@ namespace fcf {
      */
     struct GroupOrderRegisrator {
       GroupOrderRegisrator(const char* a_name, int a_order) {
-        getStorage().groupOrders[a_name] = a_order;
+        getStorage().groupOrder(a_name, a_order);
       }
     };
 
@@ -2318,7 +2408,7 @@ namespace fcf {
      */
     struct TestOrderRegisrator {
       TestOrderRegisrator(const char* a_name, int a_order) {
-        getStorage().testOrders[a_name] = a_order;
+        getStorage().testOrder(a_name, a_order);
       }
     };
 
@@ -2371,7 +2461,7 @@ namespace fcf {
 
             sys(LMC_START);
 
-            NDetails::select(tests, a_options);
+            getStorage().select(tests, a_options);
 
             unsigned int errorCounter = 0;
             unsigned int passedCounter = 0;
