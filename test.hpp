@@ -243,7 +243,7 @@
  */
 #define FCF_TEST_PART_ORDER(am_part, am_order)\
   namespace {\
-    ::fcf::NTest::NDetails::PartOrderRegisrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_part, am_order);\
+    ::fcf::NTest::NDetails::PartOrderRegistrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_part, am_order);\
   }
 
 /**
@@ -255,7 +255,7 @@
  */
 #define FCF_TEST_GROUP_ORDER(am_group, am_order)\
   namespace {\
-    ::fcf::NTest::NDetails::GroupOrderRegisrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_group, am_order);\
+    ::fcf::NTest::NDetails::GroupOrderRegistrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_group, am_order);\
   }
 
 /**
@@ -267,7 +267,7 @@
  */
 #define FCF_TEST_TEST_ORDER(am_test, am_order)\
   namespace {\
-    ::fcf::NTest::NDetails::TestOrderRegisrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_test, am_order);\
+    ::fcf::NTest::NDetails::TestOrderRegistrator _FCF_TEST__CONCAT2(fcf_test_order_registrator_, __COUNTER__)(am_test, am_order);\
   }
 
 #ifndef _FCF_TEST_ANSI_SUCCESS
@@ -837,7 +837,13 @@ namespace fcf {
 namespace fcf {
   namespace NTest {
 
+    namespace NDetails {
+      _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+    } // NDetails namespace
+
     class _FCF_TEST_DECL_EXPORT State {
+        friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+
       public:
         Test                    test();
         void                    test(const Test& a_test);
@@ -846,13 +852,13 @@ namespace fcf {
         void                    tests(const std::set<Test>& a_tests);
         Duration                duration();
         void                    duration(const Duration& a_duration);
-        void                    resumeDuration();
-        void                    endDuration();
         void                    error(const char* a_error, bool a_ignoreExists);
         std::list<std::string>  errors();
         void                    errors(const std::list<std::string>& a_errors);
 
       private:
+        void                    _resumeDuration();
+        void                    _endDuration();
         Test                   _test;
         std::set<Test>         _tests;
         Duration               _duration;
@@ -939,10 +945,6 @@ namespace fcf {
 
 namespace fcf {
   namespace NTest {
-
-    namespace NDetails {
-      _FCF_TEST_DECL_EXPORT void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
-    } // NDetails namespace
 
     class _FCF_TEST_DECL_EXPORT Logger;
     struct LogMessageContext;
@@ -1239,26 +1241,26 @@ namespace fcf {
   namespace NTest {
     namespace NDetails {
 
-      struct Regisrator {
-        Regisrator(const Test& a_test) {
+      struct Registrator {
+        Registrator(const Test& a_test) {
           getStorage().append(a_test);
         }
       };
 
-      struct PartOrderRegisrator {
-        PartOrderRegisrator(const char* a_name, int a_order) {
+      struct PartOrderRegistrator {
+        PartOrderRegistrator(const char* a_name, int a_order) {
           getStorage().partOrder(a_name, a_order);
         }
       };
 
-      struct GroupOrderRegisrator {
-        GroupOrderRegisrator(const char* a_name, int a_order) {
+      struct GroupOrderRegistrator {
+        GroupOrderRegistrator(const char* a_name, int a_order) {
           getStorage().groupOrder(a_name, a_order);
         }
       };
 
-      struct TestOrderRegisrator {
-        TestOrderRegisrator(const char* a_name, int a_order) {
+      struct TestOrderRegistrator {
+        TestOrderRegistrator(const char* a_name, int a_order) {
           getStorage().testOrder(a_name, a_order);
         }
       };
@@ -1445,20 +1447,6 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void State::resumeDuration(){
-        std::lock_guard<std::mutex> lock(_mutex);
-        _duration.resume();
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      void State::endDuration(){
-        std::lock_guard<std::mutex> lock(_mutex);
-        _duration.end();
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
       void State::error(const char* a_error, bool a_ignoreExists){
         std::lock_guard<std::mutex> lock(_mutex);
         if (a_ignoreExists) {
@@ -1481,6 +1469,20 @@ namespace fcf {
       void State::errors(const std::list<std::string>& a_errors){
         std::lock_guard<std::mutex> lock(_mutex);
         _errors = a_errors;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::_resumeDuration(){
+        std::lock_guard<std::mutex> lock(_mutex);
+        _duration.resume();
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::_endDuration(){
+        std::lock_guard<std::mutex> lock(_mutex);
+        _duration.end();
       }
     #endif
 
@@ -1636,7 +1638,7 @@ namespace fcf {
             unsigned int passedCounter = 0;
             for(const Test& test : tests) {
               state().test(test);
-              state().resumeDuration();
+              state()._resumeDuration();
               state().errors({});
               sys(LMC_TEST_START);
               sys(LMC_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
@@ -1647,7 +1649,7 @@ namespace fcf {
                 state().error(e.what(), true);
               }
 
-              state().endDuration();
+              state()._endDuration();
               std::list<std::string> errors = state().errors();
               if (!errors.size()) {
                 sys(LMC_TEST_COMPLETE) << _FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << _FCF_TEST_ANSI_RESET 
@@ -1670,7 +1672,7 @@ namespace fcf {
               }
             }
 
-            unsigned int skipedCounter = tests.size() - passedCounter;
+            unsigned int skippedCounter = tests.size() - passedCounter;
 
             if (!errorCounter) {
               sys(LMC_COMPLETE) << std::endl
@@ -1680,7 +1682,7 @@ namespace fcf {
                              << _FCF_TEST_ANSI_FAILED << "[FAILED]" << _FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
             }
 
-            sys(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skipedCounter << " skiped, " << tests.size() << " total" << std::endl;
+            sys(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skippedCounter << " skipped, " << tests.size() << " total" << std::endl;
             sys(LMC_DURATION) << "Duration: " << state().duration().totalDurationStr(true) << " sec" << std::endl;
 
             sys(LMC_END);
