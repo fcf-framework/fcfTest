@@ -333,6 +333,7 @@ namespace fcf {
       LMC_TEST_ERROR            = 0x1000,
       LMC_TEST_ERROR_MESSAGE    = 0x2000,
       LMC_TEST_END              = 0x4000,
+      LMC_RUN_ERROR             = 0x8000,
       LMC_TEST                  = LMC_USER | LMC_TEST_COMPLETE | LMC_TEST_ERROR | LMC_TEST_ERROR_MESSAGE,
       LMC_ALL                   = 0xFFFF,
     };
@@ -1620,6 +1621,8 @@ namespace fcf {
           std::list<std::string>  lastErrors = state().errors();
 
           try {
+            logger()._setEnvironment(newEnv);
+
             std::set<Test> tests;
             getStorage().select(tests, a_options);
 
@@ -1627,8 +1630,6 @@ namespace fcf {
             state().tests(tests);
             state().test({});
             state().errors({});
-
-            logger()._setEnvironment(newEnv);
 
             sys(LMC_START);
 
@@ -1651,7 +1652,7 @@ namespace fcf {
               std::list<std::string> errors = state().errors();
               if (!errors.size()) {
                 ++passedCounter;
-                sys(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET 
+                sys(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET
                                        << " Test completed successfully (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
                 sys(LMC_TEST_END);
               } else {
@@ -1686,26 +1687,32 @@ namespace fcf {
 
             sys(LMC_END);
 
+            state().tests(lastTests);
+            state().test(lastTest);
+            state().duration(lastDuration);
+            state().errors(lastErrors);
+
             logger()._setEnvironment(lastEnv);
+
             {
               std::lock_guard<std::recursive_mutex> lock(mutex);
               globalRunState = false;
             }
+          } catch(const std::exception& a_error) {
+            sys(LMC_RUN_ERROR) << "Error: " << a_error.what() << std::endl;
 
             state().tests(lastTests);
             state().test(lastTest);
             state().duration(lastDuration);
             state().errors(lastErrors);
-          } catch(const std::exception&) {
-            state().tests(lastTests);
-            state().test(lastTest);
-            state().duration(lastDuration);
-            state().errors(lastErrors);
+
             logger()._setEnvironment(lastEnv);
+
             {
               std::lock_guard<std::recursive_mutex> lock(mutex);
               globalRunState = false;
             }
+
             if (a_enableThrow) {
               throw;
             }
