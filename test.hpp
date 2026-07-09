@@ -222,15 +222,11 @@
     }
 
   #define FCF_TEST_CHECK(exp, ...) \
-    if (!(exp)) { \
-      ::fcf::NTest::Details::Printer _fcf_test_error_printer(Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
-                                         __FILE__, \
-                                         Z__FCF_TEST__STRINGIFY(__LINE__)\
-                                         Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
-                                         );\
-      std::runtime_error exception(_fcf_test_error_printer(__VA_ARGS__));\
-      ::fcf::NTest::state().error(exception.what(), false);\
-    }
+    ::fcf::NTest::Details::Printer(Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+                                       __FILE__, \
+                                       Z__FCF_TEST__STRINGIFY(__LINE__)\
+                                       Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
+                                       ).inlineCheck((exp), __VA_ARGS__)
 #endif
 
 
@@ -1780,6 +1776,22 @@ namespace fcf {
           return result;
         }
 
+        template <typename... TArgPack>
+        bool inlineCheck(bool a_expression, const TArgPack&... a_pack) {
+          if (!a_expression) {
+            expr = expr.length() && (unsigned char)expr[0] <= (unsigned char)' ' ? expr.substr(1, std::string::npos) : expr;\
+            std::string result = std::string() + \
+                                 "Test error: " + expr + "  [FILE: " + file + ":" + line + "]\n";
+            if (sizeof...(TArgPack) && values.size()) {
+              result += "  Values:\n";
+            }
+            result += PrintPack<TArgPack...>()(values.begin(), values.end(), a_pack...);
+            result = std::runtime_error(result).what();
+            ::fcf::NTest::state().error(result.c_str(), false);\
+          }
+          return a_expression;
+        }
+
         private:
           template <typename TValue, typename ...TPack>
           void _appendValue(TValue a_value, TPack... a_valuePack) {
@@ -2303,10 +2315,14 @@ namespace fcf {
         _prefixes.clear();
         if (a_defaultState) {
           LogPrefixSettings lpo;
-          lpo.name          = "offset";
-          lpo.multiLine     = true;
-          lpo.messageCategories  = LMC_TEST;
-          appendPrefixStr("   ", lpo);
+          lpo.name               = "test-offset";
+          lpo.multiLine          = true;
+          lpo.messageCategories  = LMC_TEST & (~LMC_USER);
+          appendPrefixStr("    ", lpo);
+          lpo.name               = "user-offset";
+          lpo.multiLine          = true;
+          lpo.messageCategories  = LMC_USER;
+          appendPrefixStr("  > ", lpo);
         }
       }
     #endif
