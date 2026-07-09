@@ -60,11 +60,11 @@ Performing the test: "MyLibraryPartName" -> "ExamplesGroupName" -> "VectorSizeTe
     Test error: vec.size() == 2  [FILE: PATH/example.cpp:11]
       Values:
         vec.size(): 1
-    [FAILED] Test failed (0.000`078`423 sec)
+    [FAILED] Test failed (0.000`044`808 sec)
 
 [FAILED] Testing completed with failures.
 Tests: 0 passed, 1 failed, 0 skipped, 1 total
-Duration: 0.000`078`423 sec
+Duration: 0.000`044`808 sec
 ```
 
 ## Core Macros
@@ -528,22 +528,22 @@ $ test --test-log-level inf
 
 **Output:**
 
- ```stdout
+```stdout
 Performing the test: "Math" -> "BasicArithmetic" -> "Addition" ...
   > Itertion count: 10000
-  > Total: 48 ns
+  > Total: 49 ns
   > Avg: 0 ns
-    [SUCCESS] Test completed successfully (0.000`041`235 sec)
+    [SUCCESS] Test completed successfully (0.000`025`231 sec)
 Performing the test: "Math" -> "BasicArithmetic" -> "Subtraction" ...
   > Itertion count: 10000
-  > Total: 34 ns
+  > Total: 36 ns
   > Avg: 0 ns
-    [SUCCESS] Test completed successfully (0.000`011`831 sec)
+    [SUCCESS] Test completed successfully (0.000`009`845 sec)
 Performing the test: "Vector" -> "SizeCheck" -> "EmptyVector" ...
-    [SUCCESS] Test completed successfully (0.000`007`502 sec)
+    [SUCCESS] Test completed successfully (0.000`000`099 sec)
 
 [SUCCESS] All tests were completed.
 Tests: 3 passed, 0 failed, 0 skipped, 3 total
-Duration: 0.000`060`568 sec
+Duration: 0.000`035`175 sec
 ```
 
