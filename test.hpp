@@ -2527,6 +2527,9 @@ namespace fcf {
               if (!_newLine) {
                 continue;
               }
+
+              lms.line          = 0;
+
               size_t lastPos = 0;
               std::string currentMessage = lms.message;
               std::string resultMessage;
@@ -2557,10 +2560,13 @@ namespace fcf {
                 }
                 resultMessage += lms.message;
                 lastPos = pos;
+                ++lms.line;
               }
               std::swap(lms.message, resultMessage);
             }
           }
+
+          lms.line = 0;
 
           for(LogFormat format : _formats) {
             const char* formatName = format.options.name.empty() ? "default" : format.options.name.c_str();
