@@ -57,7 +57,7 @@ The program will execute the registered tests. If an assertion fails, it prints 
 
  ```stdout
 Performing the test: "MyLibraryPartName" -> "ExamplesGroupName" -> "VectorSizeTestName" ...
-    Test error: vec.size() == 2  [FILE: /home/phoenix/Development/projects/fcfcpp/fcfTest/examples/readme-example/readme-example.cpp:11]
+    Test error: vec.size() == 2  [FILE: PATH/example.cpp:11]
       Values:
         vec.size(): 1
     [FAILED] Test failed (0.000`078`423 sec)
@@ -131,7 +131,7 @@ Performing the test: "MyLib" -> "Base" -> "Simple test" ...
   > Test started
   > Simple comparison failed
   > Test resumed
-    Test error: v1 == v2  [FILE: /home/phoenix/Development/projects/fcfcpp/fcfTest/test/main.cpp:54]
+    Test error: v1 == v2  [FILE: PATH/main.cpp:54]
       Values:
         v1: 1
     [FAILED] Test failed (0.000`049`999 sec)
