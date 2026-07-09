@@ -482,7 +482,7 @@ namespace fcf {
       ELogLevel                logLevel;      ///< Desired logging level.
       std::string              format;
       bool                     noBreak;
-      std::list<File>          files;
+      std::vector<File>        files;
 
       Options()
         : logLevel(LL_DEF)

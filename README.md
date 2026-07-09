@@ -305,7 +305,7 @@ struct Options {
   ELogLevel                logLevel;      ///< Desired logging level.
   std::string              format;        ///< Output format (e.g., "junit", "default").
   bool                     noBreak;       ///< If true, testing continues after a failure.
-  std::list<File>          files;         ///< List of log files to write to.
+  std::vector<File>        files;         ///< List of log files to write to.
 };
 ```
 
