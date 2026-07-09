@@ -100,7 +100,7 @@ The primary macro for performing checks in unit tests.
 ```c++
 int x = 5;
 FCF_TEST(x == 4, x);
-// Throws error: Test error: x == 4 [FILE: main.cpp:10]
+// Test error: x == 4 [FILE: main.cpp:10]
 // Values:
 //    x: 5
 ```
