@@ -1073,7 +1073,7 @@ namespace fcf {
 
         void prefixes(const LogPrefixes& a_prefixes);
 
-        void clearPrefixes(bool a_defaultState);
+        void clearPrefixes(bool a_defaultState = false);
 
         void appendPrefixStr(const std::string& a_prefix);
 
@@ -1089,7 +1089,7 @@ namespace fcf {
 
         void formats(LogFormats& a_formats);
 
-        void clearFormats(bool a_defaultState);
+        void clearFormats(bool a_defaultState = false);
 
         void appendFormat(const LogFormat& a_format);
 
