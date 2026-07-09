@@ -1,6 +1,8 @@
 /**
  * fcfTest - Lightweight C++ Unit Testing Library (>= C++11)
- * https://github.com/fcf-framework/fcfTest
+ *
+ * Homepage: https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest
+ * Repository: https://github.com/fcf-framework/fcfTest
  *
  * SPDX-License-Identifier: MIT
  *
