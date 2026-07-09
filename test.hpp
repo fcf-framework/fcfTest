@@ -1642,18 +1642,19 @@ namespace fcf {
             unsigned int passedCounter = 0;
             for(const Test& test : tests) {
               state().test(test);
-              state()._resumeDuration();
               state().errors({});
               sys(LMC_TEST_START);
               sys(LMC_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+              state()._resumeDuration();
 
               try {
                 test.testFunction();
+                state()._endDuration();
               } catch(std::exception& e) {
+                state()._endDuration();
                 state().error(e.what(), true);
               }
 
-              state()._endDuration();
               std::list<std::string> errors = state().errors();
               if (!errors.size()) {
                 ++passedCounter;
