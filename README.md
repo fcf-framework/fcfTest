@@ -57,14 +57,14 @@ The program will execute the registered tests. If an assertion fails, it prints 
 
  ```stdout
 Performing the test: "MyLibraryPartName" -> "ExamplesGroupName" -> "VectorSizeTestName" ...
-   Test error: vec.size() == 2  [FILE: PATH/readme-example.cpp:11]
-     Values:
-       vec.size(): 1
-   [FAILED] Test failed (0.000`078`894 sec)
+    Test error: vec.size() == 2  [FILE: /home/phoenix/Development/projects/fcfcpp/fcfTest/examples/readme-example/readme-example.cpp:11]
+      Values:
+        vec.size(): 1
+    [FAILED] Test failed (0.000`078`423 sec)
 
 [FAILED] Testing completed with failures.
 Tests: 0 passed, 1 failed, 0 skipped, 1 total
-Duration: 0.000`078`894 sec
+Duration: 0.000`078`423 sec
 ```
 
 ## Core Macros
