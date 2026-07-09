@@ -87,7 +87,7 @@ This macro is used to import symbols from the test library when using it as a cl
 - **Usage**: Defined by the main FCF library macros (`FCF_IMPORT`) if applicable, otherwise empty.
 - **Purpose**: Ensures consistent symbol visibility for functions and variables defined in external shared libraries when they are imported into the client process without multiple definition errors.
 
-### `FCF_TEST(am_expression, ...am_observedVariablePack)`
+### `FCF_TEST(bool am_expression, ...mixed am_observedVariablePack)`
 
 The primary macro for performing checks in unit tests.
 - **Behavior**: Evaluates `(am_expression)`. If the result is false (non-zero), it throws a `std::runtime_error`.
@@ -105,7 +105,7 @@ FCF_TEST(x == 4, x);
 //    x: 5
 ```
 
-### `bool FCF_TEST_CHECK(am_expression, ...am_observedVariablePack)`
+### `bool FCF_TEST_CHECK(bool am_expression, ...mixed am_observedVariablePack)`
 
 A non-throwing version of the assertion macro.
 - **Behavior**: Evaluates `(am_expression)`. If the result is false, it logs the error to the internal state but **does not** throw an exception. This is useful if you need to continue the test after a failure or if the execution is performed in a separate thread.
@@ -146,7 +146,7 @@ Duration: 0.000`049`999 sec
 
 Tests are organized hierarchically into Parts, Groups, and Tests. This allows for filtering execution based on these levels.
 
-### `FCF_TEST_DECLARE(am_part, am_group, am_test)`
+### `FCF_TEST_DECLARE(const char* am_part, const char* am_group, const char* am_test)`
 
 Declares a new test case.
 - **Parameters**:
@@ -165,7 +165,7 @@ FCF_TEST_DECLARE("Network", "HTTP", "PostRequestTest") {
 }
 ```
 
-### `FCF_TEST_PART_ORDER(am_part, am_order)`
+### `FCF_TEST_PART_ORDER(const char* am_part, int am_order)`
 
 Registers the execution order for a specific part.
 - **Parameters**:
@@ -178,7 +178,7 @@ FCF_TEST_PART_ORDER("CriticalTests", 1); // Run critical tests first
 FCF_TEST_PART_ORDER("GeneralTests", 2);
 ```
 
-### `FCF_TEST_GROUP_ORDER(am_group, am_order)`
+### `FCF_TEST_GROUP_ORDER(const char* am_group, int am_order)`
 
 Registers the execution order for a specific group within a part.
 - **Parameters**:
@@ -191,7 +191,7 @@ FCF_TEST_GROUP_ORDER("Integration", 1);
 FCF_TEST_GROUP_ORDER("Unit", 2);
 ```
 
-### `FCF_TEST_TEST_ORDER(am_test, am_order)`
+### `FCF_TEST_TEST_ORDER(const char* am_test, int am_order)`
 
 Registers the execution order for a specific test within a group.
 - **Parameters**:
