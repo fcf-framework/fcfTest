@@ -1,6 +1,10 @@
 #ifndef Z___FCF_TEST__TEST_HPP___
 #define Z___FCF_TEST__TEST_HPP___
 
+#define FCF_TEST_VERSION_MAJOR        1
+#define FCF_TEST_VERSION_MINOR        1
+#define FCF_TEST_VERSION_MAINTENANCE  3
+
 /*
  * fcfTest is a lightweight C++ (>= C++11) unit testing framework.
  * Modern, zero-dependency, header-only cpp unittest library for TDD.
@@ -33,7 +37,8 @@
 #include <set>
 #include <regex>
 #include <mutex>
-#include "VERSION"
+
+
 
 /**
  * @brief FCF_TEST_IMPLEMENTATION/FCF_IMPLEMENTATION. Defines the implementation macro for FCF test functionality.
