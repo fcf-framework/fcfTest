@@ -85,11 +85,20 @@ FCF_TEST_DECLARE("Benchmark", "Manual", "ManualLoopBenchmark") {
 int main(int a_argc, char* a_argv[]) {
     bool error = false;
 
+    fcf::NTest::logger().clearPrefixes(false);
+
     // Add a static string prefix to all log messages to indent them.
-    fcf::NTest::logger().appendPrefixStr("  ");
+    fcf::NTest::LogPrefixSettings pls;
+    pls.name = "custom-offset";
+    pls.multiLine = true;
+    pls.messageCategories = fcf::NTest::LMC_TEST;
+    fcf::NTest::logger().appendPrefixStr("  ", pls);
 
     // Register a functional prefix that dynamically generates a timestamp and log level string.
     // This function is called by the logger every time a message is written.
+    pls.name = "info";
+    pls.multiLine = false;
+    pls.messageCategories = fcf::NTest::LMC_ALL;
     fcf::NTest::logger().appendPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::LogMessageContext& a_status){
         // Get current system time
         auto time = std::time(nullptr);
@@ -100,7 +109,7 @@ int main(int a_argc, char* a_argv[]) {
                   << a_logger.toLevelStr(a_status.level) 
                   << "]: "
                 ).str();
-    });
+    }, pls);
 
     // Run tests.
     // To see debug and trace messages, run with the flag

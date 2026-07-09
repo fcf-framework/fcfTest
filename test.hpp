@@ -321,16 +321,18 @@ namespace fcf {
       LMC_USER                  = 0x0001,
       LMC_START                 = 0x0002,
       LMC_END                   = 0x0004,
-      LMC_COMPLETE              = 0x0008,
-      LMC_ERROR                 = 0x0010,
-      LMC_RESULT                = 0x0020,
-      LMC_DURATION              = 0x0040,
-      LMC_TEST_START            = 0x0080,
-      LMC_TEST_START_MESSAGE    = 0x0100,
-      LMC_TEST_COMPLETE         = 0x0200,
-      LMC_TEST_ERROR            = 0x0400,
-      LMC_TEST_ERROR_MESSAGE    = 0x0800,
-      LMC_TEST_END              = 0x1000,
+      LMC_COMPLETE_NEW_LINE     = 0x0008,
+      LMC_COMPLETE              = 0x0010,
+      LMC_ERROR_NEW_LINE        = 0x0020,
+      LMC_ERROR                 = 0x0040,
+      LMC_RESULT                = 0x0080,
+      LMC_DURATION              = 0x0100,
+      LMC_TEST_START            = 0x0200,
+      LMC_TEST_START_MESSAGE    = 0x0400,
+      LMC_TEST_COMPLETE         = 0x0800,
+      LMC_TEST_ERROR            = 0x1000,
+      LMC_TEST_ERROR_MESSAGE    = 0x2000,
+      LMC_TEST_END              = 0x4000,
       LMC_TEST                  = LMC_USER | LMC_TEST_COMPLETE | LMC_TEST_ERROR | LMC_TEST_ERROR_MESSAGE,
       LMC_ALL                   = 0xFFFF,
     };
@@ -1672,11 +1674,11 @@ namespace fcf {
             unsigned int skippedCounter = tests.size() - passedCounter - errorCounter;
 
             if (!errorCounter) {
-              sys(LMC_COMPLETE) << std::endl
-                                << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET << " All tests were completed." << std::endl;
+              sys(LMC_COMPLETE_NEW_LINE) << std::endl;
+              sys(LMC_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET << " All tests were completed." << std::endl;
             } else {
-              sys(LMC_ERROR) << std::endl
-                             << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
+              sys(LMC_ERROR_NEW_LINE) << std::endl;
+              sys(LMC_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
             }
 
             sys(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skippedCounter << " skipped, " << tests.size() << " total" << std::endl;

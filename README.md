@@ -128,17 +128,17 @@ FCF_TEST_DECLARE("MyLib", "Base", "Simple test"){
 
  ```stdout
 Performing the test: "MyLib" -> "Base" -> "Simple test" ...
-   Test started
-   Simple comparison failed
-   Test resumed
-   Test error: v1 == v2  [FILE: PATH/main.cpp:54]
-     Values:
-       v1: 1
-   [FAILED] Test failed (0.000`053`831 sec)
+  > Test started
+  > Simple comparison failed
+  > Test resumed
+    Test error: v1 == v2  [FILE: /home/phoenix/Development/projects/fcfcpp/fcfTest/test/main.cpp:54]
+      Values:
+        v1: 1
+    [FAILED] Test failed (0.000`049`999 sec)
 
 [FAILED] Testing completed with failures.
 Tests: 0 passed, 1 failed, 0 skipped, 1 total
-Duration: 0.000`053`831 sec
+Duration: 0.000`049`999 sec
 ```
 
 
@@ -474,9 +474,9 @@ FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Additi
   bench.end();
 
   // Outputting the execution time measurement result at the 'info' logging level.
-  fcf::NTest::inf() << "  Itertion count: " << bench.iterationCount() << std::endl;
-  fcf::NTest::inf() << "  Total: " << bench.totalDuration().count() << " ns" << std::endl;
-  fcf::NTest::inf() << "  Avg: " << bench.duration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "Itertion count: " << bench.iterationCount() << std::endl;
+  fcf::NTest::inf() << "Total: " << bench.totalDuration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "Avg: " << bench.duration().count() << " ns" << std::endl;
 }
 
 FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtraction" /*TEST NAME*/) {
@@ -493,9 +493,9 @@ FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtra
   });
 
   // Outputting the execution time measurement result at the 'info' logging level.
-  fcf::NTest::inf() << "  Itertion count: " << bench.iterationCount() << std::endl;
-  fcf::NTest::inf() << "  Total: " << bench.totalDuration().count() << " ns" << std::endl;
-  fcf::NTest::inf() << "  Avg: " << bench.duration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "Itertion count: " << bench.iterationCount() << std::endl;
+  fcf::NTest::inf() << "Total: " << bench.totalDuration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "Avg: " << bench.duration().count() << " ns" << std::endl;
 }
 
 FCF_TEST_DECLARE("Vector" /*PART NAME*/, "SizeCheck" /*GROUP NAME*/, "EmptyVector" /*TEST NAME*/) {
@@ -522,18 +522,28 @@ int main(int a_argc, char* a_argv[]) {
 }
 ```
 
+**Run:**
+
+$ test --test-log-level inf
+
 **Output:**
 
  ```stdout
 Performing the test: "Math" -> "BasicArithmetic" -> "Addition" ...
-   [SUCCESS] Test completed successfully (0.000`035`417 sec)
+  > Itertion count: 10000
+  > Total: 48 ns
+  > Avg: 0 ns
+    [SUCCESS] Test completed successfully (0.000`041`235 sec)
 Performing the test: "Math" -> "BasicArithmetic" -> "Subtraction" ...
-   [SUCCESS] Test completed successfully (0.000`006`061 sec)
+  > Itertion count: 10000
+  > Total: 34 ns
+  > Avg: 0 ns
+    [SUCCESS] Test completed successfully (0.000`011`831 sec)
 Performing the test: "Vector" -> "SizeCheck" -> "EmptyVector" ...
-   [SUCCESS] Test completed successfully (0.000`003`092 sec)
+    [SUCCESS] Test completed successfully (0.000`007`502 sec)
 
 [SUCCESS] All tests were completed.
 Tests: 3 passed, 0 failed, 0 skipped, 3 total
-Duration: 0.000`044`570 sec
+Duration: 0.000`060`568 sec
 ```
 

@@ -237,16 +237,6 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
 
 }
 
-FCF_TEST_DECLARE("MyLib", "Base", "Simple test"){
-  fcf::NTest::log() << "Test started" << std::endl;
-  int v1 = 2;
-  int v2 = 2;
-  if (!FCF_TEST_CHECK(v1 == v2, v1)) {
-    fcf::NTest::err() << "Simple comparison failed" << std::endl;
-  }
-  fcf::NTest::log() << "Test resumed" << std::endl;
-}
-
 FCF_TEST_GROUP_ORDER("macro", 1);
 FCF_TEST_GROUP_ORDER("cmd",   2);
 FCF_TEST_GROUP_ORDER("cmdRun", 3);
