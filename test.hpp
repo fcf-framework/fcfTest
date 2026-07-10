@@ -2881,6 +2881,8 @@ namespace fcf {
               }
             }
             break;
+            default:
+              break;
         }
 
         a_messageContext.message = output.str();
