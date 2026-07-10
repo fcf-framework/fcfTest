@@ -517,11 +517,11 @@ namespace fcf {
       std::vector<std::string> parts;           ///< List of part names to run (empty means all).
       std::vector<std::string> groups;          ///< List of group names to run (empty means all).
       std::vector<std::string> tests;           ///< List of specific test names to run (empty means all).
-      Selector                 selector;        ///< Not in use, reserved for future use.
+      std::vector<Selector>    selector;        ///< Not in use, reserved for future use.
       std::vector<std::string> ignoreParts;     ///< List of ignore part names.
       std::vector<std::string> ignoreGroups;    ///< List of ignore group names to run.
       std::vector<std::string> ignoreTests;     ///< List of ignore specific test names to run.
-      Selector                 ignoreSelector;  ///< Not in use, reserved for future use.
+      std::vector<Selector>    ignoreSelector;  ///< Not in use, reserved for future use.
       ELogLevel                logLevel;        ///< Desired logging level.
       std::string              format;
       bool                     noBreak;
