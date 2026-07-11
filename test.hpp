@@ -64,7 +64,6 @@
 #include <map>
 #include <vector>
 #include <set>
-#include <regex>
 #include <mutex>
 
 
@@ -790,7 +789,7 @@ namespace fcf {
          * @brief Returns a string representation of the total accumulated duration.
          * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
          */
-        std::string totalDurationStr(bool a_friendly = true) const {
+        std::string totalDurationStr(bool a_friendly = false) const {
           return nsToStr( totalDuration().count(), a_friendly);
         }
 
@@ -798,7 +797,7 @@ namespace fcf {
          * @brief Returns a string representation of the last active segment duration.
          * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
          */
-        std::string lastTotalDurationStr(bool a_friendly = true) const {
+        std::string lastTotalDurationStr(bool a_friendly = false) const {
           return nsToStr( lastTotalDuration().count(), a_friendly);
         }
 
@@ -822,7 +821,7 @@ namespace fcf {
          * @brief Returns a string representation of the average iteration duration based on total time.
          * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
          */
-        std::string durationStr(bool a_friendly = true) const {
+        std::string durationStr(bool a_friendly = false) const {
           return nsToStr(duration().count(), a_friendly);
         }
 
@@ -830,7 +829,7 @@ namespace fcf {
          * @brief Returns a string representation of the average iteration duration based on the last segment.
          * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
          */
-        std::string lastDurationStr(bool a_friendly = true) const {
+        std::string lastDurationStr(bool a_friendly = false) const {
           return nsToStr( lastDuration().count(), a_friendly);
         }
 
