@@ -32,7 +32,7 @@
 
 #define FCF_TEST_VERSION_MAJOR        1
 #define FCF_TEST_VERSION_MINOR        1
-#define FCF_TEST_VERSION_MAINTENANCE  10
+#define FCF_TEST_VERSION_MAINTENANCE  11
 
 /*
  * fcfTest is a lightweight C++ (>= C++11) unit testing framework.
