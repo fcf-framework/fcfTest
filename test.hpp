@@ -1148,7 +1148,7 @@ namespace fcf {
 
         void _setEnvironment(const Environment& a_environment);
 
-        void _write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, std::string&& a_message);
+        void _write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, const std::string& a_message);
 
         LogWriter _log(ELogLevel a_level, ELogMessageCategory a_messageCategory);
 
@@ -1197,8 +1197,8 @@ namespace fcf {
       LogMessageContext() = delete;
       LogMessageContext(const LogMessageContext&) = delete;
       LogMessageContext& operator=(const LogMessageContext&) = delete;
-      LogMessageContext(std::string&& a_message)
-        : origin(std::move(a_message)) {
+      LogMessageContext(const std::string& a_message)
+        : origin(a_message) {
       }
     };
 
@@ -2545,12 +2545,12 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::_write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, std::string&& a_message) {
+      void Logger::_write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, const std::string& a_message) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
 
         for(LogOutputTarget& stream : _environment.targets) {
 
-          LogMessageContext lms(std::move(a_message));
+          LogMessageContext lms(a_message);
           lms.category      = a_messageCategory;
           lms.message       = lms.origin;
           lms.line          = 0;

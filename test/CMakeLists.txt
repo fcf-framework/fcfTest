@@ -11,6 +11,7 @@ endif()
 add_executable(fcf-test-test 
                   main.cpp
                   tests/cmd.cpp
+                  tests/export.cpp
                   tests/macro.cpp
               )
 
