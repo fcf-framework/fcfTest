@@ -1653,7 +1653,7 @@ namespace fcf {
           for(const Options::File& file : a_options.files) {
             std::string streamName = file.format.length() ? (std::string() + "file-" + file.format)
                                                           : std::string("file");
-            ofstreams.push_back(std::ofstream(file.file));
+            ofstreams.push_back(std::ofstream(file.file, std::ios::binary));
             Logger::_appendTarget({streamName, &ofstreams.back(), file.format, {}, {}}, newEnv);
           }
 
