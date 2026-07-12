@@ -238,6 +238,8 @@ The new version of the logger supports:
 
 The `fcf::NTest::Duration` class provides a simple interface for measuring the execution time of code blocks. It uses `std::chrono::high_resolution_clock`.
 
+Class description page: https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/classes/fcf::NTest::Duration
+
 ### Members and Methods
 - **Constructor**: `Duration(unsigned long long a_iterations)`
   - **Parameters**:
