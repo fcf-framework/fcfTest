@@ -236,7 +236,7 @@ The new version of the logger supports:
 
 ## Benchmarking: `Duration` Class
 
-The `fcf::NTest::Duration` class provides a simple interface for measuring the execution time of code blocks. It uses `std::chrono::high_resolution_clock`.
+The `fcf::NTest::Duration` class provides a simple interface for measuring the execution time of code blocks. It uses `std::chrono::steady_clock`.
 
 Class description page: https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/classes/fcf::NTest::Duration
 
