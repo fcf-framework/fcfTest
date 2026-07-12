@@ -1937,7 +1937,7 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       void Storage::testOrder(const char* a_name, int a_order) {
         std::lock_guard<std::mutex> lock(_mutex);
-        _groupOrders[a_name] = a_order;
+        _testOrders[a_name] = a_order;
       }
     #endif
 

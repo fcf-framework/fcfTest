@@ -205,7 +205,7 @@ FCF_TEST_GROUP_ORDER("cmdRun", 3);
 int main(int a_argc, char* a_argv[]) {
   bool error = false;
   fcf::NTest::Options options;
-  options.ignoreParts = {"subrun", "subrun-export"};
+  options.ignoreParts = {"subrun", "subrun-export", "subrun-order 1", "subrun-order 2", "subrun-order 3"};
   fcf::NTest::cmdRun(options, a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
   return error ? 1 : 0;
 }
