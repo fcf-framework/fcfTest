@@ -262,6 +262,15 @@
                                        ).inlineCheck((exp), __VA_ARGS__)
 #endif
 
+/**
+ * @brief FCF_TEST_THROW. Macro to assert that a code block throws an exception.
+ * If the provided code does not throw any exception, it generates a detailed
+ * error message including the expression, file, line number, and any provided
+ * arguments, then logs the error and throws a std::runtime_error.
+ *
+ * @param am_code The code block or expression to be executed and checked for an exception.
+ * @param ... Variable list of arguments whose values will be included in the error message if no exception is thrown.
+ */
 #ifndef FCF_TEST_THROW
   #define FCF_TEST_THROW(am_code, ...)\
     {\
@@ -286,6 +295,16 @@
     }
 #endif
 
+/**
+ * @brief FCF_TEST_THROW_CHECK. Non-throwing macro to assert that a code block throws an exception.
+ * Evaluates the provided code block. If no exception is thrown, it logs a detailed
+ * error message to the internal state but does not throw an exception.
+ *
+ * @return true if an exception was caught, false if no exception was thrown.
+ *
+ * @param am_code The code block or expression to be executed and checked for an exception.
+ * @param ... Variable list of arguments whose values will be included in the error message if no exception is thrown.
+ */
 #ifndef FCF_TEST_THROW_CHECK
   #define FCF_TEST_THROW_CHECK(am_code, ...)\
     [&]() -> bool{\
