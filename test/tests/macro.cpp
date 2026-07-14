@@ -36,7 +36,6 @@ FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST"){
     std::string expecedMSVC = ", \" some<i,1>\" , \" 2\"";
     FCF_TEST(macro == expeced || macro == expecedMSVC, macro, expeced, expecedMSVC);
   }
-  
 }
 
 

@@ -187,27 +187,6 @@ FCF_TEST_DECLARE("fcfTest", "storage", "select (ignore)") {
 }
 
 
-#define FCF_TEST_THROW(am_code, ...)\
-  {\
-    bool _fcf_test_throw_flag = false;\
-    try {\
-      am_code;\
-    } catch(...) {\
-      _fcf_test_throw_flag = true;\
-    }\
-    if (!_fcf_test_throw_flag) {\
-      ::fcf::NTest::NDetails::Printer _fcf_test_error_printer(\
-          "'" Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT  am_code)) "' did not throw", \
-          __FILE__, \
-          Z__FCF_TEST__STRINGIFY(__LINE__)\
-          Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
-          );\
-      std::runtime_error exception(_fcf_test_error_printer(__VA_ARGS__));\
-      ::fcf::NTest::state().error(exception.what(), false);\
-      throw exception;\
-    }\
-  }
-
 FCF_TEST_DECLARE("fcfTest", "storage", "select (throw)") {
   fcf::NTest::Storage storage;
   fcf::NTest::Test testP1G1T1 = {"p1", 0, "g1", 0, "t1", 0, nullptr};

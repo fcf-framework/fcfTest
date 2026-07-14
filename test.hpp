@@ -262,6 +262,47 @@
                                        ).inlineCheck((exp), __VA_ARGS__)
 #endif
 
+#ifndef FCF_TEST_THROW
+  #define FCF_TEST_THROW(am_code, ...)\
+    {\
+      bool _fcf_test_throw_flag = false;\
+      try {\
+        am_code;\
+      } catch(...) {\
+        _fcf_test_throw_flag = true;\
+      }\
+      if (!_fcf_test_throw_flag) {\
+        ::fcf::NTest::NDetails::Printer _fcf_test_error_printer(\
+            "'" Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT  am_code)) "' did not throw", \
+            __FILE__, \
+            Z__FCF_TEST__STRINGIFY(__LINE__)\
+            Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
+            );\
+        std::runtime_error _fcf_test_throw_exception(_fcf_test_error_printer(__VA_ARGS__));\
+        ::fcf::NTest::state().error(_fcf_test_throw_exception.what(), false);\
+        throw _fcf_test_throw_exception;\
+      }\
+    }
+#endif
+
+#ifndef FCF_TEST_THROW_CHECK
+  #define FCF_TEST_THROW_CHECK(am_code, ...)\
+    [&]() -> bool{\
+      try {\
+        am_code;\
+      } catch(...) {\
+        return true;\
+      }\
+      ::fcf::NTest::NDetails::Printer _fcf_test_error_printer(\
+          "'" Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT  am_code)) "' did not throw", \
+          __FILE__, \
+          Z__FCF_TEST__STRINGIFY(__LINE__)\
+          Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
+          );\
+      ::fcf::NTest::state().error(std::runtime_error(_fcf_test_error_printer(__VA_ARGS__)).what(), false);\
+      return false;\
+    }()
+#endif
 
 /**
  * @brief FCF_TEST_PART_ORDER. Macro to register the order of a test part.
