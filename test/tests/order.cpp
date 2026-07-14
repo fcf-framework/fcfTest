@@ -6,9 +6,9 @@
 FCF_TEST_DECLARE("fcfTest", "order", "macro") {
   {
     fcf::NTest::Options options;
-    options.parts.push_back("subrun-order 1");
-    options.parts.push_back("subrun-order 2");
-    options.parts.push_back("subrun-order 3");
+    options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun-order 1"}, {}, {}} );
+    options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun-order 2"}, {}, {}} );
+    options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun-order 3"}, {}, {}} );
     std::stringstream ss;
     bool error = InnerTestRunner().run(options, ss);
 

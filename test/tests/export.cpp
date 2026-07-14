@@ -4,7 +4,7 @@
 FCF_TEST_DECLARE("fcfTest", "export", "run"){
   {
     fcf::NTest::Options options;
-    options.parts.push_back("subrun-export");
+    options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun-export"}, {}, {}} );
     options.files.push_back({"test.console.log", "default"});
     options.files.push_back({"test.results.xml", "junit"});
     std::stringstream ss;

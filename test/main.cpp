@@ -74,7 +74,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
   {
     std::stringstream ss;
     fcf::NTest::Options options;
-    options.tests   = {"subrun ok"};
+    options.selectors.push_back( fcf::NTest::Options::Selector{{}, {}, {"subrun ok"}} );
     InnerTestRunner()(options, ss, 0, 0);
     std::string expected = std::string()+
                           "Performing the test: \"subrun\" -> \"default\" -> \"subrun ok\" ...\n"+
@@ -88,7 +88,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
   {
     std::stringstream ss;
     fcf::NTest::Options options;
-    options.tests   = {"subrun ok"};
+    options.selectors.push_back( fcf::NTest::Options::Selector{{}, {}, {"subrun ok"}} );
     const char* argv[] = {"--test-format=junit"};
     InnerTestRunner()(options, ss, 1, &argv[0]);
     std::string expected = std::string()+
@@ -104,7 +104,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
   {
     std::stringstream ss;
     fcf::NTest::Options options;
-    options.tests   = {"subrun error 0"};
+    options.selectors.push_back( fcf::NTest::Options::Selector{{}, {}, {"subrun error 0"}} );
     const char* argv[] = {""};
     InnerTestRunner()(options, ss, 1, &argv[0]);
     std::string expected = std::string()+
@@ -120,7 +120,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
   {
     std::stringstream ss;
     fcf::NTest::Options options;
-    options.tests   = {"subrun error 1"};
+    options.selectors.push_back( fcf::NTest::Options::Selector{{}, {}, {"subrun error 1"}} );
     const char* argv[] = {""};
     InnerTestRunner()(options, ss, 1, &argv[0]);
     std::string expected = std::string()+
@@ -138,7 +138,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
   {
     std::stringstream ss;
     fcf::NTest::Options options;
-    options.tests   = {"subrun error 2"};
+    options.selectors.push_back( fcf::NTest::Options::Selector{{}, {}, {"subrun error 2"}} );
     const char* argv[] = {""};
     InnerTestRunner()(options, ss, 1, &argv[0]);
     std::string expected = std::string()+
@@ -157,7 +157,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
   {
     std::stringstream ss;
     fcf::NTest::Options options;
-    options.tests   = {"subrun error check 1"};
+    options.selectors.push_back( fcf::NTest::Options::Selector{{}, {}, {"subrun error check 1"}} );
     const char* argv[] = {""};
     InnerTestRunner()(options, ss, 1, &argv[0]);
     std::string expected = std::string()+
@@ -179,7 +179,7 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
   {
     std::stringstream ss;
     fcf::NTest::Options options;
-    options.tests   = {"subrun check 1"};
+    options.selectors.push_back( fcf::NTest::Options::Selector{{}, {}, {"subrun check 1"}} );
     const char* argv[] = {""};
     InnerTestRunner()(options, ss, 1, &argv[0]);
     std::string expected = std::string()+
@@ -199,13 +199,19 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
 }
 
 FCF_TEST_GROUP_ORDER("macro", 1);
-FCF_TEST_GROUP_ORDER("cmd",   2);
-FCF_TEST_GROUP_ORDER("cmdRun", 3);
+FCF_TEST_GROUP_ORDER("cmd",   1000001);
+FCF_TEST_GROUP_ORDER("cmdRun", 1000002);
 
 int main(int a_argc, char* a_argv[]) {
   bool error = false;
   fcf::NTest::Options options;
-  options.ignoreParts = {"subrun", "subrun-export", "subrun-order 1", "subrun-order 2", "subrun-order 3"};
+  options.ignoreSelectors.push_back(
+    fcf::NTest::Options::Selector{
+      {"subrun", "subrun-export", "subrun-order 1", "subrun-order 2", "subrun-order 3"}, 
+      {}, 
+      {}
+    }
+  );
   fcf::NTest::cmdRun(options, a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
   return error ? 1 : 0;
 }

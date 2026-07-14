@@ -14,6 +14,7 @@ add_executable(fcf-test-test
                   tests/export.cpp
                   tests/macro.cpp
                   tests/order.cpp
+                  tests/storage.cpp
               )
 
 target_include_directories(fcf-test-test SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../..)

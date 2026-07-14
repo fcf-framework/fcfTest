@@ -162,7 +162,7 @@
     namespace {\
     struct am_className { \
       am_className() {\
-        ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ 1000000, am_test, 1000000, am_group, 1000000, am_part, test } );\
+        ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ am_part, 1000000, am_group, 1000000, am_test, 1000000, test } );\
       }\
       static void test();\
     };\
@@ -244,7 +244,7 @@
 
   #define FCF_TEST(exp, ...) \
     if (!(exp)) { \
-      ::fcf::NTest::Details::Printer _fcf_test_error_printer(Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+      ::fcf::NTest::NDetails::Printer _fcf_test_error_printer(Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
                                          __FILE__, \
                                          Z__FCF_TEST__STRINGIFY(__LINE__)\
                                          Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
@@ -255,7 +255,7 @@
     }
 
   #define FCF_TEST_CHECK(exp, ...) \
-    ::fcf::NTest::Details::Printer(Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+    ::fcf::NTest::NDetails::Printer(Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
                                        __FILE__, \
                                        Z__FCF_TEST__STRINGIFY(__LINE__)\
                                        Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
@@ -463,12 +463,12 @@ namespace fcf {
      * @brief Represents a single test case with metadata.
      */
     struct Test {
-      int         nameOrder;       ///< Execution order within the test.
-      std::string name;            ///< Name of the test function.
-      int         groupOrder;      ///< Execution order within the group.
-      std::string group;           ///< Name of the test group.
-      int         partOrder;       ///< Execution order within the part.
       std::string part;            ///< Name of the test part.
+      int         partOrder;       ///< Execution order within the part.
+      std::string group;           ///< Name of the test group.
+      int         groupOrder;      ///< Execution order within the group.
+      std::string name;            ///< Name of the test function.
+      int         nameOrder;       ///< Execution order within the test.
       void (*testFunction)();      ///< Pointer to the test function to execute.
 
       /**
@@ -493,6 +493,21 @@ namespace fcf {
                name > a_test.name ? false :
                                    false;
       }
+
+      bool operator==(const Test& a_test) const {
+        return partOrder == a_test.partOrder &&
+               partOrder == a_test.partOrder &&
+               part == a_test.part &&
+               part == a_test.part &&
+               groupOrder == a_test.groupOrder &&
+               groupOrder == a_test.groupOrder &&
+               group == a_test.group &&
+               group == a_test.group &&
+               nameOrder == a_test.nameOrder &&
+               nameOrder == a_test.nameOrder &&
+               name == a_test.name &&
+               name == a_test.name;
+      }
     };
 
 
@@ -508,18 +523,12 @@ namespace fcf {
 
       // Not in use, reserved for future use.
       struct Selector {
-        std::string  part;
-        std::string  group;
-        std::string  test;
+        std::vector<std::string>  parts;
+        std::vector<std::string>  groups;
+        std::vector<std::string>  tests;
       };
 
-      std::vector<std::string> parts;           ///< List of part names to run (empty means all).
-      std::vector<std::string> groups;          ///< List of group names to run (empty means all).
-      std::vector<std::string> tests;           ///< List of specific test names to run (empty means all).
       std::vector<Selector>    selectors;       ///< Not in use, reserved for future use.
-      std::vector<std::string> ignoreParts;     ///< List of ignore part names.
-      std::vector<std::string> ignoreGroups;    ///< List of ignore group names to run.
-      std::vector<std::string> ignoreTests;     ///< List of ignore specific test names to run.
       std::vector<Selector>    ignoreSelectors; ///< Not in use, reserved for future use.
       ELogLevel                logLevel;        ///< Desired logging level.
       std::string              format;
@@ -587,48 +596,13 @@ namespace fcf {
       private:
         typedef std::map<std::string, int> OrderMap;
 
-        /**
-         * @brief Enumerates permission states for allowing or ignoring tests.
-         */
-        enum EAllow {
-          IGNORE,
-          NONE,
-          ALLOW,
-          FORCE_ALLOW
-        };
+        bool _suitability(const std::vector<std::string>& a_items, const std::string& a_rule, bool& a_dstSuitability);
 
-        /**
-         * @brief Internal state used to validate if all requested elements exist.
-         */
-        struct SearchState {
-          public:
-            std::map<std::string, bool> tests;
-            std::map<std::string, bool> groups;
-            std::map<std::string, bool> parts;
-
-            void check();
-
-          private:
-            void _check(std::map<std::string, bool>& elements, const char* a_typeName);
-        };
-
-        /**
-         * @brief Determines the allowance state of a specific name based on allow and ignore lists.
-         */
-        template <typename TAllowList>
-        EAllow checkAllow(EAllow a_allow, const TAllowList& a_allowList, const TAllowList& a_ignoreList, const std::string& a_name);
-
-        /**
-         * @brief Populates the search state with requested items and marks them as found if they exist.
-         */
-        template <typename TMap, typename TAllowList>
-        void checkExists(std::map<std::string, bool>& a_state, const TMap& a_map, const TAllowList& a_allowList);
-
-        Parts         _parts;           ///< Map of parts to their groups.
-        OrderMap  _partOrders;      ///< Execution order for each part.
-        OrderMap  _groupOrders;     ///< Execution order for each group.
-        OrderMap  _testOrders;      ///< Execution order for each test.
-        std::mutex    _mutex;
+        std::vector<Test> _tests;       ///< Registered tests
+        OrderMap          _partOrders;  ///< Execution order for each part.
+        OrderMap          _groupOrders; ///< Execution order for each group.
+        OrderMap          _testOrders;  ///< Execution order for each test.
+        std::mutex        _mutex;
 
     };
 
@@ -1573,22 +1547,22 @@ namespace fcf {
               a_dstOptions.format = args[i+1];
               ++i;
             } else if (args[i] == "--test-part" && (i+1) < args.size()) {
-              a_dstOptions.parts.push_back(args[i+1]);
+              a_dstOptions.selectors.push_back( Options::Selector{{args[i+1]}, {}, {}}  );
               ++i;
             } else if (args[i] == "--test-group" && (i+1) < args.size()) {
-              a_dstOptions.groups.push_back(args[i+1]);
+              a_dstOptions.selectors.push_back( Options::Selector{{}, {args[i+1]}, {}}  );
               ++i;
             } else if (args[i] == "--test-test" && (i+1) < args.size()) {
-              a_dstOptions.tests.push_back(args[i+1]);
+              a_dstOptions.selectors.push_back( Options::Selector{{}, {}, {args[i+1]}}  );
               ++i;
             } else if (args[i] == "--test-ignore-part" && (i+1) < args.size()) {
-              a_dstOptions.ignoreParts.push_back(args[i+1]);
+              a_dstOptions.ignoreSelectors.push_back( Options::Selector{{args[i+1]}, {}, {}}  );
               ++i;
             } else if (args[i] == "--test-ignore-group" && (i+1) < args.size()) {
-              a_dstOptions.ignoreGroups.push_back(args[i+1]);
+              a_dstOptions.ignoreSelectors.push_back( Options::Selector{{}, {args[i+1]}, {}}  );
               ++i;
             } else if (args[i] == "--test-ignore-test" && (i+1) < args.size()) {
-              a_dstOptions.ignoreTests.push_back(args[i+1]);
+              a_dstOptions.ignoreSelectors.push_back( Options::Selector{{}, {}, {args[i+1]}}  );
               ++i;
             } else if (args[i] == "--test-no-break") {
               a_dstOptions.noBreak = true;
@@ -1777,7 +1751,7 @@ namespace fcf {
       #endif
     } // NDetails namespace
 
-    namespace Details {
+    namespace NDetails {
 
       template <typename... TPack>
       struct PrintPack {
@@ -1853,7 +1827,7 @@ namespace fcf {
           void _appendValue() {
           }
       };
-    } // Details namespace
+    } // NDetails namespace
   } // NTest namespace
 } // fcf namespace
 
@@ -1944,118 +1918,115 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       void Storage::append(const Test& a_test) {
         std::lock_guard<std::mutex> lock(_mutex);
-        Parts::Map::iterator partIterator = _parts.values.insert( Parts::Map::value_type(a_test.part, Groups() )  ).first;
-        Groups::Map::iterator groupIterator = partIterator->second.values.insert( Groups::Map::value_type(a_test.group, Tests() )  ).first;
-        groupIterator->second.values[a_test.name] = a_test;
+        _tests.push_back(a_test);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
       void Storage::select(std::set<Test>& a_dst, const Options& a_options) {
         std::lock_guard<std::mutex> lock(_mutex);
-        SearchState state;
-        checkExists(state.parts, _parts.values, a_options.parts);
+        std::map<std::string, bool> exists[3];
 
-        for(const auto& partItem : _parts.values) {
-
-          checkExists(state.groups, partItem.second.values, a_options.groups);
-
-          EAllow allowPart = checkAllow(a_options.parts.empty() ? ALLOW : NONE, a_options.parts, a_options.ignoreParts, partItem.first);
-
-          for(const auto& groupItem : partItem.second.values) {
-
-            checkExists(state.tests, groupItem.second.values, a_options.tests);
-
-            EAllow allowGroup = checkAllow(allowPart, a_options.groups, a_options.ignoreGroups, groupItem.first);
-
-            for(const auto& testItem : groupItem.second.values) {
-              EAllow allowTest = checkAllow(allowGroup, a_options.tests, a_options.ignoreTests, testItem.first);
-
-              if (allowTest == NONE || allowTest == IGNORE) {
-                continue;
+        for(const Options::Selector& selector : a_options.selectors) {
+          const std::vector<std::string>* selectors[3] = {&selector.parts, &selector.groups, &selector.tests};
+          for(size_t i = 0; i < 3; ++i) {
+            for(const std::string& element : *selectors[i]){
+              if (element.length() && element != "*" && element != "") {
+                exists[i].insert({element, false});
               }
-
-              Test test(testItem.second);
-              {
-                Storage::OrderMap::const_iterator it = _partOrders.find(test.part);
-                if (it != _partOrders.end()) {
-                  test.partOrder = it->second;
-                }
-              }
-              {
-                Storage::OrderMap::const_iterator it = _groupOrders.find(test.group);
-                if (it != _groupOrders.end()) {
-                  test.groupOrder = it->second;
-                }
-              }
-              {
-                Storage::OrderMap::const_iterator it = _testOrders.find(test.name);
-                if (it != _testOrders.end()) {
-                  test.nameOrder = it->second;
-                }
-              }
-              a_dst.insert(test);
             }
           }
         }
 
-        state.check();
+        for(const Test& test : _tests) {
+          const std::string* levels[3] = {&test.part, &test.group, &test.name};
+          for(size_t i = 0; i < 3; ++i) {
+            std::map<std::string, bool>::iterator existsIt = exists[i].find(*levels[i]);
+            if (existsIt != exists[i].end()){
+              existsIt->second = true;
+            }
+          }
+
+          bool suitability = true;
+          for(const Options::Selector& selector : a_options.selectors) {
+            suitability = true;
+            if (!selector.parts.empty() && !_suitability(selector.parts, test.part, suitability)){
+              continue;
+            }
+            if (!selector.groups.empty() && !_suitability(selector.groups, test.group, suitability)){
+              continue;
+            }
+            if (!selector.tests.empty() && !_suitability(selector.tests, test.name, suitability)){
+              continue;
+            }
+            break;
+          }
+          if (!suitability) {
+            continue;
+          }
+
+          bool ignore = false;
+          for(const Options::Selector& selector : a_options.ignoreSelectors) {
+            if (!selector.parts.empty() && _suitability(selector.parts, test.part, ignore)){
+              break;
+            }
+            if (!selector.groups.empty() && _suitability(selector.groups, test.group, ignore)){
+              break;
+            }
+            if (!selector.tests.empty() && _suitability(selector.tests, test.name, ignore)){
+              break;
+            }
+          }
+          if (ignore) {
+            continue;
+          }
+
+          Test resultTest(test);
+          {
+            Storage::OrderMap::const_iterator it = _partOrders.find(test.part);
+            if (it != _partOrders.end()) {
+              resultTest.partOrder = it->second;
+            }
+          }
+          {
+            Storage::OrderMap::const_iterator it = _groupOrders.find(test.group);
+            if (it != _groupOrders.end()) {
+              resultTest.groupOrder = it->second;
+            }
+          }
+          {
+            Storage::OrderMap::const_iterator it = _testOrders.find(test.name);
+            if (it != _testOrders.end()) {
+              resultTest.nameOrder = it->second;
+            }
+          }
+          a_dst.insert(resultTest);
+        }
+
+        const char* throwPrefixes[3] = { "parts ", "groups ", "" };
+        for(size_t i = 0; i < 3; ++i) {
+          for(std::pair<const std::string, bool>& existsElement : exists[i]) {
+            if (!existsElement.second) {
+              throw std::runtime_error(std::string() + "The test " + throwPrefixes[i] + "named '" + existsElement.first + "' cannot be found");
+            }
+          }
+        }
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Storage::SearchState::check() {
-        _check(parts, "parts ");
-        _check(groups, "groups ");
-        _check(tests, "");
+      bool Storage::_suitability(const std::vector<std::string>& a_items, const std::string& a_rule, bool& a_dstSuitability) {
+        std::vector<std::string>::const_iterator foundIt = std::find(a_items.begin(), a_items.end(), "*");
+        if (foundIt == a_items.end()) {
+          foundIt = std::find(a_items.begin(), a_items.end(), "");
+        }
+        if (foundIt == a_items.end()) {
+          foundIt = std::find_if(a_items.begin(), a_items.end(), [&a_rule](const std::string& a_name){ return a_name == a_rule; });
+        }
+        a_dstSuitability = foundIt != a_items.end();
+        return a_dstSuitability;
       }
     #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      void Storage::SearchState::_check(std::map<std::string, bool>& elements, const char* a_typeName) {
-        for(const auto& item : elements) {
-          if (!item.second) {
-            throw std::runtime_error(std::string() + "The test " + a_typeName + "named '" + item.first + "' cannot be found");
-          }
-        }
-      }
-    #endif
-
-    template <typename TAllowList>
-    typename Storage::EAllow Storage::checkAllow(EAllow a_allow, const TAllowList& a_allowList, const TAllowList& a_ignoreList, const std::string& a_name) {
-      if (a_allow == ALLOW) {
-        if (!a_allowList.empty()) {
-          auto it = std::find(a_allowList.begin(), a_allowList.end(), a_name);
-          if (it != a_allowList.end()) {
-            a_allow = FORCE_ALLOW;
-          } else {
-            a_allow = NONE;
-          }
-        }
-      } else if (a_allow == NONE) {
-        if (!a_allowList.empty()) {
-          auto it = std::find(a_allowList.begin(), a_allowList.end(), a_name);
-          if (it != a_allowList.end()) {
-            a_allow = FORCE_ALLOW;
-          }
-        }
-      }
-      auto it = std::find(a_ignoreList.begin(), a_ignoreList.end(), a_name);
-      if (it != a_ignoreList.end()) {
-        a_allow = IGNORE;
-      }
-      return a_allow;
-    }
-
-    template <typename TMap, typename TAllowList>
-    void Storage::checkExists(std::map<std::string, bool>& a_state, const TMap& a_map, const TAllowList& a_allowList) {
-      for (const auto& allowItem : a_allowList) {
-        auto stateIt = a_state.insert({allowItem, false}).first;
-        if (a_map.find(allowItem) != a_map.end()) {
-          stateIt->second = true;
-        }
-      }
-    }
 
   } // NTest namespace
 } // fcf namespace
