@@ -244,7 +244,7 @@
 
   #define FCF_TEST(exp, ...) \
     if (!(exp)) { \
-      ::fcf::NTest::NDetails::Printer _fcf_test_error_printer(Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+      ::fcf::NTest::NDetails::Printer _fcf_test_error_printer(Z__FCF_TEST__STRINGIFY(exp), \
                                          __FILE__, \
                                          Z__FCF_TEST__STRINGIFY(__LINE__)\
                                          Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
@@ -255,7 +255,7 @@
     }
 
   #define FCF_TEST_CHECK(exp, ...) \
-    ::fcf::NTest::NDetails::Printer(Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT exp)), \
+    ::fcf::NTest::NDetails::Printer(Z__FCF_TEST__STRINGIFY(exp), \
                                        __FILE__, \
                                        Z__FCF_TEST__STRINGIFY(__LINE__)\
                                        Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
@@ -273,7 +273,8 @@
       }\
       if (!_fcf_test_throw_flag) {\
         ::fcf::NTest::NDetails::Printer _fcf_test_error_printer(\
-            "'" Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT  am_code)) "' did not throw", \
+            ::fcf::NTest::NDetails::Printer::PM_EXCEPTION,\
+            Z__FCF_TEST__STRINGIFY(am_code), \
             __FILE__, \
             Z__FCF_TEST__STRINGIFY(__LINE__)\
             Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
@@ -294,7 +295,8 @@
         return true;\
       }\
       ::fcf::NTest::NDetails::Printer _fcf_test_error_printer(\
-          "'" Z__FCF_TEST__STRINGIFY(Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT  am_code)) "' did not throw", \
+          ::fcf::NTest::NDetails::Printer::PM_EXCEPTION,\
+          Z__FCF_TEST__STRINGIFY(am_code), \
           __FILE__, \
           Z__FCF_TEST__STRINGIFY(__LINE__)\
           Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
@@ -1936,17 +1938,38 @@ namespace fcf {
         const char*             line;
         std::list<const char*>  values;
 
+        enum EPrinterMode {
+          PM_DEFAULT,
+          PM_EXCEPTION,
+        };
+
         template <typename ...TPack>
         Printer(const char* a_expr, const char* a_file, const char* a_line, TPack... a_argPack)
-          : expr (a_expr)
+          : expr (_trim(a_expr, true))
           , file(a_file)
           , line(a_line) {
           _appendValue(a_argPack...);
         }
 
+        template <typename ...TPack>
+        Printer(EPrinterMode a_printerMode, const char* a_expr, const char* a_file, const char* a_line, TPack... a_argPack)
+          : file(a_file)
+          , line(a_line) {
+          switch(a_printerMode){
+            case PM_EXCEPTION:
+              expr = "'";
+              expr += _trim(a_expr, true);
+              expr += "' did not throw";
+              break;
+            default:
+              expr = _trim(a_expr,true);
+              break;
+          };
+          _appendValue(a_argPack...);
+        }
+
         template <typename... TArgPack>
         std::string operator()(const TArgPack&... a_pack) {
-          expr = expr.length() && (unsigned char)expr[0] <= (unsigned char)' ' ? expr.substr(1, std::string::npos) : expr;\
           std::string result = std::string() + \
                                "Test error: " + expr + "  [FILE: " + file + ":" + line + "]\n";
           if (sizeof...(TArgPack) && values.size()) {
@@ -1959,7 +1982,6 @@ namespace fcf {
         template <typename... TArgPack>
         bool inlineCheck(bool a_expression, const TArgPack&... a_pack) {
           if (!a_expression) {
-            expr = expr.length() && (unsigned char)expr[0] <= (unsigned char)' ' ? expr.substr(1, std::string::npos) : expr;\
             std::string result = std::string() + \
                                  "Test error: " + expr + "  [FILE: " + file + ":" + line + "]\n";
             if (sizeof...(TArgPack) && values.size()) {
@@ -1979,6 +2001,16 @@ namespace fcf {
             _appendValue(a_valuePack...);
           }
           void _appendValue() {
+          }
+          std::string _trim(std::string a_str, bool a_removeParenthesis) {
+            auto is_space = [](unsigned char ch) { return !std::isspace(ch); };
+            a_str.erase(a_str.begin(), std::find_if(a_str.begin(), a_str.end(), is_space));
+            a_str.erase(std::find_if(a_str.rbegin(), a_str.rend(), is_space).base(), a_str.end());
+            if (a_removeParenthesis && a_str.length() && a_str.front() == '(' && a_str.back() == ')'){
+              a_str.erase(0, 1);
+              a_str.erase(a_str.length()-1, a_str.length());
+            }
+            return a_str;
           }
       };
     } // NDetails namespace

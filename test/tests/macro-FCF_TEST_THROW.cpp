@@ -37,6 +37,31 @@ FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST_THROW") {
   }
   {
     fcf::NTest::Options options;
+    options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun"}, {"FCF_TEST_THROW"}, {"no except (parenthesis)"}} );
+    std::stringstream ss;
+    bool error = InnerTestRunner().run(options, ss);
+
+
+    std::string content = uniout(ss.str(), true);
+    std::string expected =  std::string() +
+                            "Performing the test: \"subrun\" -> \"FCF_TEST_THROW\" -> \"no except (parenthesis)\" ...\n" +
+                            "  > 1\n" +
+                            "    Test error: 'callNoThrowWithParams<int, int>(std::map<int,int>().size(), 1)' did not throw  [FILE: XXX]\n" +
+                            "      Values:\n" +
+                            "        std::map<int,int>().size(): 0\n" +
+                            "        1: 1\n" +
+                            "    [FAILED] Test failed (XXX sec)\n" +
+                            "\n" +
+                            "[FAILED] Testing completed with failures.\n" +
+                            "Tests: 0 passed, 1 failed, 0 skipped, 1 total\n" +
+                            "Duration: XXX sec\n"
+                            ;
+    expected = uniout(expected, true);
+    FCF_TEST(content == expected, content, expected);
+    FCF_TEST(error);
+  }
+  {
+    fcf::NTest::Options options;
     options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun"}, {"FCF_TEST_THROW"}, {"except"}} );
     std::stringstream ss;
     bool error = InnerTestRunner().run(options, ss);
@@ -85,6 +110,12 @@ FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST_THROW") {
 FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "no except") {
   fcf::NTest::log() << "1" << std::endl;
   FCF_TEST_THROW(callNoThrow());
+  fcf::NTest::log() << "2" << std::endl;
+}
+
+FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "no except (parenthesis)") {
+  fcf::NTest::log() << "1" << std::endl;
+  FCF_TEST_THROW((callNoThrowWithParams<int, int>(std::map<int,int>().size(), 1)), (std::map<int,int>().size()), 1);
   fcf::NTest::log() << "2" << std::endl;
 }
 
