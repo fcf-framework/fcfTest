@@ -575,27 +575,38 @@ namespace fcf {
 
 
     /**
-     * @brief Configuration options for running tests.
+     * @brief Configuration options for the test runner.
+     *
+     * This structure holds all the settings used to filter tests,
+     * configure logging, and specify output files.
      */
     struct Options {
+      /**
+       * @brief Represents a file output target.
+       */
       struct File {
-        std::string  file;
-        std::string  format;
+        std::string  file;   ///< Path to the output file.
+        std::string  format; ///< Output format to use for this specific file (e.g., "default", "junit").
       };
 
-      // Not in use, reserved for future use.
+      /**
+       * @brief A selector used to filter tests based on hierarchy.
+       *
+       * A selector can match tests by their part, group, or name.
+       * If a vector is empty, it acts as a wildcard for that level.
+       */
       struct Selector {
-        std::vector<std::string>  parts;
-        std::vector<std::string>  groups;
-        std::vector<std::string>  tests;
+        std::vector<std::string>  parts;  ///< List of part names to include.
+        std::vector<std::string>  groups; ///< List of group names to include.
+        std::vector<std::string>  tests;  ///< List of specific test names to include.
       };
 
-      std::vector<Selector>    selectors;       ///< Not in use, reserved for future use.
-      std::vector<Selector>    ignoreSelectors; ///< Not in use, reserved for future use.
-      ELogLevel                logLevel;        ///< Desired logging level.
-      std::string              format;
-      bool                     noBreak;
-      std::vector<File>        files;
+      std::vector<Selector>    selectors;       ///< List of selectors to include specific tests.
+      std::vector<Selector>    ignoreSelectors; ///< List of selectors to exclude specific tests.
+      ELogLevel                logLevel;        ///< Desired verbosity level of the logger.
+      std::string              format;          ///< Default output format (e.g., "default", "junit").
+      bool                     noBreak;         ///< If true, the runner will continue testing even after a failure.
+      std::vector<File>        files;           ///< List of files where logs should be written.
 
       Options()
         : logLevel(LL_DEF)
