@@ -1,10 +1,12 @@
-name: C++ Multi-Standard CI
+name: Tests
 
 on:
   push:
     branches: [ "development", "main" ]
   pull_request:
     branches: [ "development", "main" ]
+  tags:
+    - 'v*'
 
 permissions:
   checks: write
