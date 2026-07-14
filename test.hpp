@@ -1309,20 +1309,20 @@ namespace fcf {
         std::cout << "  --test-part  PART_NAME - Run only tests from the part. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-group GROUP_NAME - Run only tests from the group. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-test  TEST_NAME - Run only this test. The parameter can be used multiple times" << std::endl;
-        std::cout << "  --test-selector PART GROUP TEST - Runs only tests that satisfy the selector specified by the three parameters." << std::endl
-                  << "                                    If a parameter is an empty string or '*', it is assumed that " << std::endl 
-                  << "                                    the selector selects all elements from the group." << std::endl 
-                  << "                                    Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl 
-                  << "                                      Example: test --test-selector Library \"\" \"func2|func2\"" << std::endl
-                  << "                                    The parameter can be used multiple times" << std::endl;
+        std::cout << "  --test-select PART GROUP TEST - Runs only tests that satisfy the selector specified by the three parameters." << std::endl
+                  << "                                  If a parameter is an empty string or '*', it is assumed that " << std::endl 
+                  << "                                  the selector selects all elements from the group." << std::endl 
+                  << "                                  Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl 
+                  << "                                    Example: test --test-select Library \"\" \"func2|func2\"" << std::endl
+                  << "                                  The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-part PART_NAME - Exclude tests in the specified part(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-group GROUP_NAME - Exclude tests in the specified group(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-test TEST_NAME - Exclude the specified test(s). The parameter can be used multiple times" << std::endl;
-        std::cout << "  --test-ignore-selector PART GROUP TEST - Exclude tests that satisfy the selector specified by the three parameters." << std::endl
-                  << "                                    If a parameter is an empty string or '*', it is assumed that " << std::endl 
-                  << "                                    the selector selects all elements from the group." << std::endl 
-                  << "                                    Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl 
-                  << "                                    The parameter can be used multiple times" << std::endl;
+        std::cout << "  --test-ignore-select PART GROUP TEST - Exclude tests that satisfy the selector specified by the three parameters." << std::endl
+                  << "                                  If a parameter is an empty string or '*', it is assumed that " << std::endl 
+                  << "                                  the selector selects all elements from the group." << std::endl 
+                  << "                                  Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl 
+                  << "                                  The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-log-level LEVEL - Logging level (VALUES: def, off, ftl, err, wrn, att, log, inf, dbg, trc, all)" << std::endl;
         std::cout << "  --test-no-break - In case of an error, testing does not stop" << std::endl;
         std::string formats;
@@ -1341,8 +1341,8 @@ namespace fcf {
         std::cout << "  --test-help  - Help message" << std::endl;
         std::cout << std::endl;
         std::cout << "Explanatory details:" << std::endl;
-        std::cout << "  1. The --test-part, --test-group, --test-test, --test-selector commands are combined using the OR operation" << std::endl;
-        std::cout << "  2. The --test-ignore-part, --test-ignore-group, --test-ignore-test, --test-ignore-selector commands" << std::endl
+        std::cout << "  1. The --test-part, --test-group, --test-test, --test-select commands are combined using the OR operation" << std::endl;
+        std::cout << "  2. The --test-ignore-part, --test-ignore-group, --test-ignore-test, --test-ignore-select commands" << std::endl
                   << "     are combined using the OR operation" << std::endl;
       }
     #endif
@@ -1595,7 +1595,7 @@ namespace fcf {
                 } else {
                   throw std::runtime_error("One parameter are required for the --test-test TEST argument");
                 }
-              } else if (args[i] == "--test-selector") {
+              } else if (args[i] == "--test-select") {
                 if ((i+3) < args.size()) {
                   Options::Selector selector{
                     NDetails::splitSelector(args[i+1]),
@@ -1605,7 +1605,7 @@ namespace fcf {
                   a_dstOptions.selectors.push_back(selector);
                   i += 3;
                 } else {
-                  throw std::runtime_error("Three parameters are required for the --test-selector PART GROUP TEST argument");
+                  throw std::runtime_error("Three parameters are required for the --test-select PART GROUP TEST argument");
                 }
               } else if (args[i] == "--test-ignore-part") {
                 if ((i+1) < args.size()) {
@@ -1628,7 +1628,7 @@ namespace fcf {
                 } else {
                   throw std::runtime_error("One parameter are required for the --test-ignore-test TEST argument");
                 }
-              } else if (args[i] == "--test-ignore-selector") {
+              } else if (args[i] == "--test-ignore-select") {
                 if ((i+3) < args.size()) {
                   Options::Selector selector{
                     NDetails::splitSelector(args[i+1]),
@@ -1638,7 +1638,7 @@ namespace fcf {
                   a_dstOptions.ignoreSelectors.push_back(selector);
                   i += 3;
                 } else {
-                  throw std::runtime_error("Three parameters are required for the --test-ignore-selector PART GROUP TEST argument");
+                  throw std::runtime_error("Three parameters are required for the --test-ignore-select PART GROUP TEST argument");
                 }
               } else if (args[i] == "--test-no-break") {
                 a_dstOptions.noBreak = true;
