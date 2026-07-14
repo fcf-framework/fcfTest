@@ -1309,9 +1309,20 @@ namespace fcf {
         std::cout << "  --test-part  PART_NAME - Run only tests from the part. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-group GROUP_NAME - Run only tests from the group. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-test  TEST_NAME - Run only this test. The parameter can be used multiple times" << std::endl;
+        std::cout << "  --test-selector PART GROUP TEST - Runs only tests that satisfy the selector specified by the three parameters." << std::endl
+                  << "                                    If a parameter is an empty string or '*', it is assumed that " << std::endl 
+                  << "                                    the selector selects all elements from the group." << std::endl 
+                  << "                                    Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl 
+                  << "                                      Example: test --test-selector Library main \"func2|func2\"" << std::endl
+                  << "                                    The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-part PART_NAME - Exclude tests in the specified part(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-group GROUP_NAME - Exclude tests in the specified group(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-test TEST_NAME - Exclude the specified test(s). The parameter can be used multiple times" << std::endl;
+        std::cout << "  --test-ignore-selector PART GROUP TEST - Exclude tests that satisfy the selector specified by the three parameters." << std::endl
+                  << "                                    If a parameter is an empty string or '*', it is assumed that " << std::endl 
+                  << "                                    the selector selects all elements from the group." << std::endl 
+                  << "                                    Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl 
+                  << "                                    The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-log-level LEVEL - Logging level (VALUES: def, off, ftl, err, wrn, att, log, inf, dbg, trc, all)" << std::endl;
         std::cout << "  --test-no-break - In case of an error, testing does not stop" << std::endl;
         std::string formats;
@@ -1330,8 +1341,9 @@ namespace fcf {
         std::cout << "  --test-help  - Help message" << std::endl;
         std::cout << std::endl;
         std::cout << "Explanatory details:" << std::endl;
-        std::cout << "  1. The --test-part, --test-group, --test-test commands are combined using the OR operation" << std::endl;
-        std::cout << "  2. The --test-ignore-part, --test-ignore-group, --test-ignore-test commands are combined using the OR operation" << std::endl;
+        std::cout << "  1. The --test-part, --test-group, --test-test, --test-selector commands are combined using the OR operation" << std::endl;
+        std::cout << "  2. The --test-ignore-part, --test-ignore-group, --test-ignore-test, --test-ignore-selector commands" << std::endl
+                  << "     are combined using the OR operation" << std::endl;
       }
     #endif
 
@@ -1514,6 +1526,13 @@ namespace fcf {
       }
     #endif
 
+    namespace NDetails {
+      namespace {
+        #ifdef FCF_TEST_IMPLEMENTATION
+          std::vector<std::string> splitSelector(const std::string& a_str);
+        #endif
+      } // None namespace
+    } // NDetails namespace
 
     namespace NDetails {
       #ifdef FCF_TEST_IMPLEMENTATION
@@ -1523,66 +1542,144 @@ namespace fcf {
         FCF_TEST_API ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr) {
           ECmdMode mode = CM_NONE;
 
-          std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);
+          try {
+            std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);
 
-          for(size_t i = 0; i < args.size(); ++i) {
-            if (args[i] == "--test-run") {
-              mode = CM_RUN;
-            } else if (args[i] == "--test-help") {
-              mode = CM_HELP;
-              if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN) {
-                cmdHelp();
-                return mode;
+            for(size_t i = 0; i < args.size(); ++i) {
+              if (args[i] == "--test-run") {
+                mode = CM_RUN;
+              } else if (args[i] == "--test-help") {
+                mode = CM_HELP;
+                if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN) {
+                  cmdHelp();
+                  return mode;
+                }
+              } else if (args[i] == "--test-log-level") {
+                if ((i+1) < args.size()) {
+                  a_dstOptions.logLevel = Logger::toLevel(args[i+1], logger().level());
+                  ++i;
+                } else {
+                  throw std::runtime_error("One parameter are required for the --test-log-level LOG_LEVEL argument");
+                }
+              } else if (args[i] == "--test-list") {
+                mode = CM_LIST;
+                if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN) {
+                  cmdList();
+                  return mode;
+                }
+              } else if (args[i] == "--test-format") {
+                if ((i+1) < args.size()) {
+                  a_dstOptions.format = args[i+1];
+                  ++i;
+                } else {
+                  throw std::runtime_error("One parameter are required for the --test-format FORMAT argument");
+                }
+              } else if (args[i] == "--test-part") {
+                if ((i+1) < args.size()) {
+                  a_dstOptions.selectors.push_back( Options::Selector{{args[i+1]}, {}, {}}  );
+                  ++i;
+                } else {
+                  throw std::runtime_error("One parameter are required for the --test-part PART argument");
+                }
+              } else if (args[i] == "--test-group") {
+                if ((i+1) < args.size()) {
+                  a_dstOptions.selectors.push_back( Options::Selector{{}, {args[i+1]}, {}}  );
+                  ++i;
+                } else {
+                  throw std::runtime_error("One parameter are required for the --test-group GROUP argument");
+                }
+              } else if (args[i] == "--test-test") {
+                if ((i+1) < args.size()) {
+                  a_dstOptions.selectors.push_back( Options::Selector{{}, {}, {args[i+1]}}  );
+                  ++i;
+                } else {
+                  throw std::runtime_error("One parameter are required for the --test-test TEST argument");
+                }
+              } else if (args[i] == "--test-selector") {
+                if ((i+3) < args.size()) {
+                  Options::Selector selector{
+                    NDetails::splitSelector(args[i+1]),
+                    NDetails::splitSelector(args[i+2]),
+                    NDetails::splitSelector(args[i+3])
+                  };
+                  a_dstOptions.selectors.push_back(selector);
+                  i += 3;
+                } else {
+                  throw std::runtime_error("Three parameters are required for the --test-selector PART GROUP TEST argument");
+                }
+              } else if (args[i] == "--test-ignore-part") {
+                if ((i+1) < args.size()) {
+                  a_dstOptions.ignoreSelectors.push_back( Options::Selector{{args[i+1]}, {}, {}}  );
+                  ++i;
+                } else {
+                  throw std::runtime_error("One parameter are required for the --test-ignore-part PART argument");
+                }
+              } else if (args[i] == "--test-ignore-group") {
+                if ((i+1) < args.size()) {
+                  a_dstOptions.ignoreSelectors.push_back( Options::Selector{{}, {args[i+1]}, {}}  );
+                  ++i;
+                } else {
+                  throw std::runtime_error("One parameter are required for the --test-ignore-group GROUP argument");
+                }
+              } else if (args[i] == "--test-ignore-test") {
+                if ((i+1) < args.size()) {
+                  a_dstOptions.ignoreSelectors.push_back( Options::Selector{{}, {}, {args[i+1]}}  );
+                  ++i;
+                } else {
+                  throw std::runtime_error("One parameter are required for the --test-ignore-test TEST argument");
+                }
+              } else if (args[i] == "--test-ignore-selector") {
+                if ((i+3) < args.size()) {
+                  Options::Selector selector{
+                    NDetails::splitSelector(args[i+1]),
+                    NDetails::splitSelector(args[i+2]),
+                    NDetails::splitSelector(args[i+3])
+                  };
+                  a_dstOptions.ignoreSelectors.push_back(selector);
+                  i += 3;
+                } else {
+                  throw std::runtime_error("Three parameters are required for the --test-ignore-selector PART GROUP TEST argument");
+                }
+              } else if (args[i] == "--test-no-break") {
+                a_dstOptions.noBreak = true;
+              } else if (args[i] == "--test-file") {
+                if ((i+1) < args.size()) {
+                  a_dstOptions.files.push_back({args[i+1], ""});
+                  ++i;
+                } else {
+                  throw std::runtime_error("One parameter are required for the --test-file FILE  argument");
+                }
+              } else if (args[i] == "--test-file-default") {
+                if ((i+1) < args.size()) {
+                  a_dstOptions.files.push_back({args[i+1], "default"});
+                  ++i;
+                } else {
+                  throw std::runtime_error("One parameter are required for the --test-file-default FILE  argument");
+                }
               }
-            } else if (args[i] == "--test-log-level" && (i+1) < args.size()) {
-              a_dstOptions.logLevel = Logger::toLevel(args[i+1], logger().level());
-              ++i;
-            } else if (args[i] == "--test-list") {
-              mode = CM_LIST;
-              if (a_runMode == CRM_EXECUTE || a_runMode == CRM_RUN) {
-                cmdList();
-                return mode;
+              for(auto format : logger().formats()) {
+                std::string param = "--test-file-" + format.options.name;
+                if (args[i] == param) {
+                  if ((i+1) < args.size()) {
+                    a_dstOptions.files.push_back({args[i+1], format.options.name});
+                    ++i;
+                    break;
+                  } else {
+                    throw std::runtime_error("One parameter are required for the --test-file-FORMAT FILE  argument");
+                  }
+                }
               }
-            } else if (args[i] == "--test-format" && (i+1) < args.size()) {
-              a_dstOptions.format = args[i+1];
-              ++i;
-            } else if (args[i] == "--test-part" && (i+1) < args.size()) {
-              a_dstOptions.selectors.push_back( Options::Selector{{args[i+1]}, {}, {}}  );
-              ++i;
-            } else if (args[i] == "--test-group" && (i+1) < args.size()) {
-              a_dstOptions.selectors.push_back( Options::Selector{{}, {args[i+1]}, {}}  );
-              ++i;
-            } else if (args[i] == "--test-test" && (i+1) < args.size()) {
-              a_dstOptions.selectors.push_back( Options::Selector{{}, {}, {args[i+1]}}  );
-              ++i;
-            } else if (args[i] == "--test-ignore-part" && (i+1) < args.size()) {
-              a_dstOptions.ignoreSelectors.push_back( Options::Selector{{args[i+1]}, {}, {}}  );
-              ++i;
-            } else if (args[i] == "--test-ignore-group" && (i+1) < args.size()) {
-              a_dstOptions.ignoreSelectors.push_back( Options::Selector{{}, {args[i+1]}, {}}  );
-              ++i;
-            } else if (args[i] == "--test-ignore-test" && (i+1) < args.size()) {
-              a_dstOptions.ignoreSelectors.push_back( Options::Selector{{}, {}, {args[i+1]}}  );
-              ++i;
-            } else if (args[i] == "--test-no-break") {
-              a_dstOptions.noBreak = true;
-            } else if (args[i] == "--test-file" && (i+1) < args.size()) {
-              a_dstOptions.files.push_back({args[i+1], ""});
-              ++i;
-            } else if (args[i] == "--test-file-default" && (i+1) < args.size()) {
-              a_dstOptions.files.push_back({args[i+1], "default"});
-              ++i;
             }
-            for(auto format : logger().formats()) {
-              std::string param = "--test-file-" + format.options.name;
-              if (args[i] == param && (i+1) < args.size()) {
-                a_dstOptions.files.push_back({args[i+1], format.options.name});
-                ++i;
-                break;
-              }
+          } catch (const std::exception& e) {
+            sys(LMC_RUN_ERROR) << "Error: " << e.what() << std::endl;
+            if (a_enableThrow) {
+              throw;
+            } else if (a_errorPtr){
+              *a_errorPtr = true;
             }
-
+            return CM_NONE;
           }
+
           if ((mode == CM_RUN && a_runMode == CRM_EXECUTE) || a_runMode == CRM_RUN) {
             runImpl(a_dstOptions, a_enableThrow, a_errorPtr);
           }
@@ -1590,6 +1687,22 @@ namespace fcf {
           return mode;
         }
       #endif
+    } // NDetails namespace
+
+    namespace NDetails {
+      namespace {
+        #ifdef FCF_TEST_IMPLEMENTATION
+          std::vector<std::string> splitSelector(const std::string& a_str) {
+            std::vector<std::string> result;
+            std::string line;
+            std::stringstream tokenStream(a_str);
+            while (std::getline(tokenStream, line, '|')) {
+                result.push_back(line);
+            }
+            return result;
+          }
+        #endif
+      } // None namespace
     } // NDetails namespace
 
     namespace NDetails {
