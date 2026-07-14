@@ -141,6 +141,56 @@ Tests: 0 passed, 1 failed, 0 skipped, 1 total
 Duration: 0.000`049`999 sec
 ```
 
+### `FCF_TEST_THROW(bool am_expression, ...mixed am_observedVariablePack)`. 
+Macro to assert that a code block throws an exception.
+
+If the provided code does not throw any exception, it generates a detailed error message including the expression, file, line number, and any provided arguments, then logs the error and throws a `std::runtime_error`.
+
+- **Behavior**: Evaluates the provided code block within a `try-catch` block. If no exception is caught, it triggers a test failure.
+- **Error Message**: The exception message includes:
+  - The string representation of the code block.
+  - The file name and line number where the macro was called.
+  - Values of all additional arguments provided in `am_observedVariablePack`.
+
+**Example:**
+```c++
+void riskyFunction() {
+    throw std::runtime_error("Error!");
+}
+
+void safeFunction(int x) {
+}
+
+// This test passes
+FCF_TEST_THROW(riskyFunction());
+
+// This test fails because no exception is thrown
+int x = 10;
+FCF_TEST_THROW(safeFunction(x), x);
+// Test error: 'safeFunction(x)' did not throw  [FILE: main.cpp:15]
+//   Values:
+//     x: 10
+```
+
+
+### `bool FCF_TEST_THROW_CHECK(bool am_expression, ...mixed am_observedVariablePack)`. 
+Non-throwing macro to assert that a code block throws an exception.
+
+Evaluates the provided code block. If no exception is thrown, it logs a detailed error message to the internal state but does not throw an exception. This is useful for testing in multithreaded environments or when you want to continue execution after a failure.
+
+- **Behavior**: Evaluates the code block. Returns `true` if an exception was caught, and `false` if no exception was thrown.
+- **Return Value**: `bool` (true if exception caught, false otherwise).
+
+**Example:**
+```c++
+void safeFunction() {}
+
+// Returns false, logs error to state, but does NOT throw exception
+if (!FCF_TEST_THROW_CHECK(safeFunction(), "some_context")) {
+    fcf::NTest::log() << "The function was expected to throw, but it didn't." << std::endl;
+}
+```
+
 
 ## Testing Organization Macros
 
@@ -315,6 +365,8 @@ struct Options {
 
 The central function for executing the test suite. It parses command-line arguments and determines the action.
 
+**`ECmdMode cmdRun(int a_argc, const char* const* a_argv, ECmdRunMode a_runMode)`**
+**`ECmdMode cmdRun(int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr)`**
 **`ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode)`**
 **`ECmdMode cmdRun(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool* a_errorPtr)`**
 
@@ -408,10 +460,21 @@ int main(int a_argc, char* a_argv[]) {
 - `--test-log-level LEVEL`: Sets the global logging verbosity (e.g., `dbg`, `log`, `err`).
 - `--test-part PART_NAME`: Filters execution to only tests belonging to the specified part. Can be used multiple times.
 - `--test-group GROUP_NAME`: Filters execution to only tests belonging to the specified group. Can be used multiple times.
+- `--test-select PART GROUP TEST` - Runs only tests that satisfy the selector specified by the three parameters.
+                                  - If a parameter is an empty string or '\*', it is assumed that
+                                  - the selector selects all elements from the group.
+                                  - Multiple values can be provided in a parameter, separated by the '|' symbol.
+                                    - Example: test --test-select Library "" "func2|func2"
+                                  - The parameter can be used multiple times
 - `--test-test TEST_NAME`: Filters execution to run only the specific test named. Can be used multiple times.
 - `--test-ignore-part PART_NAME`: Exclude tests in the specified part(s). Can be used multiple times.
 - `--test-ignore-group GROUP_NAME`: Exclude tests in the specified group(s). Can be used multiple times.
 - `--test-ignore-test TEST_NAME`: Exclude tests in the specified test(s). Can be used multiple times.
+- `--test-ignore-select PART GROUP TEST` - Exclude tests that satisfy the selector specified by the three parameters.
+                                  - If a parameter is an empty string or '\*', it is assumed that
+                                  - the selector selects all elements from the group.
+                                  - Multiple values can be provided in a parameter, separated by the '|' symbol.
+                                  - The parameter can be used multiple times
 - `--test-no-break`: In case of an error, testing does not stop.
 - `--test-format FORMAT`: Output format (e.g., `junit`, `default`).
 - `--test-file FILE_PATH`: Log file (uses default format).
@@ -419,8 +482,8 @@ int main(int a_argc, char* a_argv[]) {
 - `--test-file-[FORMAT] FILE_PATH`: Log file with a specific format (e.g., `--test-file-junit path/to/log.xml`).
 
 #### Explanatory details:
-  - The --test-part, --test-group, --test-test commands are combined using the OR operation
-  - The --test-ignore-part, --test-ignore-group, --test-ignore-test commands are combined using the OR operation
+  - The --test-part, --test-group, --test-test, --test-select commands are combined using the OR operation
+  - The --test-ignore-part, --test-ignore-group, --test-ignore-test, --test-ignore-select commands are combined using the OR operation
 
 **Example Command:**
 ```bash
