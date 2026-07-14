@@ -1313,7 +1313,7 @@ namespace fcf {
                   << "                                    If a parameter is an empty string or '*', it is assumed that " << std::endl 
                   << "                                    the selector selects all elements from the group." << std::endl 
                   << "                                    Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl 
-                  << "                                      Example: test --test-selector Library main \"func2|func2\"" << std::endl
+                  << "                                      Example: test --test-selector Library \"\" \"func2|func2\"" << std::endl
                   << "                                    The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-part PART_NAME - Exclude tests in the specified part(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-group GROUP_NAME - Exclude tests in the specified group(s). The parameter can be used multiple times" << std::endl;
