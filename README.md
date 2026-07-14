@@ -344,20 +344,39 @@ This structure holds the configuration for running tests. It is populated automa
 
 ```c++
 struct Options {
+  /**
+   * @brief Represents a file output target.
+   */
   struct File {
-    std::string  file;
-    std::string  format;
+    std::string  file;   ///< Path to the output file.
+    std::string  format; ///< Output format to use for this specific file (e.g., "default", "junit").
   };
-  std::vector<std::string> parts;         ///< List of part names to run (empty means all).
-  std::vector<std::string> groups;        ///< List of group names to run (empty means all).
-  std::vector<std::string> tests;         ///< List of specific test names to run (empty means all).
-  std::vector<std::string> ignoreParts;   ///< List of ignore part names.
-  std::vector<std::string> ignoreGroups;  ///< List of ignore group names to run.
-  std::vector<std::string> ignoreTests;   ///< List of ignore specific test names to run.
-  ELogLevel                logLevel;      ///< Desired logging level.
-  std::string              format;        ///< Output format (e.g., "junit", "default").
-  bool                     noBreak;       ///< If true, testing continues after a failure.
-  std::vector<File>        files;         ///< List of log files to write to.
+
+  /**
+   * @brief A selector used to filter tests based on hierarchy.
+   *
+   * A selector can match tests by their part, group, or name.
+   * If the vector is empty, all elements from the given level are selected.
+   * If the element is "*" or an empty string, all elements from the specified level are selected.
+   */
+  struct Selector {
+    std::vector<std::string>  parts;  ///< List of part names to include.
+    std::vector<std::string>  groups; ///< List of group names to include.
+    std::vector<std::string>  tests;  ///< List of specific test names to include.
+  };
+
+  std::vector<Selector>    selectors;       ///< List of selectors to include specific tests.
+  std::vector<Selector>    ignoreSelectors; ///< List of selectors to exclude specific tests.
+  ELogLevel                logLevel;        ///< Desired verbosity level of the logger.
+  std::string              format;          ///< Default output format (e.g., "default", "junit").
+  bool                     noBreak;         ///< If true, the runner will continue testing even after a failure.
+  std::vector<File>        files;           ///< List of files where logs should be written.
+
+  Options()
+    : logLevel(LL_DEF)
+    , format("default")
+    , noBreak(false) {
+  }
 };
 ```
 

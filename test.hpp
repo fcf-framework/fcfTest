@@ -593,7 +593,8 @@ namespace fcf {
        * @brief A selector used to filter tests based on hierarchy.
        *
        * A selector can match tests by their part, group, or name.
-       * If a vector is empty, it acts as a wildcard for that level.
+       * If the vector is empty, all elements from the given level are selected.
+       * If the element is "*" or an empty string, all elements from the specified level are selected.
        */
       struct Selector {
         std::vector<std::string>  parts;  ///< List of part names to include.
