@@ -11,7 +11,7 @@ jobs:
   release:
     if: >
       github.event.workflow_run.conclusion == 'success' &&
-      startsWith(github.event.workflow_run.head_branch, 'v')
+      startsWith(github.event.workflow_run.head_branch, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -23,19 +23,24 @@ jobs:
 
       - name: Prepare and Archive Sources
         run: |
-          TAG_NAME="${{ github.event.workflow_run.head_branch }}"
+          FULL_REF="${{ github.event.workflow_run.head_branch }}"
+          TAG_NAME="${FULL_REF##*/}"
+
           VERSION=${TAG_NAME#v}
+          echo "Tag name: $TAG_NAME"
           echo "Version to use: $VERSION"
 
           mkdir -p fcfTest
           rsync -rrv --exclude='fcfTest' --exclude='.git' --exclude='.github' ./ fcfTest/
           zip -r "fcfTest-${VERSION}.zip" fcfTest/
+
           echo "ARCHIVE_NAME=fcfTest-${VERSION}.zip" >> $GITHUB_ENV
+          echo "CLEAN_TAG=$TAG_NAME" >> $GITHUB_ENV
 
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.workflow_run.head_branch }}
+          tag_name: ${{ env.CLEAN_TAG }}
           generate_release_notes: true
           files: ${{ env.ARCHIVE_NAME }}
 
