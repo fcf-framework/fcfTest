@@ -2,9 +2,10 @@ name: Create Release
 
 on:
   workflow_run:
-    workflows: ["Test"]
+    workflows: ["Tests"]
     types:
       - completed
+  workflow_dispatch:
 
 jobs:
   release:
