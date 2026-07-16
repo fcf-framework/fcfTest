@@ -1068,8 +1068,8 @@ namespace fcf {
         typedef std::list<Format> Formats;
         struct Prefix;
         typedef std::list<Prefix> Prefixes;
-        struct FormatContext;
-        typedef std::map<std::string, FormatContext> FormatContextStorage;
+        struct HandlerDataItem;
+        typedef std::map<std::string, HandlerDataItem> HandlerDataMap;
         class OutputTarget;
         typedef std::list<OutputTarget> OutputTargets;
 
@@ -1165,7 +1165,7 @@ namespace fcf {
             std::stringstream   _sstream;
         };
 
-        struct FormatContext {
+        struct HandlerDataItem {
           std::string         strValue;
           unsigned long long  ullValue;
           void*               ptrValue;
@@ -1180,7 +1180,7 @@ namespace fcf {
           size_t              line;
           ELogLevel           level;
           std::ostream*       stream;
-          FormatContext*      data;
+          HandlerDataItem*    data;
 
           MessageContext() = delete;
           MessageContext(const MessageContext&) = delete;
@@ -1216,13 +1216,12 @@ namespace fcf {
           Logger::PrefixSettings options;
         };
 
-
         struct OutputTarget {
-          std::string           name;
-          std::ostream*         stream;
-          std::string           format;
-          FormatContextStorage  prefixData;
-          FormatContextStorage  formatData;
+          std::string     name;
+          std::ostream*   stream;
+          std::string     format;
+          HandlerDataMap  prefixData;
+          HandlerDataMap  formatData;
         };
 
       protected:
@@ -2790,9 +2789,9 @@ namespace fcf {
 
                 if (prefix.func) {
                   const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
-                  FormatContextStorage::iterator dataIt = stream.prefixData.find(prefixName);
+                  HandlerDataMap::iterator dataIt = stream.prefixData.find(prefixName);
                   if (dataIt == stream.prefixData.end()) {
-                    dataIt = stream.prefixData.insert({prefixName, FormatContext()}).first;
+                    dataIt = stream.prefixData.insert({prefixName, HandlerDataItem()}).first;
                   }
                   lms.data = &dataIt->second;
 
@@ -2816,9 +2815,9 @@ namespace fcf {
           for(Format format : _formats) {
             const char* formatName = format.options.name.empty() ? "default" : format.options.name.c_str();
             if (formatName == currentFormatName) {
-              FormatContextStorage::iterator dataIt = stream.formatData.find(formatName);
+              HandlerDataMap::iterator dataIt = stream.formatData.find(formatName);
               if (dataIt == stream.formatData.end()) {
-                dataIt = stream.formatData.insert({formatName, Logger::FormatContext()}).first;
+                dataIt = stream.formatData.insert({formatName, Logger::HandlerDataItem()}).first;
               }
               lms.data = &dataIt->second;
               format.func(*this, lms);
