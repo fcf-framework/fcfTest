@@ -28,14 +28,14 @@ class InnerTestRunner{
     {
     }
     bool run(fcf::NTest::Options& a_options, std::stringstream& a_sstream){
-      fcf::NTest::LogOutputTargets targets = { {"default", &a_sstream, "", {}, {}} };
+      fcf::NTest::Logger::OutputTargets targets = { {"default", &a_sstream, "", {}, {}} };
       fcf::NTest::logger().targets(targets);
       bool error = false;
       fcf::NTest::run(a_options, &error);
       return error;
     }
     void operator()(fcf::NTest::Options& a_options, std::stringstream& a_sstream, int a_argc, const char** a_argv){
-      fcf::NTest::LogOutputTargets targets = { {"default", &a_sstream, "", {}, {}} };
+      fcf::NTest::Logger::OutputTargets targets = { {"default", &a_sstream, "", {}, {}} };
       fcf::NTest::logger().targets(targets);
       bool error = false;
       fcf::NTest::cmdRun(a_options, a_argc, a_argv, fcf::NTest::CRM_RUN, &error);
@@ -44,7 +44,7 @@ class InnerTestRunner{
       fcf::NTest::logger().targets(_targets);
     }
   private:
-    fcf::NTest::LogOutputTargets  _targets;
+    fcf::NTest::Logger::OutputTargets  _targets;
 
 };
 

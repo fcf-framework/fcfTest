@@ -1054,111 +1054,46 @@ namespace fcf {
   namespace NTest {
 
     class FCF_TEST_API Logger;
-    struct LogMessageContext;
-    struct LogFormatContext;
-    typedef std::function<std::string(Logger&, LogMessageContext&)> LogPrefixFunction;
-    typedef std::function<void(Logger&, LogMessageContext&)>        LogFormatFunction;
-    struct LogFormatSettings;
-    struct LogFormat;
-    typedef std::list<LogFormat> LogFormats;
-    struct LogPrefixSettings;
-    struct LogPrefix;
-    typedef std::list<LogPrefix> LogPrefixes;
-    struct LogOutputTarget;
-    typedef std::list<LogOutputTarget> LogOutputTargets;
-    class FCF_TEST_API LogWriter;
-
-    /**
-    * @brief Declaration for the global logger instance.
-    * @return Reference to the Logger instance.
-    */
-    FCF_TEST_API Logger& logger();
-
-    /**
-     * @brief Returns the output stream for fatal messages (global shortcut).
-     * @return Reference to the output stream.
-     */
-    inline LogWriter ftl();
-
-    /**
-     * @brief Returns the output stream for error messages (global shortcut).
-     * @return Reference to the output stream.
-     */
-    inline LogWriter err();
-
-    /**
-     * @brief Returns the output stream for warning messages (global shortcut).
-     * @return Reference to the output stream.
-     */
-    inline LogWriter wrn();
-
-    /**
-     * @brief Returns the output stream for attention messages (global shortcut).
-     * @return Reference to the output stream.
-     */
-    inline LogWriter att();
-
-    /**
-     * @brief Returns the output stream for log messages (global shortcut).
-     * @return Reference to the output stream.
-     */
-    inline LogWriter log();
-
-    /**
-     * @brief Returns the output stream for informational messages (global shortcut).
-     * @return Reference to the output stream.
-     */
-    inline LogWriter inf();
-
-    /**
-     * @brief Returns the output stream for debug messages (global shortcut).
-     * @return Reference to the output stream.
-     */
-    inline LogWriter dbg();
-
-    /**
-     * @brief Returns the output stream for trace messages (global shortcut).
-     * @return Reference to the output stream.
-     */
-    inline LogWriter trc();
-
-    /**
-     * @brief The output stream returns for the test inner message. The log recording is always performed.
-     * @return Reference to the output stream.
-     */
-    inline LogWriter sys(ELogMessageCategory a_messageCategory);
 
     class FCF_TEST_API Logger {
-        friend LogWriter;
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
 
-        struct Environment {
-          ELogLevel           level;
-          std::string         format;
-          LogOutputTargets    targets;
-        };
-
       public:
+        class MessageContext;
+        typedef std::function<std::string(Logger&, MessageContext&)> PrefixFunction;
+        typedef std::function<void(Logger&, MessageContext&)>        FormatFunction;
+        struct PrefixSettings;
+        struct FormatSettings;
+        struct Format;
+        typedef std::list<Format> Formats;
+        struct Prefix;
+        typedef std::list<Prefix> Prefixes;
+        struct FormatContext;
+        typedef std::map<std::string, FormatContext> FormatContextStorage;
+        class OutputTarget;
+        typedef std::list<OutputTarget> OutputTargets;
+
+        class FCF_TEST_API Writer;
 
         Logger();
 
-        LogWriter ftl();
+        Writer ftl();
 
-        LogWriter err();
+        Writer err();
 
-        LogWriter wrn();
+        Writer wrn();
 
-        LogWriter att();
+        Writer att();
 
-        LogWriter log();
+        Writer log();
 
-        LogWriter inf();
+        Writer inf();
 
-        LogWriter dbg();
+        Writer dbg();
 
-        LogWriter trc();
+        Writer trc();
 
-        LogWriter sys(ELogMessageCategory a_messageCategory);
+        Writer sys(ELogMessageCategory a_messageCategory);
 
         const char* levelStr() const;
 
@@ -1172,43 +1107,133 @@ namespace fcf {
 
         static const char* toLevelStr(ELogLevel a_level);
 
-        LogPrefixes prefixes();
+        Prefixes prefixes();
 
-        void prefixes(const LogPrefixes& a_prefixes);
+        void prefixes(const Prefixes& a_prefixes);
 
         void clearPrefixes(bool a_defaultState = false);
 
         void appendPrefixStr(const std::string& a_prefix);
 
-        void appendPrefixStr(const std::string& a_prefix, const LogPrefixSettings& a_options);
+        void appendPrefixStr(const std::string& a_prefix, const PrefixSettings& a_options);
 
-        void appendPrefixFunc(const LogPrefixFunction& a_prefix);
+        void appendPrefixFunc(const PrefixFunction& a_prefix);
 
-        void appendPrefixFunc(const LogPrefixFunction& a_prefix, const LogPrefixSettings& a_options);
+        void appendPrefixFunc(const PrefixFunction& a_prefix, const PrefixSettings& a_options);
 
-        void appendPrefix(const LogPrefix& a_prefix);
+        void appendPrefix(const Prefix& a_prefix);
 
-        LogFormats formats();
+        Formats formats();
 
-        void formats(LogFormats& a_formats);
+        void formats(Formats& a_formats);
 
         void clearFormats(bool a_defaultState = false);
 
-        void appendFormat(const LogFormat& a_format);
+        void appendFormat(const Format& a_format);
 
-        void appendFormatFunc(const LogFormatFunction& a_prefix, const LogFormatSettings& a_options);
+        void appendFormatFunc(const FormatFunction& a_prefix, const FormatSettings& a_options);
 
-        LogOutputTargets targets();
+        OutputTargets targets();
 
-        void targets(const LogOutputTargets& a_targets);
+        void targets(const OutputTargets& a_targets);
 
         void clearTargets(bool a_defaultState);
 
-        void appendTarget(const LogOutputTarget& a_stream);
+        void appendTarget(const OutputTarget& a_stream);
+
+        class FCF_TEST_API Writer {
+          public:
+            Writer();
+
+            Writer(const Writer& a_output)  = delete;
+
+            Writer(Writer&& a_output);
+
+            Writer(Logger& a_logger, ELogLevel a_level, ELogMessageCategory a_loggerMessageCategory);
+
+            ~Writer();
+
+            template <typename Ty>
+            Writer& operator<<(const Ty& a_value);
+
+            Writer& operator<<(std::ostream& (*a_manipulator)(std::ostream&));
+
+          private:
+            Logger*             _logger;
+            ELogLevel           _level;
+            ELogMessageCategory _loggerMessageCategory;
+            std::stringstream   _sstream;
+        };
+
+        struct FormatContext {
+          std::string         strValue;
+          unsigned long long  ullValue;
+          void*               ptrValue;
+          SharedPtrAny        sptrValue;
+        };
+
+
+        struct MessageContext {
+          ELogMessageCategory category;
+          const std::string   origin;
+          std::string         message;
+          size_t              line;
+          ELogLevel           level;
+          std::ostream*       stream;
+          FormatContext*      data;
+
+          MessageContext() = delete;
+          MessageContext(const MessageContext&) = delete;
+          MessageContext& operator=(const MessageContext&) = delete;
+          MessageContext(const std::string& a_message)
+            : origin(a_message) {
+          }
+        };
+
+        struct PrefixSettings {
+          std::string  name;
+          bool         multiLine;
+          unsigned int messageCategories;
+          PrefixSettings()
+            : name("")
+            , multiLine(false)
+            , messageCategories(LMC_USER)
+          {}
+        };
+
+        struct FormatSettings {
+          std::string name;
+        };
+
+        struct Format {
+          FormatFunction func;
+          FormatSettings options;
+        };
+
+        struct Prefix {
+          std::string            str;
+          Logger::PrefixFunction func;
+          Logger::PrefixSettings options;
+        };
+
+
+        struct OutputTarget {
+          std::string           name;
+          std::ostream*         stream;
+          std::string           format;
+          FormatContextStorage  prefixData;
+          FormatContextStorage  formatData;
+        };
 
       protected:
 
-        static void _appendTarget(const LogOutputTarget& a_stream, Environment& a_environment );
+        struct Environment {
+          ELogLevel        level;
+          std::string      format;
+          OutputTargets    targets;
+        };
+
+        static void _appendTarget(const OutputTarget& a_stream, Environment& a_environment );
 
         Environment _getEnvironment();
 
@@ -1216,96 +1241,22 @@ namespace fcf {
 
         void _write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, const std::string& a_message);
 
-        LogWriter _log(ELogLevel a_level, ELogMessageCategory a_messageCategory);
+        Writer _log(ELogLevel a_level, ELogMessageCategory a_messageCategory);
 
-        Environment _environment;
-        std::list<LogPrefix> _prefixes;
-        std::list<LogFormat> _formats;
-        std::recursive_mutex    _mutex;
-        bool                    _newLine;
+        Environment           _environment;
+        std::list<Prefix>     _prefixes;
+        std::list<Format>     _formats;
+        std::recursive_mutex  _mutex;
+        bool                  _newLine;
     };
 
 
-    class FCF_TEST_API LogWriter {
-      public:
-        LogWriter();
 
-        LogWriter(const LogWriter& a_output)  = delete;
-
-        LogWriter(LogWriter&& a_output);
-
-        LogWriter(Logger& a_logger, ELogLevel a_level, ELogMessageCategory a_loggerMessageCategory);
-
-        ~LogWriter();
-
-        template <typename Ty>
-        LogWriter& operator<<(const Ty& a_value);
-
-        LogWriter& operator<<(std::ostream& (*a_manipulator)(std::ostream&));
-
-      private:
-        Logger*             _logger;
-        ELogLevel           _level;
-        ELogMessageCategory _loggerMessageCategory;
-        std::stringstream   _sstream;
-    };
-
-
-    struct LogMessageContext {
-      ELogMessageCategory   category;
-      const std::string     origin;
-      std::string           message;
-      size_t                line;
-      ELogLevel             level;
-      std::ostream*         stream;
-      LogFormatContext*     data;
-
-      LogMessageContext() = delete;
-      LogMessageContext(const LogMessageContext&) = delete;
-      LogMessageContext& operator=(const LogMessageContext&) = delete;
-      LogMessageContext(const std::string& a_message)
-        : origin(a_message) {
-      }
-    };
-
-    struct LogFormatContext {
-      std::string         strValue;
-      unsigned long long  ullValue;
-      void*               ptrValue;
-      SharedPtrAny        sptrValue;
-    };
-
-
-    struct LogPrefixSettings {
-      std::string         name;
-      bool                multiLine;
-      unsigned int        messageCategories;
-      LogPrefixSettings()
-        : name("")
-        , multiLine(false)
-        , messageCategories(LMC_USER)
-      {}
-    };
-
-    struct LogFormatSettings {
-      std::string         name;
-    };
-
-    struct LogFormat {
-      LogFormatFunction func;
-      LogFormatSettings options;
-    };
-
-    struct LogPrefix {
-      std::string         str;
-      LogPrefixFunction  func;
-      LogPrefixSettings options;
-    };
 
 
     class FCF_TEST_API LogJunitFormatter {
       public:
-        static void format(Logger& a_logger, LogMessageContext& a_messageContext);
+        static void format(Logger& a_logger, Logger::MessageContext& a_messageContext);
         static std::string suiteName(const Test& a_test);
         static std::string xmlAttribute(const std::string& a_string);
         static std::string xmlText(const std::string& a_string);
@@ -1319,16 +1270,65 @@ namespace fcf {
         std::map<Test, ProcessedInfo> _processed;
     };
 
-    typedef std::map<std::string, LogFormatContext> LogFormatContextStorage;
+    /**
+    * @brief Declaration for the global logger instance.
+    * @return Reference to the Logger instance.
+    */
+    FCF_TEST_API Logger& logger();
 
-    struct LogOutputTarget {
-      std::string                     name;
-      std::ostream*                   stream;
-      std::string                     format;
-      LogFormatContextStorage  prefixData;
-      LogFormatContextStorage  formatData;
-    };
+    /**
+     * @brief Returns the output stream for fatal messages (global shortcut).
+     * @return Reference to the output stream.
+     */
+    inline Logger::Writer ftl();
 
+    /**
+     * @brief Returns the output stream for error messages (global shortcut).
+     * @return Reference to the output stream.
+     */
+    inline Logger::Writer err();
+
+    /**
+     * @brief Returns the output stream for warning messages (global shortcut).
+     * @return Reference to the output stream.
+     */
+    inline Logger::Writer wrn();
+
+    /**
+     * @brief Returns the output stream for attention messages (global shortcut).
+     * @return Reference to the output stream.
+     */
+    inline Logger::Writer att();
+
+    /**
+     * @brief Returns the output stream for log messages (global shortcut).
+     * @return Reference to the output stream.
+     */
+    inline Logger::Writer log();
+
+    /**
+     * @brief Returns the output stream for informational messages (global shortcut).
+     * @return Reference to the output stream.
+     */
+    inline Logger::Writer inf();
+
+    /**
+     * @brief Returns the output stream for debug messages (global shortcut).
+     * @return Reference to the output stream.
+     */
+    inline Logger::Writer dbg();
+
+    /**
+     * @brief Returns the output stream for trace messages (global shortcut).
+     * @return Reference to the output stream.
+     */
+    inline Logger::Writer trc();
+
+    /**
+     * @brief The output stream returns for the test inner message. The log recording is always performed.
+     * @return Reference to the output stream.
+     */
+    inline Logger::Writer sys(ELogMessageCategory a_messageCategory);
 
 
   } // NTest namespace
@@ -2438,55 +2438,55 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter Logger::ftl() {
+      Logger::Writer Logger::ftl() {
         return _log(LL_FTL, LMC_USER);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter Logger::err() {
+      Logger::Writer Logger::err() {
         return _log(LL_ERR, LMC_USER);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter Logger::wrn() {
+      Logger::Writer Logger::wrn() {
         return _log(LL_WRN, LMC_USER);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter Logger::att() {
+      Logger::Writer Logger::att() {
         return _log(LL_ATT, LMC_USER);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter Logger::log() {
+      Logger::Writer Logger::log() {
         return _log(LL_LOG, LMC_USER);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter Logger::inf() {
+      Logger::Writer Logger::inf() {
         return _log(LL_INF, LMC_USER);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter Logger::dbg() {
+      Logger::Writer Logger::dbg() {
         return _log(LL_DBG, LMC_USER);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter Logger::trc() {
+      Logger::Writer Logger::trc() {
         return _log(LL_TRC, LMC_USER);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter Logger::sys(ELogMessageCategory a_messageCategory) {
+      Logger::Writer Logger::sys(ELogMessageCategory a_messageCategory) {
         return _log(LL_LOG, a_messageCategory);
       }
     #endif
@@ -2546,18 +2546,18 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogPrefixes Logger::prefixes() {
+      Logger::Prefixes Logger::prefixes() {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
-        LogPrefixes prefixes = _prefixes;
+        Prefixes prefixes = _prefixes;
         return prefixes;
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::prefixes(const LogPrefixes& a_prefixes) {
+      void Logger::prefixes(const Prefixes& a_prefixes) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         clearPrefixes(false);
-        for(const LogPrefix& prefix : a_prefixes) {
+        for(const Prefix& prefix : a_prefixes) {
           appendPrefix(prefix);
         }
       }
@@ -2568,7 +2568,7 @@ namespace fcf {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         _prefixes.clear();
         if (a_defaultState) {
-          LogPrefixSettings lpo;
+          PrefixSettings lpo;
           lpo.name               = "test-offset";
           lpo.multiLine          = true;
           lpo.messageCategories  = LMC_TEST & (~LMC_USER);
@@ -2583,15 +2583,15 @@ namespace fcf {
 
     #ifdef FCF_TEST_IMPLEMENTATION
       void Logger::appendPrefixStr(const std::string& a_prefix) {
-        LogPrefix prefix;
+        Prefix prefix;
         prefix.str = a_prefix;
         appendPrefix(prefix);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendPrefixStr(const std::string& a_prefix, const LogPrefixSettings& a_options) {
-        LogPrefix prefix;
+      void Logger::appendPrefixStr(const std::string& a_prefix, const PrefixSettings& a_options) {
+        Prefix prefix;
         prefix.str = a_prefix;
         prefix.options = a_options;
         appendPrefix(prefix);
@@ -2599,16 +2599,16 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendPrefixFunc(const LogPrefixFunction& a_prefix) {
-        LogPrefix prefix;
+      void Logger::appendPrefixFunc(const PrefixFunction& a_prefix) {
+        Prefix prefix;
         prefix.func = a_prefix;
         appendPrefix(prefix);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendPrefixFunc(const LogPrefixFunction& a_prefix, const LogPrefixSettings& a_options) {
-        LogPrefix prefix;
+      void Logger::appendPrefixFunc(const PrefixFunction& a_prefix, const PrefixSettings& a_options) {
+        Prefix prefix;
         prefix.func = a_prefix;
         prefix.options = a_options;
         appendPrefix(prefix);
@@ -2616,9 +2616,9 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendPrefix(const LogPrefix& a_prefix) {
+      void Logger::appendPrefix(const Prefix& a_prefix) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
-        auto existIt = std::find_if(_prefixes.begin(), _prefixes.end(), [&a_prefix](const LogPrefix& a_item) { return a_prefix.options.name == a_item.options.name; });
+        auto existIt = std::find_if(_prefixes.begin(), _prefixes.end(), [&a_prefix](const Prefix& a_item) { return a_prefix.options.name == a_item.options.name; });
         if (existIt != _prefixes.end()) {
           *existIt = a_prefix;
         } else {
@@ -2628,18 +2628,18 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogFormats Logger::formats() {
+      Logger::Formats Logger::formats() {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
-        LogFormats formats = _formats;
+        Formats formats = _formats;
         return formats;
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::formats(LogFormats& a_formats) {
+      void Logger::formats(Formats& a_formats) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         _formats.clear();
-        for(const LogFormat& format : a_formats){
+        for(const Format& format : a_formats){
           appendFormat(format);
         }
       }
@@ -2650,7 +2650,7 @@ namespace fcf {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         _formats.clear();
         if (a_defaultState){
-          LogFormatSettings lfo;
+          FormatSettings lfo;
           lfo.name          = "junit";
           appendFormatFunc(LogJunitFormatter::format, lfo);
         }
@@ -2658,9 +2658,9 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendFormat(const LogFormat& a_format) {
+      void Logger::appendFormat(const Format& a_format) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
-        auto existIt = std::find_if(_formats.begin(), _formats.end(), [&a_format](const LogFormat& a_item) { return a_format.options.name == a_item.options.name; });
+        auto existIt = std::find_if(_formats.begin(), _formats.end(), [&a_format](const Format& a_item) { return a_format.options.name == a_item.options.name; });
         if (existIt != _formats.end()) {
           *existIt = a_format;
         } else {
@@ -2670,8 +2670,8 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendFormatFunc(const LogFormatFunction& a_prefix, const LogFormatSettings& a_options) {
-        LogFormat format;
+      void Logger::appendFormatFunc(const FormatFunction& a_prefix, const FormatSettings& a_options) {
+        Format format;
         format.func = a_prefix;
         format.options = a_options;
         appendFormat(format);
@@ -2679,18 +2679,18 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogOutputTargets Logger::targets() {
+      Logger::OutputTargets Logger::targets() {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
-        LogOutputTargets result(_environment.targets);
+        OutputTargets result(_environment.targets);
         return result;
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::targets(const LogOutputTargets& a_targets) {
+      void Logger::targets(const OutputTargets& a_targets) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         clearTargets(false);
-        for(const LogOutputTarget& stream : a_targets) {
+        for(const OutputTarget& stream : a_targets) {
           appendTarget(stream);
         }
       }
@@ -2707,18 +2707,18 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendTarget(const LogOutputTarget& a_stream) {
+      void Logger::appendTarget(const OutputTarget& a_stream) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         _appendTarget(a_stream, _environment);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::_appendTarget(const LogOutputTarget& a_stream, Environment& a_environment ) {
-        LogOutputTargets::iterator it = std::find_if(
+      void Logger::_appendTarget(const OutputTarget& a_stream, Environment& a_environment ) {
+        OutputTargets::iterator it = std::find_if(
                                            a_environment.targets.begin(),
                                            a_environment.targets.end(),
-                                           [&a_stream](LogOutputTarget& a_item){
+                                           [&a_stream](OutputTarget& a_item){
                                              return a_item.name == a_stream.name;
                                            });
         if (it == a_environment.targets.end()) {
@@ -2750,9 +2750,9 @@ namespace fcf {
       void Logger::_write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, const std::string& a_message) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-        for(LogOutputTarget& stream : _environment.targets) {
+        for(OutputTarget& stream : _environment.targets) {
 
-          LogMessageContext lms(a_message);
+          MessageContext lms(a_message);
           lms.category      = a_messageCategory;
           lms.message       = lms.origin;
           lms.line          = 0;
@@ -2765,7 +2765,7 @@ namespace fcf {
                                                   : _environment.format;
 
           if (lms.origin.length()) {
-            for(LogPrefix prefix : _prefixes) {
+            for(Prefix prefix : _prefixes) {
               if (!(a_messageCategory & prefix.options.messageCategories)) {
                 continue;
               }
@@ -2790,9 +2790,9 @@ namespace fcf {
 
                 if (prefix.func) {
                   const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
-                  LogFormatContextStorage::iterator dataIt = stream.prefixData.find(prefixName);
+                  FormatContextStorage::iterator dataIt = stream.prefixData.find(prefixName);
                   if (dataIt == stream.prefixData.end()) {
-                    dataIt = stream.prefixData.insert({prefixName, LogFormatContext()}).first;
+                    dataIt = stream.prefixData.insert({prefixName, FormatContext()}).first;
                   }
                   lms.data = &dataIt->second;
 
@@ -2813,12 +2813,12 @@ namespace fcf {
 
           lms.line = 0;
 
-          for(LogFormat format : _formats) {
+          for(Format format : _formats) {
             const char* formatName = format.options.name.empty() ? "default" : format.options.name.c_str();
             if (formatName == currentFormatName) {
-              LogFormatContextStorage::iterator dataIt = stream.formatData.find(formatName);
+              FormatContextStorage::iterator dataIt = stream.formatData.find(formatName);
               if (dataIt == stream.formatData.end()) {
-                dataIt = stream.formatData.insert({formatName, LogFormatContext()}).first;
+                dataIt = stream.formatData.insert({formatName, Logger::FormatContext()}).first;
               }
               lms.data = &dataIt->second;
               format.func(*this, lms);
@@ -2837,11 +2837,11 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter Logger::_log(ELogLevel a_level, ELogMessageCategory a_messageCategory) {
+      Logger::Writer Logger::_log(ELogLevel a_level, ELogMessageCategory a_messageCategory) {
         if (_environment.level >= a_level || a_messageCategory != LMC_USER) {
-          return LogWriter(*this, a_level, a_messageCategory);
+          return Logger::Writer(*this, a_level, a_messageCategory);
         } else {
-          return LogWriter();
+          return Logger::Writer();
         }
       }
     #endif
@@ -2853,20 +2853,20 @@ namespace fcf {
 
 /* -------------------------------- */
 /* --       Implementation      --- */
-/* ---   fcf::NTest::LogWriter  --- */
+/* ---   fcf::NTest::Logger::Writer  --- */
 /* -------------------------------- */
 
 namespace fcf {
   namespace NTest {
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter::LogWriter()
+      Logger::Writer::Writer()
         : _logger(0) {
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter::LogWriter(LogWriter&& a_output)
+      Logger::Writer::Writer(Writer&& a_output)
         : _logger((Logger*)a_output._logger)
         , _level(a_output._level)
         , _loggerMessageCategory(a_output._loggerMessageCategory)
@@ -2876,13 +2876,13 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter::LogWriter(Logger& a_logger, ELogLevel a_level, ELogMessageCategory a_loggerMessageCategory)
+      Logger::Writer::Writer(Logger& a_logger, ELogLevel a_level, ELogMessageCategory a_loggerMessageCategory)
         : _logger(&a_logger), _level(a_level), _loggerMessageCategory(a_loggerMessageCategory) {
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter::~LogWriter() {
+      Logger::Writer::~Writer() {
         if (_logger) {
           _logger->_write(_level, _loggerMessageCategory, _sstream.str());
         }
@@ -2890,13 +2890,13 @@ namespace fcf {
     #endif
 
     template <typename Ty>
-    LogWriter& LogWriter::operator<<(const Ty& a_value) {
+    Logger::Writer& Logger::Writer::operator<<(const Ty& a_value) {
       _sstream << a_value;
       return *this;
     }
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      LogWriter& LogWriter::operator<<(std::ostream& (*a_manipulator)(std::ostream&)) {
+      Logger::Writer& Logger::Writer::operator<<(std::ostream& (*a_manipulator)(std::ostream&)) {
         a_manipulator(_sstream);
         return *this;
       }
@@ -2955,7 +2955,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void LogJunitFormatter::format(Logger& a_logger, LogMessageContext& a_messageContext) {
+      void LogJunitFormatter::format(Logger& a_logger, Logger::MessageContext& a_messageContext) {
         std::ostringstream output;
 
         switch (a_messageContext.category) {
@@ -3116,39 +3116,39 @@ namespace fcf {
       }
     #endif
 
-    inline LogWriter ftl() {
+    inline Logger::Writer ftl() {
       return logger().ftl();
     }
 
-    inline LogWriter err() {
+    inline Logger::Writer err() {
       return logger().err();
     }
 
-    inline LogWriter wrn() {
+    inline Logger::Writer wrn() {
       return logger().wrn();
     }
 
-    inline LogWriter att() {
+    inline Logger::Writer att() {
       return logger().att();
     }
 
-    inline LogWriter log() {
+    inline Logger::Writer log() {
       return logger().log();
     }
 
-    inline LogWriter inf() {
+    inline Logger::Writer inf() {
       return logger().inf();
     }
 
-    inline LogWriter dbg() {
+    inline Logger::Writer dbg() {
       return logger().dbg();
     }
 
-    inline LogWriter trc() {
+    inline Logger::Writer trc() {
       return logger().trc();
     }
 
-    LogWriter sys(ELogMessageCategory a_messageCategory) {
+    Logger::Writer sys(ELogMessageCategory a_messageCategory) {
       return logger().sys(a_messageCategory);
     }
   } // NTest namespace

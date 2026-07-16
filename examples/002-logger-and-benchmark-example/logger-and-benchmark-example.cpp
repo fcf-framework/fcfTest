@@ -88,7 +88,7 @@ int main(int a_argc, char* a_argv[]) {
     fcf::NTest::logger().clearPrefixes(false);
 
     // Add a static string prefix to all log messages to indent them.
-    fcf::NTest::LogPrefixSettings pls;
+    fcf::NTest::Logger::PrefixSettings pls;
     pls.name = "custom-offset";
     pls.multiLine = true;
     pls.messageCategories = fcf::NTest::LMC_TEST;
@@ -99,7 +99,7 @@ int main(int a_argc, char* a_argv[]) {
     pls.name = "info";
     pls.multiLine = false;
     pls.messageCategories = fcf::NTest::LMC_ALL;
-    fcf::NTest::logger().appendPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::LogMessageContext& a_status){
+    fcf::NTest::logger().appendPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::Logger::MessageContext& a_status){
         // Get current system time
         auto time = std::time(nullptr);
         // Format the output as: "YYYY-MM-DD HH:MM:SS [LEVEL]: "
