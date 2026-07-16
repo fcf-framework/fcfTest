@@ -150,7 +150,7 @@ If the provided code does not throw any exception, it generates a detailed error
 - **Parameters**:
   - `am_expression`: The code block or expression to be executed and checked for an exception.
   - `am_exception`:  The name of the expected exception. To catch all exceptions, this parameter must be ...
-  - `...am\_observedVariablePack`:  Variable list of arguments whose values will be included in the error message if no exception is thrown.
+  - `...am_observedVariablePack`:  Variable list of arguments whose values will be included in the error message if no exception is thrown.
 - **Error Message**: The exception message includes:
   - The string representation of the code block.
   - The file name and line number where the macro was called.
@@ -186,7 +186,7 @@ Evaluates the provided code block. If no exception is thrown, it logs a detailed
 - **Parameters**:
   - `am_expression`: The code block or expression to be executed and checked for an exception.
   - `am_exception`:  The name of the expected exception. To catch all exceptions, this parameter must be ...
-  - `...am\_observedVariablePack`:  Variable list of arguments whose values will be included in the error message if no exception is thrown.
+  - `...am_observedVariablePack`:  Variable list of arguments whose values will be included in the error message if no exception is thrown.
 - **Return Value**: `bool` (true if exception caught, false otherwise).
 
 **Example:**
