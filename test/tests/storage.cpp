@@ -195,25 +195,25 @@ FCF_TEST_DECLARE("fcfTest", "storage", "select (throw)") {
     std::set<fcf::NTest::Test> tests;
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"w"}, {}, {} });
-    FCF_TEST_THROW(storage.select(tests, options), testsToStr(tests));
+    FCF_TEST_THROW(storage.select(tests, options), ..., testsToStr(tests));
   }
   {
     std::set<fcf::NTest::Test> tests;
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {}, {"w"}, {} });
-    FCF_TEST_THROW(storage.select(tests, options), testsToStr(tests));
+    FCF_TEST_THROW(storage.select(tests, options), ..., testsToStr(tests));
   }
   {
     std::set<fcf::NTest::Test> tests;
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {}, {}, {"w"} });
-    FCF_TEST_THROW(storage.select(tests, options), testsToStr(tests));
+    FCF_TEST_THROW(storage.select(tests, options), ..., testsToStr(tests));
   }
   {
     std::set<fcf::NTest::Test> tests;
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"w"}, {}, {"w"} });
-    FCF_TEST_THROW(storage.select(tests, options), testsToStr(tests));
+    FCF_TEST_THROW(storage.select(tests, options), ..., testsToStr(tests));
   }
 
 }

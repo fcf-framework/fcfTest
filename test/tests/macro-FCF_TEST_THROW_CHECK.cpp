@@ -10,6 +10,9 @@ namespace {
   void callThrow(){
     throw std::runtime_error("1");
   }
+  void callThrowOutOfRange(){
+    throw std::out_of_range("Info");
+  }
 }
 
 FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST_THROW_CHECK") {
@@ -90,14 +93,57 @@ FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST_THROW_CHECK") {
     FCF_TEST(content == expected, content, expected);
     FCF_TEST(error);
   }
+  {
+    fcf::NTest::Options options;
+    options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun"}, {"FCF_TEST_THROW_CHECK"}, {"except std::out_of_range != std::runtime_error"}} );
+    std::stringstream ss;
+    bool error = InnerTestRunner().run(options, ss);
+
+    std::string content = uniout(ss.str(), true);
+    std::string expected =  std::string() +
+                            "Performing the test: \"subrun\" -> \"FCF_TEST_THROW_CHECK\" -> \"except std::out_of_range != std::runtime_error\" ...\n" +
+                            "  > end\n" +
+                            "    Test error: 'callThrow()' threw an exception that does not match 'std::out_of_range'  [FILE: XXX]\n" +
+                            "      Values:\n" +
+                            "        v: 999\n" +
+                            "    [FAILED] Test failed (XXX sec)\n" +
+                            "\n" +
+                            "[FAILED] Testing completed with failures.\n" +
+                            "Tests: 0 passed, 1 failed, 0 skipped, 1 total\n" +
+                            "Duration: XXX sec\n"
+                            ;
+    expected = uniout(expected, true);
+    FCF_TEST(content == expected, content, expected);
+    FCF_TEST(error);
+  }
+  {
+    fcf::NTest::Options options;
+    options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun"}, {"FCF_TEST_THROW_CHECK"}, {"except std::out_of_range == std::out_of_range"}} );
+    std::stringstream ss;
+    bool error = InnerTestRunner().run(options, ss);
+
+    std::string content = uniout(ss.str(), true);
+    std::string expected =  std::string() +
+                            "Performing the test: \"subrun\" -> \"FCF_TEST_THROW_CHECK\" -> \"except std::out_of_range == std::out_of_range\" ...\n" +
+                            "  > end\n" +
+                            "    [SUCCESS] Test completed successfully (XXX sec)\n"+
+                            "\n" +
+                            "[SUCCESS] All tests were completed.\n" +
+                            "Tests: 1 passed, 0 failed, 0 skipped, 1 total\n" +
+                            "Duration: XXX sec\n"
+                            ;
+    expected = uniout(expected, true);
+    FCF_TEST(content == expected, content, expected);
+    FCF_TEST(!error);
+  }
 }
 
 
 FCF_TEST_DECLARE("subrun", "throw-check", "no except") {
   fcf::NTest::log() << "1" << std::endl;
-  FCF_TEST_THROW_CHECK(callNoThrow());
+  FCF_TEST_THROW_CHECK(callNoThrow(), ...);
   fcf::NTest::log() << "2" << std::endl;
-  if(!FCF_TEST_THROW_CHECK(callNoThrow())){
+  if(!FCF_TEST_THROW_CHECK(callNoThrow(), ...) ){
     fcf::NTest::log() << "err" << std::endl;
   }
   fcf::NTest::log() << "3" << std::endl;
@@ -105,9 +151,9 @@ FCF_TEST_DECLARE("subrun", "throw-check", "no except") {
 
 FCF_TEST_DECLARE("subrun", "throw-check", "except") {
   fcf::NTest::log() << "1" << std::endl;
-  FCF_TEST_THROW_CHECK(callThrow());
+  FCF_TEST_THROW_CHECK(callThrow(), ...);
   fcf::NTest::log() << "2" << std::endl;
-  if(!FCF_TEST_THROW_CHECK(callThrow())){
+  if(!FCF_TEST_THROW_CHECK(callThrow(), ...)){
     fcf::NTest::log() << "err" << std::endl;
   }
   fcf::NTest::log() << "3" << std::endl;
@@ -117,12 +163,23 @@ FCF_TEST_DECLARE("subrun", "throw-check", "no except a2") {
   int a1 = 1;
   int a2 = 2;
   fcf::NTest::log() << "1" << std::endl;
-  FCF_TEST_THROW_CHECK(callNoThrowWithParams(a1), a1);
+  FCF_TEST_THROW_CHECK(callNoThrowWithParams(a1), ..., a1);
   fcf::NTest::log() << "2" << std::endl;
-  if(!FCF_TEST_THROW_CHECK(callNoThrowWithParams(a1, a2), a1, a2)){
+  if(!FCF_TEST_THROW_CHECK(callNoThrowWithParams(a1, a2), ..., a1, a2)){
     fcf::NTest::log() << "err" << std::endl;
   }
   fcf::NTest::log() << "3" << std::endl;
 }
 
+FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW_CHECK", "except std::out_of_range != std::runtime_error") {
+  int v = 999;
+  FCF_TEST_THROW_CHECK(callThrow(), std::out_of_range, v);
+  fcf::NTest::log() << "end" << std::endl;
+}
+
+FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW_CHECK", "except std::out_of_range == std::out_of_range") {
+  int v = 888;
+  FCF_TEST_THROW_CHECK(callThrowOutOfRange(), std::out_of_range, v);
+  fcf::NTest::log() << "end" << std::endl;
+}
 

@@ -10,6 +10,9 @@ namespace {
   void callThrow(){
     throw std::runtime_error("1");
   }
+  void callThrowOutOfRange(){
+    throw std::out_of_range("Info");
+  }
 }
 
 FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST_THROW") {
@@ -105,23 +108,63 @@ FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST_THROW") {
     FCF_TEST(content == expected, content, expected);
     FCF_TEST(error);
   }
+  {
+    fcf::NTest::Options options;
+    options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun"}, {"FCF_TEST_THROW"}, {"except std::out_of_range != std::runtime_error"}} );
+    std::stringstream ss;
+    bool error = InnerTestRunner().run(options, ss);
+
+    std::string content = uniout(ss.str(), true);
+    std::string expected =  std::string() +
+                            "Performing the test: \"subrun\" -> \"FCF_TEST_THROW\" -> \"except std::out_of_range != std::runtime_error\" ...\n" +
+                            "    Test error: 'callThrow()' threw an exception that does not match 'std::out_of_range'  [FILE: XXX]\n" +
+                            "    [FAILED] Test failed (XXX sec)\n" +
+                            "\n" +
+                            "[FAILED] Testing completed with failures.\n" +
+                            "Tests: 0 passed, 1 failed, 0 skipped, 1 total\n" +
+                            "Duration: XXX sec\n"
+                            ;
+    expected = uniout(expected, true);
+    FCF_TEST(content == expected, content, expected);
+    FCF_TEST(error);
+  }
+  {
+    fcf::NTest::Options options;
+    options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun"}, {"FCF_TEST_THROW"}, {"except std::out_of_range == std::out_of_range"}} );
+    std::stringstream ss;
+    bool error = InnerTestRunner().run(options, ss);
+
+    std::string content = uniout(ss.str(), true);
+    std::string expected =  std::string() +
+                            "Performing the test: \"subrun\" -> \"FCF_TEST_THROW\" -> \"except std::out_of_range == std::out_of_range\" ...\n" +
+                            "  > end\n" +
+                            "    [SUCCESS] Test completed successfully (XXX sec)\n"+
+                            "\n" +
+                            "[SUCCESS] All tests were completed.\n" +
+                            "Tests: 1 passed, 0 failed, 0 skipped, 1 total\n" +
+                            "Duration: XXX sec\n"
+                            ;
+    expected = uniout(expected, true);
+    FCF_TEST(content == expected, content, expected);
+    FCF_TEST(!error);
+  }
 }
 
 FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "no except") {
   fcf::NTest::log() << "1" << std::endl;
-  FCF_TEST_THROW(callNoThrow());
+  FCF_TEST_THROW(callNoThrow(), ...);
   fcf::NTest::log() << "2" << std::endl;
 }
 
 FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "no except (parenthesis)") {
   fcf::NTest::log() << "1" << std::endl;
-  FCF_TEST_THROW((callNoThrowWithParams<int, int>(std::map<int,int>().size(), 1)), (std::map<int,int>().size()), 1);
+  FCF_TEST_THROW((callNoThrowWithParams<int, int>(std::map<int,int>().size(), 1)), ..., (std::map<int,int>().size()), 1);
   fcf::NTest::log() << "2" << std::endl;
 }
 
 FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "except") {
   fcf::NTest::log() << "1" << std::endl;
-  FCF_TEST_THROW(callThrow());
+  FCF_TEST_THROW(callThrow(), ...);
   fcf::NTest::log() << "2" << std::endl;
 }
 
@@ -129,8 +172,17 @@ FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "no except a2") {
   int a1 = 1;
   int a2 = 2;
   fcf::NTest::log() << "1" << std::endl;
-  FCF_TEST_THROW(callNoThrowWithParams(a1), a1);
+  FCF_TEST_THROW(callNoThrowWithParams(a1), ..., a1);
   fcf::NTest::log() << "2" << std::endl;
 }
 
+FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "except std::out_of_range != std::runtime_error") {
+  FCF_TEST_THROW(callThrow(), std::out_of_range);
+  fcf::NTest::log() << "end" << std::endl;
+}
+
+FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "except std::out_of_range == std::out_of_range") {
+  FCF_TEST_THROW(callThrowOutOfRange(), std::out_of_range);
+  fcf::NTest::log() << "end" << std::endl;
+}
 

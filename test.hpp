@@ -269,21 +269,30 @@
  * arguments, then logs the error and throws a std::runtime_error.
  *
  * @param am_code The code block or expression to be executed and checked for an exception.
+ * @param am_exception The name of the expected exception. 
+ *                     To catch all exceptions, this parameter must be ...
  * @param ... Variable list of arguments whose values will be included in the error message if no exception is thrown.
  */
 #ifndef FCF_TEST_THROW
-  #define FCF_TEST_THROW(am_code, ...)\
+  #define FCF_TEST_THROW(am_code, am_exception, ...)\
     {\
       bool _fcf_test_throw_flag = false;\
-      try {\
-        am_code;\
+      bool _fcf_test_throw_uncatch_flag = false;\
+      try { \
+        try {\
+          am_code;\
+        } catch( Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT am_exception) ) {\
+          _fcf_test_throw_flag = true;\
+        }\
       } catch(...) {\
-        _fcf_test_throw_flag = true;\
+        _fcf_test_throw_uncatch_flag = true;\
       }\
-      if (!_fcf_test_throw_flag) {\
+      if (!_fcf_test_throw_flag || _fcf_test_throw_uncatch_flag) {\
         ::fcf::NTest::NDetails::Printer _fcf_test_error_printer(\
-            ::fcf::NTest::NDetails::Printer::PM_EXCEPTION,\
-            Z__FCF_TEST__STRINGIFY(am_code), \
+            std::pair<const char*, const char*> {\
+              Z__FCF_TEST__STRINGIFY(am_code), \
+              _fcf_test_throw_uncatch_flag ? Z__FCF_TEST__STRINGIFY(am_exception) : nullptr\
+            }, \
             __FILE__, \
             Z__FCF_TEST__STRINGIFY(__LINE__)\
             Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
@@ -303,19 +312,28 @@
  * @return true if an exception was caught, false if no exception was thrown.
  *
  * @param am_code The code block or expression to be executed and checked for an exception.
+ * @param am_exception The name of the expected exception. 
+ *                     To catch all exceptions, this parameter must be ...
  * @param ... Variable list of arguments whose values will be included in the error message if no exception is thrown.
  */
 #ifndef FCF_TEST_THROW_CHECK
-  #define FCF_TEST_THROW_CHECK(am_code, ...)\
+  #define FCF_TEST_THROW_CHECK(am_code, am_exception, ...)\
     [&]() -> bool{\
+      bool _fcf_test_throw_uncatch_flag = false;\
       try {\
-        am_code;\
+        try {\
+          am_code;\
+        } catch( Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT am_exception)  ) {\
+          return true;\
+        }\
       } catch(...) {\
-        return true;\
+        _fcf_test_throw_uncatch_flag = true;\
       }\
       ::fcf::NTest::NDetails::Printer _fcf_test_error_printer(\
-          ::fcf::NTest::NDetails::Printer::PM_EXCEPTION,\
-          Z__FCF_TEST__STRINGIFY(am_code), \
+          std::pair<const char*, const char*> {\
+            Z__FCF_TEST__STRINGIFY(am_code), \
+            _fcf_test_throw_uncatch_flag ? Z__FCF_TEST__STRINGIFY(am_exception) : nullptr\
+          }, \
           __FILE__, \
           Z__FCF_TEST__STRINGIFY(__LINE__)\
           Z__FCF_TEST__APPEND_TO_LIST(_fcf_test_names, __VA_ARGS__)\
@@ -1969,11 +1987,6 @@ namespace fcf {
         const char*             line;
         std::list<const char*>  values;
 
-        enum EPrinterMode {
-          PM_DEFAULT,
-          PM_EXCEPTION,
-        };
-
         template <typename ...TPack>
         Printer(const char* a_expr, const char* a_file, const char* a_line, TPack... a_argPack)
           : expr (_trim(a_expr, true))
@@ -1983,19 +1996,20 @@ namespace fcf {
         }
 
         template <typename ...TPack>
-        Printer(EPrinterMode a_printerMode, const char* a_expr, const char* a_file, const char* a_line, TPack... a_argPack)
+        Printer(std::pair<const char*, const char*> a_exceptionInfo, const char* a_file, const char* a_line, TPack... a_argPack)
           : file(a_file)
           , line(a_line) {
-          switch(a_printerMode){
-            case PM_EXCEPTION:
-              expr = "'";
-              expr += _trim(a_expr, true);
-              expr += "' did not throw";
-              break;
-            default:
-              expr = _trim(a_expr,true);
-              break;
-          };
+          if (a_exceptionInfo.second) {
+            expr = "'";
+            expr += _trim(a_exceptionInfo.first, true);
+            expr += "' threw an exception that does not match '";
+            expr += _trim(a_exceptionInfo.second, true);
+            expr += "'";
+          } else {
+            expr = "'";
+            expr += _trim(a_exceptionInfo.first, true);
+            expr += "' did not throw";
+          }
           _appendValue(a_argPack...);
         }
 
