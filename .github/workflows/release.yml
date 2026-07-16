@@ -9,10 +9,6 @@ on:
 
 jobs:
   release:
-    if: >
-      github.event_name == 'workflow_dispatch' || 
-      (github.event.workflow_run.conclusion == 'success' && 
-       startsWith(github.event.workflow_run.head_branch, 'v'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -24,13 +20,14 @@ jobs:
 
       - name: Prepare and Archive Sources
         run: |
-          # Корректно получаем имя тега для обоих типов запуска
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # Для ручного запуска берем имя из текущего рефа (например, refs/tags/v1.0.0 -> v1.0.0)
             TAG_NAME="${GITHUB_REF##*/}"
           else
-            # Для workflow_run берем чистый head_branch
             TAG_NAME="${{ github.event.workflow_run.head_branch }}"
+          fi
+
+          if [ -z "$TAG_NAME" ]; then
+            TAG_NAME="latest"
           fi
 
           VERSION=${TAG_NAME#v}
