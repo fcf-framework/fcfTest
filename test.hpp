@@ -150,28 +150,56 @@
 
 
 /**
- * @brief FCF_TEST_DECLARE. Macro to declare a new test case.
+ * @brief FCF_TEST_DECLARE(const char* am_part, const char* am_group, const char* am_test)
+ * @brief FCF_TEST_DECLARE(const char* am_part, const char* am_group, const char* am_test, TYPE am_testerClassName)
+ * Macro to declare a new test case.
  * Registers the test function with the storage system and assigns it to a group and part.
  *
  * @param am_part The name of the part (logical grouping level).
  * @param am_group The name of the group (sub-grouping level).
  * @param am_test The name or identifier of the test function.
+ * @param am_testerClassName The name of the tester class. Can be used to specify a 'friend' test.
  */
 #ifndef FCF_TEST_DECLARE
-  #define Z__FCF_TEST_DECLARE_IMPL(am_className, am_part, am_group, am_test)\
-    namespace {\
-    struct am_className { \
-      am_className() {\
-        ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ am_part, 1000000, am_group, 1000000, am_test, 1000000, test } );\
+  #define Z_FCF_TEST_DECLARE__EXPAND(am_arg) am_arg
+  #define Z_FCF_TEST_DECLARE__IMPL__SELECT_LIST() , AUTO
+  #define Z_FCF_TEST_DECLARE__IMPL__SELECT_ARG(am_a1, am_a2, ...) am_a2
+  #define Z_FCF_TEST_DECLARE__IMPL__SELECT(...) \
+                      Z_FCF_TEST_DECLARE__EXPAND(Z_FCF_TEST_DECLARE__IMPL__SELECT_ARG(__VA_ARGS__))
+  #define Z_FCF_TEST_DECLARE__IMPL__MACRO_NAME(...)\
+                      Z_FCF_TEST_DECLARE__EXPAND(Z__FCF_TEST__CONCAT2(Z_FCF_TEST_DECLARE__IMPL__DEFINITION, Z_FCF_TEST_DECLARE__IMPL__SELECT(Z_FCF_TEST_DECLARE__IMPL__SELECT_LIST __VA_ARGS__ () , )))
+  #define Z_FCF_TEST_DECLARE__IMPL__DEFINITION(am_part,  am_group, am_test, am_autoTesterClassName, am_testerClassName)\
+    class  am_testerClassName { \
+      public:\
+      am_testerClassName() {\
+        ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ am_part, 1000000, am_group, 1000000, am_test, 1000000, am_testerClassName::test } );\
       }\
       static void test();\
     };\
-    am_className Z__FCF_TEST__CONCAT3(am_className, _reg_, __COUNTER__);\
+    namespace {\
+      am_testerClassName Z__FCF_TEST__CONCAT3(am_testerClassName, _reg_, __COUNTER__);\
     }\
-    void am_className::test()
+    void am_testerClassName::test()
 
-  #define FCF_TEST_DECLARE(am_part, am_group, am_test)\
-    Z__FCF_TEST_DECLARE_IMPL(Z__FCF_TEST__CONCAT2(fcf_test_,__COUNTER__), am_part,  am_group, am_test)
+  #define Z_FCF_TEST_DECLARE__IMPL__DEFINITIONAUTO(am_part,  am_group, am_test, am_autoTesterClassName, ...) \
+    namespace {\
+      class  am_autoTesterClassName { \
+        public:\
+        am_autoTesterClassName() {\
+          ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ am_part, 1000000, am_group, 1000000, am_test, 1000000, am_autoTesterClassName::test } );\
+        }\
+        static void test();\
+      };\
+      am_autoTesterClassName Z__FCF_TEST__CONCAT3(am_autoTesterClassName, _reg_, __COUNTER__);\
+    }\
+    void am_autoTesterClassName::test()
+
+
+  #define Z_FCF_TEST_DECLARE__IMPL(am_macro, am_part,  am_group, am_test, am_autoTesterClassName, ...)\
+    am_macro(am_part,  am_group, am_test, am_autoTesterClassName, __VA_ARGS__)
+
+  #define FCF_TEST_DECLARE(am_part, am_group, am_test, ...)\
+    Z_FCF_TEST_DECLARE__IMPL(Z_FCF_TEST_DECLARE__IMPL__MACRO_NAME(__VA_ARGS__), am_part,  am_group, am_test, Z__FCF_TEST__CONCAT2(_fcf_test_,__COUNTER__), __VA_ARGS__)
 #endif
 
 
@@ -1050,14 +1078,14 @@ namespace fcf {
 /* ===                                                    === */
 /* ========================================================== */
 
+class LogPrefixTester;
+
 namespace fcf {
   namespace NTest {
 
-    class FCF_TEST_API Logger;
-
     class FCF_TEST_API Logger {
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
-
+        friend class ::LogPrefixTester;
       public:
         class MessageContext;
         typedef std::function<std::string(Logger&, MessageContext&)> PrefixFunction;
