@@ -1105,23 +1105,21 @@ namespace fcf {
 
         Logger();
 
-        Writer ftl();
+        Writer ftl(ELogMessageCategory a_category = LMC_USER);
 
-        Writer err();
+        Writer err(ELogMessageCategory a_category = LMC_USER);
 
-        Writer wrn();
+        Writer wrn(ELogMessageCategory a_category = LMC_USER);
 
-        Writer att();
+        Writer att(ELogMessageCategory a_category = LMC_USER);
 
-        Writer log();
+        Writer log(ELogMessageCategory a_category = LMC_USER);
 
-        Writer inf();
+        Writer inf(ELogMessageCategory a_category = LMC_USER);
 
-        Writer dbg();
+        Writer dbg(ELogMessageCategory a_category = LMC_USER);
 
-        Writer trc();
-
-        Writer sys(ELogMessageCategory a_messageCategory);
+        Writer trc(ELogMessageCategory a_category = LMC_USER);
 
         const char* levelStr() const;
 
@@ -1307,55 +1305,49 @@ namespace fcf {
      * @brief Returns the output stream for fatal messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer ftl();
+    inline Logger::Writer ftl(ELogMessageCategory a_category = LMC_USER);
 
     /**
      * @brief Returns the output stream for error messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer err();
+    inline Logger::Writer err(ELogMessageCategory a_category = LMC_USER);
 
     /**
      * @brief Returns the output stream for warning messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer wrn();
+    inline Logger::Writer wrn(ELogMessageCategory a_category = LMC_USER);
 
     /**
      * @brief Returns the output stream for attention messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer att();
+    inline Logger::Writer att(ELogMessageCategory a_category = LMC_USER);
 
     /**
      * @brief Returns the output stream for log messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer log();
+    inline Logger::Writer log(ELogMessageCategory a_category = LMC_USER);
 
     /**
      * @brief Returns the output stream for informational messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer inf();
+    inline Logger::Writer inf(ELogMessageCategory a_category = LMC_USER);
 
     /**
      * @brief Returns the output stream for debug messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer dbg();
+    inline Logger::Writer dbg(ELogMessageCategory a_category = LMC_USER);
 
     /**
      * @brief Returns the output stream for trace messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer trc();
-
-    /**
-     * @brief The output stream returns for the test inner message. The log recording is always performed.
-     * @return Reference to the output stream.
-     */
-    inline Logger::Writer sys(ELogMessageCategory a_messageCategory);
+    inline Logger::Writer trc(ELogMessageCategory a_category = LMC_USER);
 
 
   } // NTest namespace
@@ -1790,7 +1782,7 @@ namespace fcf {
               }
             }
           } catch (const std::exception& e) {
-            sys(LMC_RUN_ERROR) << "Error: " << e.what() << std::endl;
+            log(LMC_RUN_ERROR) << "Error: " << e.what() << std::endl;
             if (a_enableThrow) {
               throw;
             } else if (a_errorPtr){
@@ -1879,15 +1871,15 @@ namespace fcf {
             state().test({});
             state().errors({});
 
-            sys(LMC_START);
+            log(LMC_START);
 
             unsigned int errorCounter = 0;
             unsigned int passedCounter = 0;
             for(const Test& test : tests) {
               state().test(test);
               state().errors({});
-              sys(LMC_TEST_START);
-              sys(LMC_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+              log(LMC_TEST_START);
+              log(LMC_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
               state()._resumeDuration();
 
               try {
@@ -1901,18 +1893,18 @@ namespace fcf {
               std::list<std::string> errors = state().errors();
               if (!errors.size()) {
                 ++passedCounter;
-                sys(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET
+                log(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET
                                        << " Test completed successfully (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
-                sys(LMC_TEST_END);
+                log(LMC_TEST_END);
               } else {
                 totalErrorFlag = true;
                 ++errorCounter;
                 for(std::string errorMesssage : errors) {
                   errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
-                  sys(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
+                  log(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
                 }
-                sys(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
-                sys(LMC_TEST_END);
+                log(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
+                log(LMC_TEST_END);
                 if (a_options.noBreak) {
                   continue;
                 } else {
@@ -1924,17 +1916,17 @@ namespace fcf {
             unsigned int skippedCounter = tests.size() - passedCounter - errorCounter;
 
             if (!errorCounter) {
-              sys(LMC_COMPLETE_NEW_LINE) << std::endl;
-              sys(LMC_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET << " All tests were completed." << std::endl;
+              log(LMC_COMPLETE_NEW_LINE) << std::endl;
+              log(LMC_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET << " All tests were completed." << std::endl;
             } else {
-              sys(LMC_ERROR_NEW_LINE) << std::endl;
-              sys(LMC_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
+              log(LMC_ERROR_NEW_LINE) << std::endl;
+              log(LMC_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
             }
 
-            sys(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skippedCounter << " skipped, " << tests.size() << " total" << std::endl;
-            sys(LMC_DURATION) << "Duration: " << state().duration().totalDurationStr(true) << " sec" << std::endl;
+            log(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skippedCounter << " skipped, " << tests.size() << " total" << std::endl;
+            log(LMC_DURATION) << "Duration: " << state().duration().totalDurationStr(true) << " sec" << std::endl;
 
-            sys(LMC_END);
+            log(LMC_END);
 
             state().tests(lastTests);
             state().test(lastTest);
@@ -1948,7 +1940,7 @@ namespace fcf {
               globalRunState = false;
             }
           } catch(const std::exception& a_error) {
-            sys(LMC_RUN_ERROR) << "Error: " << a_error.what() << std::endl;
+            log(LMC_RUN_ERROR) << "Error: " << a_error.what() << std::endl;
 
             state().tests(lastTests);
             state().test(lastTest);
@@ -2465,56 +2457,50 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::ftl() {
-        return _log(LL_FTL, LMC_USER);
+      Logger::Writer Logger::ftl(ELogMessageCategory a_category) {
+        return _log(LL_FTL, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::err() {
-        return _log(LL_ERR, LMC_USER);
+      Logger::Writer Logger::err(ELogMessageCategory a_category) {
+        return _log(LL_ERR, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::wrn() {
-        return _log(LL_WRN, LMC_USER);
+      Logger::Writer Logger::wrn(ELogMessageCategory a_category) {
+        return _log(LL_WRN, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::att() {
-        return _log(LL_ATT, LMC_USER);
+      Logger::Writer Logger::att(ELogMessageCategory a_category) {
+        return _log(LL_ATT, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::log() {
-        return _log(LL_LOG, LMC_USER);
+      Logger::Writer Logger::log(ELogMessageCategory a_category) {
+        return _log(LL_LOG, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::inf() {
-        return _log(LL_INF, LMC_USER);
+      Logger::Writer Logger::inf(ELogMessageCategory a_category) {
+        return _log(LL_INF, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::dbg() {
-        return _log(LL_DBG, LMC_USER);
+      Logger::Writer Logger::dbg(ELogMessageCategory a_category) {
+        return _log(LL_DBG, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::trc() {
-        return _log(LL_TRC, LMC_USER);
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::sys(ELogMessageCategory a_messageCategory) {
-        return _log(LL_LOG, a_messageCategory);
+      Logger::Writer Logger::trc(ELogMessageCategory a_category) {
+        return _log(LL_TRC, a_category);
       }
     #endif
 
@@ -3157,41 +3143,38 @@ namespace fcf {
       }
     #endif
 
-    inline Logger::Writer ftl() {
-      return logger().ftl();
+    inline Logger::Writer ftl(ELogMessageCategory a_category) {
+      return logger().ftl(a_category);
     }
 
-    inline Logger::Writer err() {
-      return logger().err();
+    inline Logger::Writer err(ELogMessageCategory a_category) {
+      return logger().err(a_category);
     }
 
-    inline Logger::Writer wrn() {
-      return logger().wrn();
+    inline Logger::Writer wrn(ELogMessageCategory a_category) {
+      return logger().wrn(a_category);
     }
 
-    inline Logger::Writer att() {
-      return logger().att();
+    inline Logger::Writer att(ELogMessageCategory a_category) {
+      return logger().att(a_category);
     }
 
-    inline Logger::Writer log() {
-      return logger().log();
+    inline Logger::Writer log(ELogMessageCategory a_category) {
+      return logger().log(a_category);
     }
 
-    inline Logger::Writer inf() {
-      return logger().inf();
+    inline Logger::Writer inf(ELogMessageCategory a_category) {
+      return logger().inf(a_category);
     }
 
-    inline Logger::Writer dbg() {
-      return logger().dbg();
+    inline Logger::Writer dbg(ELogMessageCategory a_category) {
+      return logger().dbg(a_category);
     }
 
-    inline Logger::Writer trc() {
-      return logger().trc();
+    inline Logger::Writer trc(ELogMessageCategory a_category) {
+      return logger().trc(a_category);
     }
 
-    Logger::Writer sys(ELogMessageCategory a_messageCategory) {
-      return logger().sys(a_messageCategory);
-    }
   } // NTest namespace
 } // fcf namespace
 
