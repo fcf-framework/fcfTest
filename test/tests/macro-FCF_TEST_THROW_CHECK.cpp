@@ -5,7 +5,7 @@ namespace {
   void callNoThrow(){
   }
   template <typename ...TArgPack>
-  void callNoThrowWithParams(TArgPack ...a_argPack){
+  void callNoThrowWithParams(TArgPack ...){
   }
   void callThrow(){
     throw std::runtime_error("1");

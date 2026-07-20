@@ -1165,7 +1165,7 @@ namespace fcf {
 
         void targets(const OutputTargets& a_targets);
 
-        void clearTargets(bool a_defaultState);
+        void clearTargets(bool a_defaultState = false);
 
         void appendTarget(const OutputTarget& a_stream);
 
@@ -2787,6 +2787,8 @@ namespace fcf {
           lms.stream        = stream.stream ? stream.stream : &std::cout;
           lms.data          = nullptr;
 
+          std::vector<size_t> prefposv;
+
           const std::string& currentFormatName = stream.format.length()
                                                   ? stream.format
                                                   : _environment.format;
@@ -2805,6 +2807,7 @@ namespace fcf {
               size_t lastPos = 0;
               std::string currentMessage = lms.message;
               std::string resultMessage;
+              size_t prefLength;
               while(lastPos < currentMessage.length()) {
                 size_t pos = prefix.options.multiLine ? currentMessage.find("\n", lastPos)
                                                       : currentMessage.length()-1;
@@ -2825,11 +2828,22 @@ namespace fcf {
 
                   std::string prefixPart = prefix.func(*this, lms);
                   if (prefixPart.length()) {
-                    lms.message = prefixPart + lms.message;
+                    size_t lastPrefEnd = lms.line < prefposv.size() ? prefposv[lms.line] : 0;
+                    lms.message = lms.message.substr(0, lastPrefEnd) +  prefixPart + lms.message.substr(lastPrefEnd, lms.message.length() - lastPrefEnd);
                   }
+                  prefLength = prefixPart.length();
                 } else {
-                  lms.message = prefix.str + lms.message;
+                  size_t lastPrefEnd = lms.line < prefposv.size() ? prefposv[lms.line] : 0;
+                  lms.message = lms.message.substr(0, lastPrefEnd) +  prefix.str + lms.message.substr(lastPrefEnd, lms.message.length() - lastPrefEnd);
+                  prefLength = prefix.str.length();
                 }
+
+                if (prefposv.size() <= lms.line) {
+                  prefposv.push_back(prefLength);
+                } else {
+                  prefposv[lms.line] += prefLength;
+                }
+
                 resultMessage += lms.message;
                 lastPos = pos;
                 ++lms.line;

@@ -5,7 +5,7 @@ namespace {
   void callNoThrow(){
   }
   template <typename ...TArgPack>
-  void callNoThrowWithParams(TArgPack ...a_argPack){
+  void callNoThrowWithParams(TArgPack ...){
   }
   void callThrow(){
     throw std::runtime_error("1");
@@ -170,7 +170,6 @@ FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "except") {
 
 FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "no except a2") {
   int a1 = 1;
-  int a2 = 2;
   fcf::NTest::log() << "1" << std::endl;
   FCF_TEST_THROW(callNoThrowWithParams(a1), ..., a1);
   fcf::NTest::log() << "2" << std::endl;
