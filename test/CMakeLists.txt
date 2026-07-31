@@ -12,6 +12,8 @@ add_executable(fcf-test-test
                   main.cpp
                   tests/cmd.cpp
                   tests/export.cpp
+                  tests/fixture.cpp
+                  tests/fixture-run.cpp
                   tests/logger.cpp
                   tests/macro.cpp
                   tests/macro-FCF_TEST_THROW.cpp

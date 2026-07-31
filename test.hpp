@@ -203,6 +203,60 @@
 #endif
 
 
+
+#ifndef FCF_TEST_FIXTURE_DECLARE_START
+  #define Z_FCF_TEST_FIXTURE_DECLARE__EXPAND(am_arg) am_arg
+  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT_LIST() , AUTO
+  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT_ARG(am_a1, am_a2, ...) am_a2
+  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT(...) \
+                      Z_FCF_TEST_FIXTURE_DECLARE__EXPAND(Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT_ARG(__VA_ARGS__))
+  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__MACRO_NAME(...)\
+                      Z_FCF_TEST_FIXTURE_DECLARE__EXPAND(Z__FCF_TEST__CONCAT2(Z_FCF_TEST_FIXTURE_DECLARE__IMPL__DEFINITION, Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT(Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT_LIST __VA_ARGS__ () , )))
+  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__DEFINITION(am_part,  am_group, am_test, am_start, am_level, am_autoFixtureClassName, am_fixtureClassName)\
+    class  am_fixtureClassName { \
+      public:\
+      am_fixtureClassName() {\
+        ::fcf::NTest::getStorage().append( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
+                                                                  ::fcf::NTest::NDetails::splitSelector(am_group), 1000000, \
+                                                                  ::fcf::NTest::NDetails::splitSelector(am_test), 1000000, \
+                                                                  am_start, am_level, am_fixtureClassName::fixture } );\
+      }\
+      static void fixture();\
+    };\
+    namespace {\
+      am_fixtureClassName Z__FCF_TEST__CONCAT3(am_fixtureClassName, _reg_, __COUNTER__);\
+    }\
+    void am_fixtureClassName::fixture()
+
+  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__DEFINITIONAUTO(am_part,  am_group, am_test, am_start, am_level, am_autoFixtureClassName, ...) \
+    namespace {\
+      class  am_autoFixtureClassName { \
+        public:\
+        am_autoFixtureClassName() {\
+          ::fcf::NTest::getStorage().append( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
+                                                                    ::fcf::NTest::NDetails::splitSelector(am_group), 1000000, \
+                                                                    ::fcf::NTest::NDetails::splitSelector(am_test), 1000000, \
+                                                                    am_start, am_level, am_autoFixtureClassName::fixture } );\
+        }\
+        static void fixture();\
+      };\
+      am_autoFixtureClassName Z__FCF_TEST__CONCAT3(am_autoFixtureClassName, _reg_, __COUNTER__);\
+    }\
+    void am_autoFixtureClassName::fixture()
+
+  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL(am_macro, am_part,  am_group, am_test, am_start, am_level, am_autoFixtureClassName, ...)\
+    am_macro(am_part,  am_group, am_test, am_start, am_level, am_autoFixtureClassName, __VA_ARGS__)
+
+  #define FCF_TEST_FIXTURE_DECLARE_START(am_part, am_group, am_test, am_level, ...)\
+    Z_FCF_TEST_FIXTURE_DECLARE__IMPL(Z_FCF_TEST_FIXTURE_DECLARE__IMPL__MACRO_NAME(__VA_ARGS__), am_part,  am_group, am_test, true, am_level, Z__FCF_TEST__CONCAT2(_fcf_fixture_,__COUNTER__), __VA_ARGS__)
+#endif
+
+#ifndef FCF_TEST_FIXTURE_DECLARE_END
+  #define FCF_TEST_FIXTURE_DECLARE_END(am_part, am_group, am_test, am_level, ...)\
+    Z_FCF_TEST_FIXTURE_DECLARE__IMPL(Z_FCF_TEST_FIXTURE_DECLARE__IMPL__MACRO_NAME(__VA_ARGS__), am_part,  am_group, am_test, false, am_level, Z__FCF_TEST__CONCAT2(_fcf_fixture_,__COUNTER__), __VA_ARGS__)
+#endif
+
+
 #ifndef Z__FCF_TEST__REMOVE_PARENTHESIS
   #define Z__FCF_TEST__REMOVE_PARENTHESIS_SELECTORZ__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT
   #define Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT(...) Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT __VA_ARGS__
@@ -458,25 +512,57 @@ namespace fcf {
       LL_ALL = 9,   ///< All levels.
     };
 
+
+    /**
+     * @brief Enumerates message categories for the logger.
+     * Used for filtering and prefixing log messages.
+     *
+     * The fcf::NTest::ELogMessageCategory enumeration is used to 
+     * categorize every log message produced by the framework. 
+     * It is designed as a bitmask, which allows a single log message 
+     * to belong to multiple categories simultaneously, 
+     * or for a logger to filter messages based on a combination of categories.
+     *
+     * The high two bytes are the message category/type.
+     * When determining whether a message matches a given type, 
+     * a check is performed using the & operator.
+     *
+     * The low two bytes are the message number. 
+     * And the equality check is performed if it is not zero.
+     * If the low-order bytes are zero, then all common 
+     * bytes from the specified group are selected.
+     *
+     * The first two bytes can be set by the user to
+     * identify the message. Example: LMC_USER_GROUP | 0x0001
+     */
     enum ELogMessageCategory {
-      LMC_USER                  = 0x0001,
-      LMC_START                 = 0x0002,
-      LMC_END                   = 0x0004,
-      LMC_COMPLETE_NEW_LINE     = 0x0008,
-      LMC_COMPLETE              = 0x0010,
-      LMC_ERROR_NEW_LINE        = 0x0020,
-      LMC_ERROR                 = 0x0040,
-      LMC_RESULT                = 0x0080,
-      LMC_DURATION              = 0x0100,
-      LMC_TEST_START            = 0x0200,
-      LMC_TEST_START_MESSAGE    = 0x0400,
-      LMC_TEST_COMPLETE         = 0x0800,
-      LMC_TEST_ERROR            = 0x1000,
-      LMC_TEST_ERROR_MESSAGE    = 0x2000,
-      LMC_TEST_END              = 0x4000,
-      LMC_RUN_ERROR             = 0x8000,
-      LMC_TEST                  = LMC_USER | LMC_TEST_COMPLETE | LMC_TEST_ERROR | LMC_TEST_ERROR_MESSAGE,
-      LMC_ALL                   = 0xFFFF,
+      LMC_ROOT_GROUP            = 0x00010000,
+      LMC_LAUNCH_GROUP          = 0x00020000,
+      LMC_TEST_GROUP            = 0x00040000,
+      LMC_USER_GROUP            = 0x00080000,                       ///< User-defined messages.
+      LMC_ROOT_START            = LMC_ROOT_GROUP    | 0x0001,       ///< [no output] Start of the test execution process.
+      LMC_ROOT_END              = LMC_ROOT_GROUP    | 0x0002,       ///< [no output] End of the test execution process.
+      LMC_ROOT_COMPLETE         = LMC_ROOT_GROUP    | 0x0003,       ///< Overall completion status.
+      LMC_ROOT_ERROR            = LMC_ROOT_GROUP    | 0x0004,       ///< General error messages.
+      LMC_ROOT_SUMMARY          = LMC_ROOT_GROUP    | 0x0005,       ///< Test results summary.
+      LMC_ROOT_DURATION         = LMC_ROOT_GROUP    | 0x0006,       ///< Execution time/duration information.
+      LMC_ROOT_RUN_ERROR        = LMC_ROOT_GROUP    | 0x0007,       ///< Error during the test runner execution.
+      LMC_ROOT_NEW_LINE         = LMC_ROOT_GROUP    | 0x0008,       ///< Error during the test runner execution.
+      LMC_LAUNCH_START          = LMC_LAUNCH_GROUP  | 0x0001,       ///< Start of an individual test case.
+      LMC_LAUNCH_START_MESSAGE  = LMC_LAUNCH_GROUP  | 0x0002,       ///< Descriptive message for test start.
+      LMC_LAUNCH_END            = LMC_LAUNCH_GROUP  | 0x0003,       ///< End of an individual test case.
+      LMC_TEST_COMPLETE         = LMC_TEST_GROUP    | 0x0001,       ///< Successful completion of a test case.
+      LMC_TEST_ERROR            = LMC_TEST_GROUP    | 0x0002,       ///< Failure of a test case.
+      LMC_TEST_ERROR_MESSAGE    = LMC_TEST_GROUP    | 0x0003,       ///< Detailed error description for a test.
+      LMC_TEST                  = LMC_USER_GROUP | LMC_TEST_GROUP,  ///< Combined category for all test-related messages.
+      LMC_ALL                   = 0xFFFF0000,                       ///< All message categories.
+    };
+
+    enum EFixtureLevel{
+      FL_GLOBAL,
+      FL_PART,
+      FL_GROUP,
+      FL_TEST
     };
 
   } // NTest namespace
@@ -620,6 +706,34 @@ namespace fcf {
 
 
 
+    struct Fixture {
+      std::vector<std::string>  parts;
+      int                       partOrder;
+      std::vector<std::string>  groups;
+      int                       groupOrder;
+      std::vector<std::string>  tests;
+      int                       testOrder;
+      bool                      start;
+      EFixtureLevel             level;
+      void (*fixtureFunction)();   ///< Pointer to the fixture function to execute.
+
+      bool operator<(const Fixture& a_fixture) const {
+        return partOrder        < a_fixture.partOrder        ? true :
+               partOrder        > a_fixture.partOrder        ? false :
+               groupOrder       < a_fixture.groupOrder       ? true :
+               groupOrder       > a_fixture.groupOrder       ? false :
+               testOrder        < a_fixture.testOrder        ? true :
+               testOrder        > a_fixture.testOrder        ? false :
+               level            < a_fixture.level            ? true :
+               level            > a_fixture.level            ? false :
+               start            < a_fixture.start            ? true :
+               start            > a_fixture.start            ? false :
+               (void*)fixtureFunction  < (void*)a_fixture.fixtureFunction  ? true :
+               (void*)fixtureFunction  > (void*)a_fixture.fixtureFunction  ? false :
+                                                               false;
+      }
+    };
+
     /**
      * @brief Configuration options for the test runner.
      *
@@ -706,6 +820,13 @@ namespace fcf {
         void append(const Test& a_test);
 
         /**
+         * @brief Adds a new fixture to the storage, organizing it into parts and groups.
+         *
+         * @param a_fixture The Fixture object containing metadata and function pointer.
+         */
+        void append(Fixture a_fixture);
+
+        /**
          * @brief Recursively selects tests based on parts.
          *
          * @param a_dst Destination set where selected tests will be inserted.
@@ -713,16 +834,19 @@ namespace fcf {
          */
         void select(std::set<Test>& a_dst, const Options& a_options);
 
+        const std::vector< Fixture >& fixtures();
+
       private:
         typedef std::map<std::string, int> OrderMap;
 
         bool _suitability(const std::vector<std::string>& a_items, const std::string& a_rule, bool& a_dstSuitability);
 
-        std::vector<Test> _tests;       ///< Registered tests
-        OrderMap          _partOrders;  ///< Execution order for each part.
-        OrderMap          _groupOrders; ///< Execution order for each group.
-        OrderMap          _testOrders;  ///< Execution order for each test.
-        std::mutex        _mutex;
+        std::vector<Test>     _tests;       ///< Registered tests
+        OrderMap              _partOrders;  ///< Execution order for each part.
+        OrderMap              _groupOrders; ///< Execution order for each group.
+        OrderMap              _testOrders;  ///< Execution order for each test.
+        std::vector<Fixture>  _fixtures;
+        std::mutex            _mutex;
 
     };
 
@@ -963,48 +1087,6 @@ namespace fcf {
 } // fcf namespace
 
 
-/* ========================================================== */
-/* ===                                                    === */
-/* ===                    Testing status                  === */
-/* ===                                                    === */
-/* ========================================================== */
-
-namespace fcf {
-  namespace NTest {
-
-    namespace NDetails {
-      FCF_TEST_API void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
-    } // NDetails namespace
-
-    class FCF_TEST_API State {
-        friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
-
-      public:
-        Test                    test();
-        void                    test(const Test& a_test);
-        std::set<Test>          tests();
-        size_t                  testsCount();
-        void                    tests(const std::set<Test>& a_tests);
-        Duration                duration();
-        void                    duration(const Duration& a_duration);
-        void                    error(const char* a_error, bool a_ignoreExists);
-        std::list<std::string>  errors();
-        void                    errors(const std::list<std::string>& a_errors);
-
-      private:
-        void                    _resumeDuration();
-        void                    _endDuration();
-        Test                   _test;
-        std::set<Test>         _tests;
-        Duration               _duration;
-        std::list<std::string> _errors;
-        std::mutex             _mutex;
-    };
-
-    FCF_TEST_API State& state();
-
-  } // NTest namespace
-} // fcf namespace
 
 /* ========================================================== */
 /* ===                                                    === */
@@ -1072,6 +1154,58 @@ namespace fcf {
 } // fcf namespace
 
 
+
+/* ========================================================== */
+/* ===                                                    === */
+/* ===                    Testing status                  === */
+/* ===                                                    === */
+/* ========================================================== */
+
+namespace fcf {
+  namespace NTest {
+
+    class SharedPtrAny;
+
+    namespace NDetails {
+      FCF_TEST_API void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+    } // NDetails namespace
+
+    class FCF_TEST_API State {
+        friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+
+      public:
+        Test                      test();
+        void                      test(const Test& a_test);
+        std::set<Test>            tests();
+        size_t                    testsCount();
+        void                      tests(const std::set<Test>& a_tests);
+        Duration                  duration();
+        void                      duration(const Duration& a_duration);
+        void                      error(const char* a_error, bool a_ignoreExists);
+        std::list<std::string>    errors();
+        void                      errors(const std::list<std::string>& a_errors);
+        void                      data(const char* a_key, SharedPtrAny a_data);
+        SharedPtrAny              data(const char* a_key);
+        void                      eraseData(const char* a_key);
+        std::set<std::string>     dataKeys();
+
+      private:
+        void                                _resumeDuration();
+        void                                _endDuration();
+        Test                                _test;
+        std::set<Test>                      _tests;
+        Duration                            _duration;
+        std::list<std::string>              _errors;
+        std::mutex                          _mutex;
+        std::map<std::string, SharedPtrAny> _data;
+    };
+
+    FCF_TEST_API State& state();
+
+  } // NTest namespace
+} // fcf namespace
+
+
 /* ========================================================== */
 /* ===                                                    === */
 /* ===               Logging and formatting               === */
@@ -1105,21 +1239,21 @@ namespace fcf {
 
         Logger();
 
-        Writer ftl(ELogMessageCategory a_category = LMC_USER);
+        Writer ftl(unsigned int a_category = LMC_USER_GROUP);
 
-        Writer err(ELogMessageCategory a_category = LMC_USER);
+        Writer err(unsigned int a_category = LMC_USER_GROUP);
 
-        Writer wrn(ELogMessageCategory a_category = LMC_USER);
+        Writer wrn(unsigned int a_category = LMC_USER_GROUP);
 
-        Writer att(ELogMessageCategory a_category = LMC_USER);
+        Writer att(unsigned int a_category = LMC_USER_GROUP);
 
-        Writer log(ELogMessageCategory a_category = LMC_USER);
+        Writer log(unsigned int a_category = LMC_USER_GROUP);
 
-        Writer inf(ELogMessageCategory a_category = LMC_USER);
+        Writer inf(unsigned int a_category = LMC_USER_GROUP);
 
-        Writer dbg(ELogMessageCategory a_category = LMC_USER);
+        Writer dbg(unsigned int a_category = LMC_USER_GROUP);
 
-        Writer trc(ELogMessageCategory a_category = LMC_USER);
+        Writer trc(unsigned int a_category = LMC_USER_GROUP);
 
         const char* levelStr() const;
 
@@ -1175,7 +1309,7 @@ namespace fcf {
 
             Writer(Writer&& a_output);
 
-            Writer(Logger& a_logger, ELogLevel a_level, ELogMessageCategory a_loggerMessageCategory);
+            Writer(Logger& a_logger, ELogLevel a_level, unsigned int a_loggerMessageCategory);
 
             ~Writer();
 
@@ -1187,7 +1321,7 @@ namespace fcf {
           private:
             Logger*             _logger;
             ELogLevel           _level;
-            ELogMessageCategory _loggerMessageCategory;
+            unsigned int _loggerMessageCategory;
             std::stringstream   _sstream;
         };
 
@@ -1200,7 +1334,7 @@ namespace fcf {
 
 
         struct MessageContext {
-          ELogMessageCategory category;
+          unsigned int category;
           const std::string   origin;
           std::string         message;
           size_t              line;
@@ -1223,7 +1357,7 @@ namespace fcf {
           PrefixSettings()
             : name("")
             , multiLine(false)
-            , messageCategories(LMC_USER)
+            , messageCategories(LMC_USER_GROUP)
           {}
         };
 
@@ -1264,9 +1398,9 @@ namespace fcf {
 
         void _setEnvironment(const Environment& a_environment);
 
-        void _write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, const std::string& a_message);
+        void _write(fcf::NTest::ELogLevel a_level, unsigned int a_messageCategory, const std::string& a_message);
 
-        Writer _log(ELogLevel a_level, ELogMessageCategory a_messageCategory);
+        Writer _log(ELogLevel a_level, unsigned int a_messageCategory);
 
         Environment           _environment;
         std::list<Prefix>     _prefixes;
@@ -1305,49 +1439,49 @@ namespace fcf {
      * @brief Returns the output stream for fatal messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer ftl(ELogMessageCategory a_category = LMC_USER);
+    inline Logger::Writer ftl(unsigned int a_category = LMC_USER_GROUP);
 
     /**
      * @brief Returns the output stream for error messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer err(ELogMessageCategory a_category = LMC_USER);
+    inline Logger::Writer err(unsigned int a_category = LMC_USER_GROUP);
 
     /**
      * @brief Returns the output stream for warning messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer wrn(ELogMessageCategory a_category = LMC_USER);
+    inline Logger::Writer wrn(unsigned int a_category = LMC_USER_GROUP);
 
     /**
      * @brief Returns the output stream for attention messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer att(ELogMessageCategory a_category = LMC_USER);
+    inline Logger::Writer att(unsigned int a_category = LMC_USER_GROUP);
 
     /**
      * @brief Returns the output stream for log messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer log(ELogMessageCategory a_category = LMC_USER);
+    inline Logger::Writer log(unsigned int a_category = LMC_USER_GROUP);
 
     /**
      * @brief Returns the output stream for informational messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer inf(ELogMessageCategory a_category = LMC_USER);
+    inline Logger::Writer inf(unsigned int a_category = LMC_USER_GROUP);
 
     /**
      * @brief Returns the output stream for debug messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer dbg(ELogMessageCategory a_category = LMC_USER);
+    inline Logger::Writer dbg(unsigned int a_category = LMC_USER_GROUP);
 
     /**
      * @brief Returns the output stream for trace messages (global shortcut).
      * @return Reference to the output stream.
      */
-    inline Logger::Writer trc(ELogMessageCategory a_category = LMC_USER);
+    inline Logger::Writer trc(unsigned int a_category = LMC_USER_GROUP);
 
 
   } // NTest namespace
@@ -1611,6 +1745,38 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
+      void State::data(const char* a_key, SharedPtrAny a_data) {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _data[a_key] = a_data;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      SharedPtrAny State::data(const char* a_key) {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return SharedPtrAny(_data[a_key]);
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      std::set<std::string> State::dataKeys() {
+        std::lock_guard<std::mutex> lock(_mutex);
+        std::set<std::string> result;
+        for(std::map<std::string, SharedPtrAny>::const_iterator it = _data.begin(); it != _data.end(); ++it) {
+          result.insert(it->first);
+        }
+        return result;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::eraseData(const char* a_key){
+        std::lock_guard<std::mutex> lock(_mutex);
+        _data.erase(a_key);
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
       void State::_resumeDuration(){
         std::lock_guard<std::mutex> lock(_mutex);
         _duration.resume();
@@ -1638,11 +1804,7 @@ namespace fcf {
     #endif
 
     namespace NDetails {
-      namespace {
-        #ifdef FCF_TEST_IMPLEMENTATION
-          std::vector<std::string> splitSelector(const std::string& a_str);
-        #endif
-      } // None namespace
+      std::vector<std::string> splitSelector(const std::string& a_str);
     } // NDetails namespace
 
     namespace NDetails {
@@ -1782,7 +1944,7 @@ namespace fcf {
               }
             }
           } catch (const std::exception& e) {
-            log(LMC_RUN_ERROR) << "Error: " << e.what() << std::endl;
+            log(LMC_ROOT_RUN_ERROR) << "Error: " << e.what() << std::endl;
             if (a_enableThrow) {
               throw;
             } else if (a_errorPtr){
@@ -1801,20 +1963,294 @@ namespace fcf {
     } // NDetails namespace
 
     namespace NDetails {
-      namespace {
-        #ifdef FCF_TEST_IMPLEMENTATION
-          std::vector<std::string> splitSelector(const std::string& a_str) {
-            std::vector<std::string> result;
-            std::string line;
-            std::stringstream tokenStream(a_str);
-            while (std::getline(tokenStream, line, '|')) {
-                result.push_back(line);
-            }
-            return result;
+      #ifdef FCF_TEST_IMPLEMENTATION
+        std::vector<std::string> splitSelector(const std::string& a_str) {
+          std::vector<std::string> result;
+          std::string line;
+          std::stringstream tokenStream(a_str);
+          while (std::getline(tokenStream, line, '|')) {
+            result.push_back(line.length() ? line : std::string("*"));
           }
-        #endif
-      } // None namespace
+          return result;
+        }
+      #endif
     } // NDetails namespace
+
+    namespace NDetails {
+      #ifdef FCF_TEST_IMPLEMENTATION
+        class FixtureHandler {
+          private:
+
+            struct FixtureInfo {
+              Fixture      fixture;
+              mutable int  active;
+              mutable int  close;
+              bool operator<(const FixtureInfo& a_info) const {
+                return fixture < a_info.fixture;
+              }
+            };
+
+            struct FixtureTestGraph {
+              std::set<FixtureInfo> fixtures;
+            };
+
+            struct FixtureGroupGraph {
+              std::map<std::string, FixtureTestGraph> tests;
+              std::set<FixtureInfo>                   fixtures;
+            };
+
+            struct FixturePartGraph {
+              std::map<std::string, FixtureGroupGraph> groups;
+              std::set<FixtureInfo>                    fixtures;
+            };
+
+            struct FixtureGraph {
+              std::map<std::string, FixturePartGraph> parts;
+              std::set<FixtureInfo>                   fixtures;
+            };
+
+          public:
+
+            FixtureHandler()
+              : _graph(_build()) {
+            }
+
+            void start(const std::set<Test>& a_tests) {
+              for(std::set<Test>::const_iterator it = a_tests.begin(); it != a_tests.end(); ++it) {
+                _call(std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), it->part, it->group, it->name, true, true);
+              }
+            }
+
+            void end(const std::set<Test>& a_tests) {
+              for(std::set<Test>::const_iterator it = a_tests.begin(); it != a_tests.end(); ++it) {
+                _call(std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), it->part, it->group, it->name, false, true);
+              }
+            }
+
+            void call(std::set<Test>::const_iterator a_beginIt, std::set<Test>::const_iterator a_currentIt, std::set<Test>::const_iterator a_endIt,
+                      const std::string& a_part, const std::string& a_group, const std::string& a_test, 
+                      bool a_start) {
+              _call(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, a_start, false);
+            }
+
+          private:
+            void _call(std::set<Test>::const_iterator a_beginIt, std::set<Test>::const_iterator a_currentIt, std::set<Test>::const_iterator a_endIt,
+                       const std::string& a_part, const std::string& a_group, const std::string& a_test,
+                       bool a_start, int a_onlyGlobal) {
+
+              _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, _graph.fixtures, a_start, a_onlyGlobal);
+
+              std::map<std::string, FixturePartGraph>::iterator pitv[2] = {_graph.parts.find(a_part), _graph.parts.find("*")};
+              for(size_t i = 0; i < 2; ++i) {
+                if (pitv[i] == _graph.parts.end()) {
+                  continue;
+                }
+
+                _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, pitv[i]->second.fixtures, a_start, a_onlyGlobal);
+
+                std::map<std::string, FixtureGroupGraph>::iterator gitv[2] = { pitv[i]->second.groups.find(a_group), pitv[i]->second.groups.find("*")};
+
+                for(size_t j = 0; j < 2; ++j) {
+                  if (gitv[j] == pitv[i]->second.groups.end()) {
+                    continue;
+                  }
+                  _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, gitv[j]->second.fixtures, a_start, a_onlyGlobal);
+
+                  std::map<std::string, FixtureTestGraph>::iterator titv[2] = { gitv[j]->second.tests.find(a_test), gitv[j]->second.tests.find("*")};
+
+                  for(size_t k = 0; k < 2; ++k) {
+                    if (titv[k] == gitv[j]->second.tests.end()) {
+                      continue;
+                    }
+                    _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, titv[k]->second.fixtures, a_start, a_onlyGlobal);
+                  }
+                }
+              }
+            }
+
+            bool _fixureMatch(const Fixture& a_fixture, const std::string& a_part, const std::string& a_group, const std::string& a_test){
+              bool match;
+              match = a_fixture.parts.empty() ||
+                      std::find_if(a_fixture.parts.begin(), a_fixture.parts.end(), [&](const std::string& a_name){ return a_name == "*" || a_name == a_part; }) != a_fixture.parts.end();
+              if (!match) {
+                return false;
+              }
+              match = a_fixture.groups.empty() ||
+                      std::find_if(a_fixture.groups.begin(), a_fixture.groups.end(), [&](const std::string& a_name){ return a_name == "*" || a_name == a_group; }) != a_fixture.groups.end();
+              if (!match) {
+                return false;
+              }
+              match = a_fixture.tests.empty() ||
+                      std::find_if(a_fixture.tests.begin(), a_fixture.tests.end(), [&](const std::string& a_name){ return a_name == "*" || a_name == a_test; }) != a_fixture.tests.end();
+              return match;
+            }
+
+            void _callFixtures(std::set<Test>::const_iterator a_beginIt, std::set<Test>::const_iterator a_currentIt, std::set<Test>::const_iterator a_endIt,
+                               const std::string& a_part, const std::string& a_group, const std::string& a_test,
+                               std::set<FixtureInfo>& a_fixtures, bool a_start, bool a_onlyGlobal) {
+              for(const FixtureInfo& fi : a_fixtures) {
+                int enable = false;
+                if (a_onlyGlobal) {
+                  enable = (fi.active == 0 && fi.fixture.level == FL_GLOBAL) ||
+                           (!a_start && fi.close);
+                } else if (fi.fixture.level == FL_GLOBAL) {
+                  enable = false;
+                } else if (fi.fixture.level == FL_TEST) {
+                  enable = true;
+                } else if (a_start) {
+                  if (fi.fixture.level == FL_GROUP) {
+                    bool match = false;
+                    std::set<Test>::const_iterator it = a_currentIt;
+                    while (a_beginIt != it && !match) {
+                      --it;
+                      if (it->group != a_group) {
+                        break;
+                      }
+                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->name);
+                    };
+                    if (!match) {
+                      enable = true;
+                    }
+                  } else if (fi.fixture.level == FL_PART) {
+                    bool match = false;
+                    std::set<Test>::const_iterator it = a_currentIt;
+                    while (a_beginIt != it && !match) {
+                      --it;
+                      if (it->part != a_part) {
+                        break;
+                      }
+                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->name);
+                    };
+                    if (!match) {
+                      enable = true;
+                    }
+                  }
+                } else {
+                  if (fi.fixture.level == FL_GROUP) {
+                    bool match = false;
+                    std::set<Test>::const_iterator it = a_currentIt;
+                    if (it != a_endIt) {
+                      ++it;
+                    }
+                    for (; it != a_endIt; ++it) {
+                      if (it->group != a_group){
+                        break;
+                      }
+                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->name);
+                    }
+                    if (!match) {
+                      enable = true;
+                    }
+                  } else if (fi.fixture.level == FL_PART) {
+                    bool match = false;
+                    std::set<Test>::const_iterator it = a_currentIt;
+                    if (it != a_endIt) {
+                      ++it;
+                    }
+                    for (; it != a_endIt; ++it) {
+                      if (it->part != a_part) {
+                        break;
+                      }
+                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->name);
+                    }
+                    if (!match) {
+                      enable = true;
+                    }
+                  }
+                }
+
+                if (!enable) {
+                  continue;
+                }
+
+                if (a_start) {
+                  if (!fi.fixture.start){
+                    ++fi.close;
+                  }
+                } else {
+                  if (!fi.fixture.start){
+                    --fi.close;
+                  }
+                }
+
+                if (fi.fixture.start != a_start) {
+                  continue;
+                }
+
+                ++fi.active;
+
+                try {
+                  fi.fixture.fixtureFunction();
+                } catch(const std::exception& e){
+                  err() << "Fixture error: " << e.what() << std::endl;
+                }
+              }
+            }
+
+            FixtureGraph _build() {
+              FixtureGraph graph;
+              int level = 3;
+              std::vector< Fixture > fixtures(getStorage().fixtures());
+              for(const Fixture& fixture : fixtures) {
+                for(const std::string& part : fixture.parts) {
+                  for(const std::string& group : fixture.groups) {
+                    for(const std::string& test : fixture.tests) {
+                      level = 3;
+                      if (test == "*") {
+                        level = 2;
+                        if (group == "*") {
+                          level = 1;
+                          if (part == "*") {
+                            level = 0;
+                          }
+                        }
+                      }
+
+                      std::set<FixtureInfo>* set = &graph.fixtures;
+                      std::map<std::string, FixturePartGraph>::iterator  pit;
+                      std::map<std::string, FixtureGroupGraph>::iterator git;
+                      std::map<std::string, FixtureTestGraph>::iterator  tit;
+                      if (level >= 1) {
+                        pit = graph.parts.find(part);
+                        if (pit == graph.parts.end()){
+                          pit = graph.parts.insert({ part, FixturePartGraph() }).first;
+                        }
+                        set = &pit->second.fixtures;
+                      }
+                      if (level >= 2) {
+                        git = pit->second.groups.find(group);
+                        if (git == pit->second.groups.end()){
+                          git = pit->second.groups.insert({ group, FixtureGroupGraph() }).first;
+                        }
+                        set = &git->second.fixtures;
+                      }
+                      if (level >= 3) {
+                        tit = git->second.tests.find(test);
+                        if (tit == git->second.tests.end()) {
+                          tit = git->second.tests.insert({ test, FixtureTestGraph() }).first;
+                        }
+                        set = &tit->second.fixtures;
+                      }
+
+                      if (set) {
+                        int levelMask = fixture.level == 3 ? 0x08 :
+                                        fixture.level == 2 ? 0x04 :
+                                        fixture.level == 1 ? 0x02 :
+                                                             0x01;
+                        set->insert( { fixture, 0, 0 } );
+                      }
+
+                    }
+                  }
+                }
+              }
+              return graph;
+            }
+
+            FixtureGraph _graph;
+        };
+      #endif
+    }
 
     namespace NDetails {
       #ifdef FCF_TEST_IMPLEMENTATION
@@ -1839,6 +2275,7 @@ namespace fcf {
 
           bool totalErrorFlag = false;
 
+          FixtureHandler fixtureHandler;
           std::set<Test> tests;
 
           Logger::Environment lastEnv = logger()._getEnvironment();
@@ -1860,6 +2297,7 @@ namespace fcf {
           Duration                lastDuration = state().duration();
           std::list<std::string>  lastErrors = state().errors();
 
+          std::set< std::string > lastTestData;
           try {
             logger()._setEnvironment(newEnv);
 
@@ -1871,15 +2309,25 @@ namespace fcf {
             state().test({});
             state().errors({});
 
-            log(LMC_START);
+            lastTestData = state().dataKeys();
 
-            unsigned int errorCounter = 0;
+            log(LMC_ROOT_START);
+
+            fixtureHandler.start(tests);
+
+            unsigned int errorCounter  = 0;
             unsigned int passedCounter = 0;
-            for(const Test& test : tests) {
+            std::set<Test>::const_iterator testIt = tests.begin();
+            for(; testIt != tests.end(); ++testIt) {
+              const Test& test = *testIt;
               state().test(test);
               state().errors({});
-              log(LMC_TEST_START);
-              log(LMC_TEST_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+
+              fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.name, true);
+
+              log(LMC_LAUNCH_START);
+              log(LMC_LAUNCH_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+
               state()._resumeDuration();
 
               try {
@@ -1895,7 +2343,8 @@ namespace fcf {
                 ++passedCounter;
                 log(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET
                                        << " Test completed successfully (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
-                log(LMC_TEST_END);
+                log(LMC_LAUNCH_END);
+                fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.name, false);
               } else {
                 totalErrorFlag = true;
                 ++errorCounter;
@@ -1904,7 +2353,9 @@ namespace fcf {
                   log(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
                 }
                 log(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
-                log(LMC_TEST_END);
+                log(LMC_LAUNCH_END);
+
+                fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.name, false);
                 if (a_options.noBreak) {
                   continue;
                 } else {
@@ -1915,23 +2366,33 @@ namespace fcf {
 
             unsigned int skippedCounter = tests.size() - passedCounter - errorCounter;
 
+            fixtureHandler.end(tests);
+
             if (!errorCounter) {
-              log(LMC_COMPLETE_NEW_LINE) << std::endl;
-              log(LMC_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET << " All tests were completed." << std::endl;
+              log(LMC_ROOT_NEW_LINE) << std::endl;
+              log(LMC_ROOT_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET << " All tests were completed." << std::endl;
             } else {
-              log(LMC_ERROR_NEW_LINE) << std::endl;
-              log(LMC_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
+              log(LMC_ROOT_NEW_LINE) << std::endl;
+              log(LMC_ROOT_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Testing completed with failures." << std::endl;
             }
 
-            log(LMC_RESULT)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skippedCounter << " skipped, " << tests.size() << " total" << std::endl;
-            log(LMC_DURATION) << "Duration: " << state().duration().totalDurationStr(true) << " sec" << std::endl;
+            log(LMC_ROOT_SUMMARY)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skippedCounter << " skipped, " << tests.size() << " total" << std::endl;
+            log(LMC_ROOT_DURATION) << "Duration: " << state().duration().totalDurationStr(true) << " sec" << std::endl;
 
-            log(LMC_END);
+            log(LMC_ROOT_END);
 
             state().tests(lastTests);
             state().test(lastTest);
             state().duration(lastDuration);
             state().errors(lastErrors);
+
+
+            std::set< std::string > currentTestData = state().dataKeys();
+            for(const std::string& key : currentTestData) {
+              if ( lastTestData.find(key) == lastTestData.end() ){
+                state().eraseData(key.c_str());
+              }
+            }
 
             logger()._setEnvironment(lastEnv);
 
@@ -1940,12 +2401,19 @@ namespace fcf {
               globalRunState = false;
             }
           } catch(const std::exception& a_error) {
-            log(LMC_RUN_ERROR) << "Error: " << a_error.what() << std::endl;
+            log(LMC_ROOT_RUN_ERROR) << "Error: " << a_error.what() << std::endl;
 
             state().tests(lastTests);
             state().test(lastTest);
             state().duration(lastDuration);
             state().errors(lastErrors);
+
+            std::set< std::string > currentTestData = state().dataKeys();
+            for(const std::string& key : currentTestData) {
+              if ( lastTestData.find(key) == lastTestData.end() ) {
+                state().eraseData(key.c_str());
+              }
+            }
 
             logger()._setEnvironment(lastEnv);
 
@@ -2173,6 +2641,37 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::append(Fixture a_fixture) {
+        std::lock_guard<std::mutex> lock(_mutex);
+        if (!a_fixture.parts.size()) {
+          a_fixture.parts.push_back("*");
+        }
+        for(size_t i = 0; i < a_fixture.parts.size(); ++i) {
+          if (!a_fixture.parts[i].length()) {
+            a_fixture.parts[i] = "*";
+          }
+        }
+        if (!a_fixture.groups.size()) {
+          a_fixture.groups.push_back("*");
+        }
+        for(size_t i = 0; i < a_fixture.groups.size(); ++i) {
+          if (!a_fixture.groups[i].length()) {
+            a_fixture.groups[i] = "*";
+          }
+        }
+        if (!a_fixture.tests.size()) {
+          a_fixture.tests.push_back("*");
+        }
+        for(size_t i = 0; i < a_fixture.tests.size(); ++i) {
+          if (!a_fixture.tests[i].length()) {
+            a_fixture.tests[i] = "*";
+          }
+        }
+        _fixtures.push_back(a_fixture);
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
       void Storage::select(std::set<Test>& a_dst, const Options& a_options) {
         std::lock_guard<std::mutex> lock(_mutex);
         std::map<std::string, bool> exists[3];
@@ -2261,6 +2760,12 @@ namespace fcf {
             }
           }
         }
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      const std::vector< Fixture >&  Storage::fixtures(){
+        return _fixtures;
       }
     #endif
 
@@ -2457,49 +2962,49 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::ftl(ELogMessageCategory a_category) {
+      Logger::Writer Logger::ftl(unsigned int a_category) {
         return _log(LL_FTL, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::err(ELogMessageCategory a_category) {
+      Logger::Writer Logger::err(unsigned int a_category) {
         return _log(LL_ERR, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::wrn(ELogMessageCategory a_category) {
+      Logger::Writer Logger::wrn(unsigned int a_category) {
         return _log(LL_WRN, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::att(ELogMessageCategory a_category) {
+      Logger::Writer Logger::att(unsigned int a_category) {
         return _log(LL_ATT, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::log(ELogMessageCategory a_category) {
+      Logger::Writer Logger::log(unsigned int a_category) {
         return _log(LL_LOG, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::inf(ELogMessageCategory a_category) {
+      Logger::Writer Logger::inf(unsigned int a_category) {
         return _log(LL_INF, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::dbg(ELogMessageCategory a_category) {
+      Logger::Writer Logger::dbg(unsigned int a_category) {
         return _log(LL_DBG, a_category);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::trc(ELogMessageCategory a_category) {
+      Logger::Writer Logger::trc(unsigned int a_category) {
         return _log(LL_TRC, a_category);
       }
     #endif
@@ -2584,11 +3089,11 @@ namespace fcf {
           PrefixSettings lpo;
           lpo.name               = "test-offset";
           lpo.multiLine          = true;
-          lpo.messageCategories  = LMC_TEST & (~LMC_USER);
+          lpo.messageCategories  = LMC_TEST & (~LMC_USER_GROUP);
           appendPrefixStr("    ", lpo);
           lpo.name               = "user-offset";
           lpo.multiLine          = true;
-          lpo.messageCategories  = LMC_USER;
+          lpo.messageCategories  = LMC_USER_GROUP;
           appendPrefixStr("  > ", lpo);
         }
       }
@@ -2760,7 +3265,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::_write(fcf::NTest::ELogLevel a_level, ELogMessageCategory a_messageCategory, const std::string& a_message) {
+      void Logger::_write(fcf::NTest::ELogLevel a_level, unsigned int a_messageCategory, const std::string& a_message) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
 
         for(OutputTarget& stream : _environment.targets) {
@@ -2781,7 +3286,9 @@ namespace fcf {
 
           if (lms.origin.length()) {
             for(Prefix prefix : _prefixes) {
-              if (!(a_messageCategory & prefix.options.messageCategories)) {
+              const unsigned int hmask = 0xffff0000 & prefix.options.messageCategories;
+              const unsigned int lmask = 0x0000ffff & prefix.options.messageCategories;
+              if (!(a_messageCategory & hmask) || ( lmask && lmask !=  (0x0000ffff & a_messageCategory)) ) {
                 continue;
               }
               if (!_newLine) {
@@ -2864,8 +3371,8 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer Logger::_log(ELogLevel a_level, ELogMessageCategory a_messageCategory) {
-        if (_environment.level >= a_level || a_messageCategory != LMC_USER) {
+      Logger::Writer Logger::_log(ELogLevel a_level, unsigned int a_messageCategory) {
+        if (_environment.level >= a_level || a_messageCategory != LMC_USER_GROUP) {
           return Logger::Writer(*this, a_level, a_messageCategory);
         } else {
           return Logger::Writer();
@@ -2903,7 +3410,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Writer::Writer(Logger& a_logger, ELogLevel a_level, ELogMessageCategory a_loggerMessageCategory)
+      Logger::Writer::Writer(Logger& a_logger, ELogLevel a_level, unsigned int a_loggerMessageCategory)
         : _logger(&a_logger), _level(a_level), _loggerMessageCategory(a_loggerMessageCategory) {
       }
     #endif
@@ -2986,7 +3493,7 @@ namespace fcf {
         std::ostringstream output;
 
         switch (a_messageContext.category) {
-          case LMC_START:
+          case LMC_ROOT_START:
             {
               a_messageContext.data->sptrValue = SharedPtrAny::make<LogJunitFormatter>();
             }
@@ -2996,15 +3503,21 @@ namespace fcf {
             {
               LogJunitFormatter* formatHandler = a_messageContext.data->sptrValue.cast<LogJunitFormatter>();
               if (formatHandler) {
-                ProcessedInfo pi;
-                pi.error = a_messageContext.category == LMC_TEST_ERROR_MESSAGE;
-                pi.message = a_messageContext.origin;
-                pi.duration = state().duration().lastTotalDuration().count();
-                formatHandler->_processed.insert({state().test(), pi});
+                std::map<Test, ProcessedInfo>::iterator it = formatHandler->_processed.find(state().test());
+                if (it != formatHandler->_processed.end()) {
+                  it->second.message += "\n";
+                  it->second.message += a_messageContext.origin;
+                } else {
+                  ProcessedInfo pi;
+                  pi.error = a_messageContext.category == LMC_TEST_ERROR_MESSAGE;
+                  pi.message = a_messageContext.origin;
+                  pi.duration = state().duration().lastTotalDuration().count();
+                  formatHandler->_processed.insert({state().test(), pi});
+                }
               }
             }
             break;
-          case LMC_END:
+          case LMC_ROOT_END:
             {
               LogJunitFormatter* formatHandler = a_messageContext.data->sptrValue.cast<LogJunitFormatter>();
               if (formatHandler) {
@@ -3143,35 +3656,35 @@ namespace fcf {
       }
     #endif
 
-    inline Logger::Writer ftl(ELogMessageCategory a_category) {
+    inline Logger::Writer ftl(unsigned int a_category) {
       return logger().ftl(a_category);
     }
 
-    inline Logger::Writer err(ELogMessageCategory a_category) {
+    inline Logger::Writer err(unsigned int a_category) {
       return logger().err(a_category);
     }
 
-    inline Logger::Writer wrn(ELogMessageCategory a_category) {
+    inline Logger::Writer wrn(unsigned int a_category) {
       return logger().wrn(a_category);
     }
 
-    inline Logger::Writer att(ELogMessageCategory a_category) {
+    inline Logger::Writer att(unsigned int a_category) {
       return logger().att(a_category);
     }
 
-    inline Logger::Writer log(ELogMessageCategory a_category) {
+    inline Logger::Writer log(unsigned int a_category) {
       return logger().log(a_category);
     }
 
-    inline Logger::Writer inf(ELogMessageCategory a_category) {
+    inline Logger::Writer inf(unsigned int a_category) {
       return logger().inf(a_category);
     }
 
-    inline Logger::Writer dbg(ELogMessageCategory a_category) {
+    inline Logger::Writer dbg(unsigned int a_category) {
       return logger().dbg(a_category);
     }
 
-    inline Logger::Writer trc(ELogMessageCategory a_category) {
+    inline Logger::Writer trc(unsigned int a_category) {
       return logger().trc(a_category);
     }
 

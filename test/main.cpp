@@ -4,12 +4,6 @@
 
 #include "tests/helpers.hpp"
 
-FCF_TEST_DECLARE("fcfTest", "some", "asd"){
-
-  //FCF_TEST_CHECK(1==2, 2);
-
-}
-
 
 FCF_TEST_DECLARE("subrun", "default", "subrun ok"){
 
@@ -39,6 +33,20 @@ FCF_TEST_DECLARE("subrun", "default", "subrun error check 1"){
   int v1 = 1;
   int v2 = 2;
   if (!FCF_TEST_CHECK(v1 == v2, v1)) {
+    fcf::NTest::err() << "error" << std::endl;
+  }
+  fcf::NTest::log() << "2" << std::endl;
+}
+
+FCF_TEST_DECLARE("subrun", "default", "subrun error check 2"){
+  fcf::NTest::log() << "1" << std::endl;
+  int v1 = 1;
+  int v2 = 2;
+  int v3 = 3;
+  if (!FCF_TEST_CHECK(v1 == v2, v1, v2)) {
+    fcf::NTest::err() << "error" << std::endl;
+  }
+  if (!FCF_TEST_CHECK(v1 == v3, v1, v3)) {
     fcf::NTest::err() << "error" << std::endl;
   }
   fcf::NTest::log() << "2" << std::endl;
@@ -179,6 +187,63 @@ FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
   {
     std::stringstream ss;
     fcf::NTest::Options options;
+    options.selectors.push_back( fcf::NTest::Options::Selector{{}, {}, {"subrun error check 2"}} );
+    const char* argv[] = {""};
+    InnerTestRunner()(options, ss, 1, &argv[0]);
+    std::string expected = std::string()+
+                            "Performing the test: \"subrun\" -> \"default\" -> \"subrun error check 2\" ...\n" + 
+                            "  > 1\n" + 
+                            "  > error\n" + 
+                            "  > error\n" + 
+                            "  > 2\n" + 
+                            "    Test error: v1 == v2  [FILE: XXX]\n" + 
+                            "      Values:\n" + 
+                            "        v1: 1\n" + 
+                            "        v2: 2\n" + 
+                            "    Test error: v1 == v3  [FILE: XXX]\n" + 
+                            "      Values:\n" + 
+                            "        v1: 1\n" + 
+                            "        v3: 3\n" + 
+                            "    [FAILED] Test failed (XXX sec)\n" + 
+                            "\n" + 
+                            "[FAILED] Testing completed with failures.\n" + 
+                            "Tests: 0 passed, 1 failed, 0 skipped, 1 total\n" + 
+                            "Duration: XXX sec\n"
+                            ;
+    FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
+  }
+  {
+    std::stringstream ss;
+    fcf::NTest::Options options;
+    options.selectors.push_back( fcf::NTest::Options::Selector{{}, {}, {"subrun error check 2"}} );
+    const char* argv[] = {"--test-format=junit"};
+    InnerTestRunner()(options, ss, 1, &argv[0]);
+
+    std::string expected = std::string()+
+                          "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
+                          "<testsuites tests=\"1\" failure=\"1\" skipped=\"0\" time=\"XXX\">\n" + 
+                          "  <testsuite name=\"subrun/default\" tests=\"1\" failure=\"1\" skipped=\"0\" time=\"XXX\">\n" + 
+                          "    <testcase classname=\"subrun/default\" name=\"subrun error check 2\" time=\"XXX\">\n" + 
+                          "      <failure message=\"Test error: v1 == v2\" type=\"AssertionError\">\n" + 
+                          "Test error: v1 == v2  [FILE: XXX]\n" + 
+                          "  Values:\n" + 
+                          "    v1: 1\n" + 
+                          "    v2: 2\n" + 
+                          "\n" + 
+                          "Test error: v1 == v3  [FILE: XXX]\n" + 
+                          "  Values:\n" + 
+                          "    v1: 1\n" + 
+                          "    v3: 3\n" + 
+                          "      </failure>\n" + 
+                          "    </testcase>\n" + 
+                          "  </testsuite>\n" + 
+                          "</testsuites>\n"
+                          ;
+    FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
+  }
+  {
+    std::stringstream ss;
+    fcf::NTest::Options options;
     options.selectors.push_back( fcf::NTest::Options::Selector{{}, {}, {"subrun check 1"}} );
     const char* argv[] = {""};
     InnerTestRunner()(options, ss, 1, &argv[0]);
@@ -207,7 +272,7 @@ int main(int a_argc, char* a_argv[]) {
   fcf::NTest::Options options;
   options.ignoreSelectors.push_back(
     fcf::NTest::Options::Selector{
-      {"subrun", "subrun-export", "subrun-order 1", "subrun-order 2", "subrun-order 3"}, 
+      {"subrun", "subrun-export", "subrun-order 1", "subrun-order 2", "subrun-order 3", "subrun-fixture"}, 
       {}, 
       {}
     }
