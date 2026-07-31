@@ -91,7 +91,7 @@ int main(int a_argc, char* a_argv[]) {
     fcf::NTest::Logger::PrefixSettings pls;
     pls.name = "custom-offset";
     pls.multiLine = true;
-    pls.messageCategory = fcf::NTest::LMC_TEST;
+    pls.messageCategory = fcf::NTest::LMC_TEST_GROUP | fcf::NTest::LMC_USER_GROUP;
     fcf::NTest::logger().appendPrefixStr("  ", pls);
 
     // Register a functional prefix that dynamically generates a timestamp and log level string.

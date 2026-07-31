@@ -554,7 +554,6 @@ namespace fcf {
       LMC_TEST_COMPLETE         = LMC_TEST_GROUP    | 0x0001,       ///< Successful completion of a test case.
       LMC_TEST_ERROR            = LMC_TEST_GROUP    | 0x0002,       ///< Failure of a test case.
       LMC_TEST_ERROR_MESSAGE    = LMC_TEST_GROUP    | 0x0003,       ///< Detailed error description for a test.
-      LMC_TEST                  = LMC_USER_GROUP | LMC_TEST_GROUP,  ///< Combined category for all test-related messages.
       LMC_ALL                   = 0xFFFF0000,                       ///< All message categories.
     };
 
@@ -3089,11 +3088,11 @@ namespace fcf {
           PrefixSettings lpo;
           lpo.name               = "test-offset";
           lpo.multiLine          = true;
-          lpo.messageCategory  = LMC_TEST & (~LMC_USER_GROUP);
+          lpo.messageCategory    = LMC_TEST_GROUP;
           appendPrefixStr("    ", lpo);
           lpo.name               = "user-offset";
           lpo.multiLine          = true;
-          lpo.messageCategory  = LMC_USER_GROUP;
+          lpo.messageCategory    = LMC_USER_GROUP;
           appendPrefixStr("  > ", lpo);
         }
       }
