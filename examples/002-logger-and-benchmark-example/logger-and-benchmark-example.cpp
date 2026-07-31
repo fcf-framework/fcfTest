@@ -91,14 +91,14 @@ int main(int a_argc, char* a_argv[]) {
     fcf::NTest::Logger::PrefixSettings pls;
     pls.name = "custom-offset";
     pls.multiLine = true;
-    pls.messageCategories = fcf::NTest::LMC_TEST;
+    pls.messageCategory = fcf::NTest::LMC_TEST;
     fcf::NTest::logger().appendPrefixStr("  ", pls);
 
     // Register a functional prefix that dynamically generates a timestamp and log level string.
     // This function is called by the logger every time a message is written.
     pls.name = "info";
     pls.multiLine = false;
-    pls.messageCategories = fcf::NTest::LMC_ALL;
+    pls.messageCategory = fcf::NTest::LMC_ALL;
     fcf::NTest::logger().appendPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::Logger::MessageContext& a_status){
         // Get current system time
         auto time = std::time(nullptr);

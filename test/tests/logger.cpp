@@ -45,12 +45,12 @@ FCF_TEST_DECLARE("fcfTest", "Logger", "Log prefix", LogPrefixTester) {
     fcf::NTest::Logger::PrefixSettings ps;
     ps.name = "custom1";
     ps.multiLine = true;
-    ps.messageCategories = fcf::NTest::LMC_ALL;
+    ps.messageCategory = fcf::NTest::LMC_ALL;
     logger.appendPrefixStr("[1]", ps);
 
     ps.name = "custom2";
     ps.multiLine = true;
-    ps.messageCategories = fcf::NTest::LMC_ALL;
+    ps.messageCategory = fcf::NTest::LMC_ALL;
     logger.appendPrefixStr("[2]", ps);
 
     logger.log() << "456\n123\n";
@@ -64,12 +64,12 @@ FCF_TEST_DECLARE("fcfTest", "Logger", "Log prefix", LogPrefixTester) {
 
     ps.name = "custom1";
     ps.multiLine = false;
-    ps.messageCategories = fcf::NTest::LMC_ALL;
+    ps.messageCategory = fcf::NTest::LMC_ALL;
     logger.appendPrefixStr("[1]", ps);
 
     ps.name = "custom2";
     ps.multiLine = true;
-    ps.messageCategories = fcf::NTest::LMC_ALL;
+    ps.messageCategory = fcf::NTest::LMC_ALL;
     logger.appendPrefixStr("[2]", ps);
 
     logger.log() << "456\n123\n";
