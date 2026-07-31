@@ -539,22 +539,23 @@ namespace fcf {
       LMC_ROOT_GROUP            = 0x00010000,
       LMC_LAUNCH_GROUP          = 0x00020000,
       LMC_TEST_GROUP            = 0x00040000,
-      LMC_USER_GROUP            = 0x00080000,                       ///< User-defined messages.
-      LMC_ROOT_START            = LMC_ROOT_GROUP    | 0x0001,       ///< [no output] Start of the test execution process.
-      LMC_ROOT_END              = LMC_ROOT_GROUP    | 0x0002,       ///< [no output] End of the test execution process.
-      LMC_ROOT_COMPLETE         = LMC_ROOT_GROUP    | 0x0003,       ///< Overall completion status.
-      LMC_ROOT_ERROR            = LMC_ROOT_GROUP    | 0x0004,       ///< General error messages.
-      LMC_ROOT_SUMMARY          = LMC_ROOT_GROUP    | 0x0005,       ///< Test results summary.
-      LMC_ROOT_DURATION         = LMC_ROOT_GROUP    | 0x0006,       ///< Execution time/duration information.
-      LMC_ROOT_RUN_ERROR        = LMC_ROOT_GROUP    | 0x0007,       ///< Error during the test runner execution.
-      LMC_ROOT_NEW_LINE         = LMC_ROOT_GROUP    | 0x0008,       ///< Error during the test runner execution.
-      LMC_LAUNCH_START          = LMC_LAUNCH_GROUP  | 0x0001,       ///< Start of an individual test case.
-      LMC_LAUNCH_START_MESSAGE  = LMC_LAUNCH_GROUP  | 0x0002,       ///< Descriptive message for test start.
-      LMC_LAUNCH_END            = LMC_LAUNCH_GROUP  | 0x0003,       ///< End of an individual test case.
-      LMC_TEST_COMPLETE         = LMC_TEST_GROUP    | 0x0001,       ///< Successful completion of a test case.
-      LMC_TEST_ERROR            = LMC_TEST_GROUP    | 0x0002,       ///< Failure of a test case.
-      LMC_TEST_ERROR_MESSAGE    = LMC_TEST_GROUP    | 0x0003,       ///< Detailed error description for a test.
-      LMC_ALL                   = 0xFFFF0000,                       ///< All message categories.
+      LMC_USER_GROUP            = 0x00080000,                                     ///< User-defined messages.
+      LMC_SYSTEM_GROUP          = 0x80000000,                                     ///< Messages are not displayed and are system messages.
+      LMC_ROOT_START            = LMC_SYSTEM_GROUP | LMC_ROOT_GROUP | 0x0001,     ///< [no output] Start of the test execution process.
+      LMC_ROOT_END              = LMC_SYSTEM_GROUP | LMC_ROOT_GROUP | 0x0002,     ///< [no output] End of the test execution process.
+      LMC_ROOT_COMPLETE         = LMC_ROOT_GROUP | 0x0003,                        ///< Overall completion status.
+      LMC_ROOT_ERROR            = LMC_ROOT_GROUP | 0x0004,                        ///< General error messages.
+      LMC_ROOT_SUMMARY          = LMC_ROOT_GROUP | 0x0005,                        ///< Test results summary.
+      LMC_ROOT_DURATION         = LMC_ROOT_GROUP | 0x0006,                        ///< Execution time/duration information.
+      LMC_ROOT_RUN_ERROR        = LMC_ROOT_GROUP | 0x0007,                        ///< Error during the test runner execution.
+      LMC_ROOT_NEW_LINE         = LMC_ROOT_GROUP | 0x0008,                        ///< Error during the test runner execution.
+      LMC_LAUNCH_START          = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0001,  ///< Start of an individual test case.
+      LMC_LAUNCH_START_MESSAGE  = LMC_LAUNCH_GROUP | 0x0002,                      ///< Descriptive message for test start.
+      LMC_LAUNCH_END            = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0003,  ///< End of an individual test case.
+      LMC_TEST_COMPLETE         = LMC_TEST_GROUP | 0x0001,                        ///< Successful completion of a test case.
+      LMC_TEST_ERROR            = LMC_TEST_GROUP | 0x0002,                        ///< Failure of a test case.
+      LMC_TEST_ERROR_MESSAGE    = LMC_TEST_GROUP | 0x0003,                        ///< Detailed error description for a test.
+      LMC_ALL                   = 0xFFFF0000,                                     ///< All message categories.
     };
 
     enum EFixtureLevel{
@@ -1326,6 +1327,7 @@ namespace fcf {
 
         struct MessageContext {
           unsigned int        category;
+          bool                system;
           const std::string   origin;
           std::string         message;
           size_t              line;
@@ -3261,6 +3263,7 @@ namespace fcf {
 
           MessageContext lms(a_message);
           lms.category      = a_messageCategory;
+          lms.system  = a_messageCategory & LMC_SYSTEM_GROUP;
           lms.message       = lms.origin;
           lms.line          = 0;
           lms.level         = a_level;
@@ -3349,8 +3352,7 @@ namespace fcf {
               format.func(*this, lms);
             }
           }
-
-          if (lms.message.length()) {
+          if (lms.message.length() && !lms.system) {
             (*lms.stream) << lms.message;
           }
 
@@ -3512,6 +3514,7 @@ namespace fcf {
             {
               LogJunitFormatter* formatHandler = a_messageContext.data->cast<LogJunitFormatter>();
               if (formatHandler) {
+                a_messageContext.system = false;
 
                 size_t totalTestCount   = state().testsCount();
                 size_t totalTestFailure = std::count_if(formatHandler->_processed.begin(),
