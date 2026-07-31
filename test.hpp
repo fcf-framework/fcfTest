@@ -363,7 +363,7 @@
       try { \
         try {\
           am_code;\
-        } catch( Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT am_exception) ) {\
+        } catch( const Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT am_exception)& ) {\
           _fcf_test_throw_flag = true;\
         }\
       } catch(...) {\
@@ -405,7 +405,7 @@
       try {\
         try {\
           am_code;\
-        } catch( Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT am_exception)  ) {\
+        } catch( const Z__FCF_TEST__REMOVE_PARENTHESIS(Z__FCF_TEST__REMOVE_PARENTHESIS_ARGUMENT am_exception)&  ) {\
           return true;\
         }\
       } catch(...) {\

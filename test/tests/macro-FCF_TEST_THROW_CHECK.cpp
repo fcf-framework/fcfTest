@@ -141,9 +141,9 @@ FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST_THROW_CHECK") {
 
 FCF_TEST_DECLARE("subrun", "throw-check", "no except") {
   fcf::NTest::log() << "1" << std::endl;
-  FCF_TEST_THROW_CHECK(callNoThrow(), ...);
+  FCF_TEST_THROW_CHECK(callNoThrow(), std::exception);
   fcf::NTest::log() << "2" << std::endl;
-  if(!FCF_TEST_THROW_CHECK(callNoThrow(), ...) ){
+  if(!FCF_TEST_THROW_CHECK(callNoThrow(), std::exception) ){
     fcf::NTest::log() << "err" << std::endl;
   }
   fcf::NTest::log() << "3" << std::endl;
@@ -151,9 +151,9 @@ FCF_TEST_DECLARE("subrun", "throw-check", "no except") {
 
 FCF_TEST_DECLARE("subrun", "throw-check", "except") {
   fcf::NTest::log() << "1" << std::endl;
-  FCF_TEST_THROW_CHECK(callThrow(), ...);
+  FCF_TEST_THROW_CHECK(callThrow(), std::exception);
   fcf::NTest::log() << "2" << std::endl;
-  if(!FCF_TEST_THROW_CHECK(callThrow(), ...)){
+  if(!FCF_TEST_THROW_CHECK(callThrow(), std::exception)){
     fcf::NTest::log() << "err" << std::endl;
   }
   fcf::NTest::log() << "3" << std::endl;
@@ -163,9 +163,9 @@ FCF_TEST_DECLARE("subrun", "throw-check", "no except a2") {
   int a1 = 1;
   int a2 = 2;
   fcf::NTest::log() << "1" << std::endl;
-  FCF_TEST_THROW_CHECK(callNoThrowWithParams(a1), ..., a1);
+  FCF_TEST_THROW_CHECK(callNoThrowWithParams(a1), std::exception, a1);
   fcf::NTest::log() << "2" << std::endl;
-  if(!FCF_TEST_THROW_CHECK(callNoThrowWithParams(a1, a2), ..., a1, a2)){
+  if(!FCF_TEST_THROW_CHECK(callNoThrowWithParams(a1, a2), std::exception, a1, a2)){
     fcf::NTest::log() << "err" << std::endl;
   }
   fcf::NTest::log() << "3" << std::endl;

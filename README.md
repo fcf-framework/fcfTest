@@ -149,7 +149,7 @@ If the provided code does not throw any exception, it generates a detailed error
 - **Behavior**: Evaluates the provided code block within a `try-catch` block. If no exception is caught, it triggers a test failure.
 - **Parameters**:
   - `am_expression`: The code block or expression to be executed and checked for an exception.
-  - `am_exception`:  The name of the expected exception. To catch all exceptions, this parameter must be ...
+  - `am_exception`:  The name of the expected exception. To catch all exceptions, this parameter must be std::exception
   - `...am_observedVariablePack`:  Variable list of arguments whose values will be included in the error message if no exception is thrown.
 - **Error Message**: The exception message includes:
   - The string representation of the code block.
@@ -170,7 +170,7 @@ FCF_TEST_THROW(riskyFunction(), std::runtime_error);
 
 // This test fails because no exception is thrown
 int x = 10;
-FCF_TEST_THROW(safeFunction(x), ..., x);
+FCF_TEST_THROW(safeFunction(x), std::exception, x);
 // Test error: 'safeFunction(x)' did not throw  [FILE: main.cpp:15]
 //   Values:
 //     x: 10
@@ -185,7 +185,7 @@ Evaluates the provided code block. If no exception is thrown, it logs a detailed
 - **Behavior**: Evaluates the code block. Returns `true` if an exception was caught, and `false` if no exception was thrown.
 - **Parameters**:
   - `am_expression`: The code block or expression to be executed and checked for an exception.
-  - `am_exception`:  The name of the expected exception. To catch all exceptions, this parameter must be ...
+  - `am_exception`:  The name of the expected exception. To catch all exceptions, this parameter must be std::exception
   - `...am_observedVariablePack`:  Variable list of arguments whose values will be included in the error message if no exception is thrown.
 - **Return Value**: `bool` (true if exception caught, false otherwise).
 
@@ -194,7 +194,7 @@ Evaluates the provided code block. If no exception is thrown, it logs a detailed
 void safeFunction() {}
 
 // Returns false, logs error to state, but does NOT throw exception
-if (!FCF_TEST_THROW_CHECK(safeFunction(), ...)) {
+if (!FCF_TEST_THROW_CHECK(safeFunction(), std::exception)) {
     fcf::NTest::log() << "The function was expected to throw, but it didn't." << std::endl;
 }
 ```
