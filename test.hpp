@@ -1353,11 +1353,11 @@ namespace fcf {
         struct PrefixSettings {
           std::string  name;
           bool         multiLine;
-          unsigned int messageCategories;
+          unsigned int messageCategory;
           PrefixSettings()
             : name("")
             , multiLine(false)
-            , messageCategories(LMC_USER_GROUP)
+            , messageCategory(LMC_USER_GROUP)
           {}
         };
 
@@ -3089,11 +3089,11 @@ namespace fcf {
           PrefixSettings lpo;
           lpo.name               = "test-offset";
           lpo.multiLine          = true;
-          lpo.messageCategories  = LMC_TEST & (~LMC_USER_GROUP);
+          lpo.messageCategory  = LMC_TEST & (~LMC_USER_GROUP);
           appendPrefixStr("    ", lpo);
           lpo.name               = "user-offset";
           lpo.multiLine          = true;
-          lpo.messageCategories  = LMC_USER_GROUP;
+          lpo.messageCategory  = LMC_USER_GROUP;
           appendPrefixStr("  > ", lpo);
         }
       }
@@ -3286,8 +3286,8 @@ namespace fcf {
 
           if (lms.origin.length()) {
             for(Prefix prefix : _prefixes) {
-              const unsigned int hmask = 0xffff0000 & prefix.options.messageCategories;
-              const unsigned int lmask = 0x0000ffff & prefix.options.messageCategories;
+              const unsigned int hmask = 0xffff0000 & prefix.options.messageCategory;
+              const unsigned int lmask = 0x0000ffff & prefix.options.messageCategory;
               if (!(a_messageCategory & hmask) || ( lmask && lmask !=  (0x0000ffff & a_messageCategory)) ) {
                 continue;
               }
