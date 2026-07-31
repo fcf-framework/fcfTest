@@ -1229,8 +1229,7 @@ namespace fcf {
         typedef std::list<Format> Formats;
         struct Prefix;
         typedef std::list<Prefix> Prefixes;
-        struct HandlerDataItem;
-        typedef std::map<std::string, HandlerDataItem> HandlerDataMap;
+        typedef std::map<std::string, SharedPtrAny> HandlerDataMap;
         class OutputTarget;
         typedef std::list<OutputTarget> OutputTargets;
 
@@ -1324,22 +1323,14 @@ namespace fcf {
             std::stringstream   _sstream;
         };
 
-        struct HandlerDataItem {
-          std::string         strValue;
-          unsigned long long  ullValue;
-          void*               ptrValue;
-          SharedPtrAny        sptrValue;
-        };
-
-
         struct MessageContext {
-          unsigned int category;
+          unsigned int        category;
           const std::string   origin;
           std::string         message;
           size_t              line;
           ELogLevel           level;
           std::ostream*       stream;
-          HandlerDataItem*    data;
+          SharedPtrAny*       data;
 
           MessageContext() = delete;
           MessageContext(const MessageContext&) = delete;
@@ -3314,7 +3305,7 @@ namespace fcf {
                   const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
                   HandlerDataMap::iterator dataIt = stream.prefixData.find(prefixName);
                   if (dataIt == stream.prefixData.end()) {
-                    dataIt = stream.prefixData.insert({prefixName, HandlerDataItem()}).first;
+                    dataIt = stream.prefixData.insert({prefixName, SharedPtrAny()}).first;
                   }
                   lms.data = &dataIt->second;
 
@@ -3351,7 +3342,7 @@ namespace fcf {
             if (formatName == currentFormatName) {
               HandlerDataMap::iterator dataIt = stream.formatData.find(formatName);
               if (dataIt == stream.formatData.end()) {
-                dataIt = stream.formatData.insert({formatName, Logger::HandlerDataItem()}).first;
+                dataIt = stream.formatData.insert({formatName, SharedPtrAny()}).first;
               }
               lms.data = &dataIt->second;
               format.func(*this, lms);
@@ -3494,13 +3485,13 @@ namespace fcf {
         switch (a_messageContext.category) {
           case LMC_ROOT_START:
             {
-              a_messageContext.data->sptrValue = SharedPtrAny::make<LogJunitFormatter>();
+              *a_messageContext.data = SharedPtrAny::make<LogJunitFormatter>();
             }
             break;
           case LMC_TEST_COMPLETE:
           case LMC_TEST_ERROR_MESSAGE:
             {
-              LogJunitFormatter* formatHandler = a_messageContext.data->sptrValue.cast<LogJunitFormatter>();
+              LogJunitFormatter* formatHandler = a_messageContext.data->cast<LogJunitFormatter>();
               if (formatHandler) {
                 std::map<Test, ProcessedInfo>::iterator it = formatHandler->_processed.find(state().test());
                 if (it != formatHandler->_processed.end()) {
@@ -3518,7 +3509,7 @@ namespace fcf {
             break;
           case LMC_ROOT_END:
             {
-              LogJunitFormatter* formatHandler = a_messageContext.data->sptrValue.cast<LogJunitFormatter>();
+              LogJunitFormatter* formatHandler = a_messageContext.data->cast<LogJunitFormatter>();
               if (formatHandler) {
 
                 size_t totalTestCount   = state().testsCount();
@@ -3617,7 +3608,7 @@ namespace fcf {
                 }
                 output << "</testsuites>\n";
 
-                a_messageContext.data->sptrValue.release();
+                a_messageContext.data->release();
               }
             }
             break;
