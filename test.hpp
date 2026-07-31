@@ -2028,7 +2028,7 @@ namespace fcf {
                        const std::string& a_part, const std::string& a_group, const std::string& a_test,
                        bool a_start, int a_onlyGlobal) {
 
-              _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, _graph.fixtures, a_start, a_onlyGlobal);
+              _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, _graph.fixtures, a_start, a_onlyGlobal);
 
               std::map<std::string, FixturePartGraph>::iterator pitv[2] = {_graph.parts.find(a_part), _graph.parts.find("*")};
               for(size_t i = 0; i < 2; ++i) {
@@ -2036,7 +2036,7 @@ namespace fcf {
                   continue;
                 }
 
-                _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, pitv[i]->second.fixtures, a_start, a_onlyGlobal);
+                _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, pitv[i]->second.fixtures, a_start, a_onlyGlobal);
 
                 std::map<std::string, FixtureGroupGraph>::iterator gitv[2] = { pitv[i]->second.groups.find(a_group), pitv[i]->second.groups.find("*")};
 
@@ -2044,7 +2044,7 @@ namespace fcf {
                   if (gitv[j] == pitv[i]->second.groups.end()) {
                     continue;
                   }
-                  _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, gitv[j]->second.fixtures, a_start, a_onlyGlobal);
+                  _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, gitv[j]->second.fixtures, a_start, a_onlyGlobal);
 
                   std::map<std::string, FixtureTestGraph>::iterator titv[2] = { gitv[j]->second.tests.find(a_test), gitv[j]->second.tests.find("*")};
 
@@ -2052,7 +2052,7 @@ namespace fcf {
                     if (titv[k] == gitv[j]->second.tests.end()) {
                       continue;
                     }
-                    _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, titv[k]->second.fixtures, a_start, a_onlyGlobal);
+                    _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, titv[k]->second.fixtures, a_start, a_onlyGlobal);
                   }
                 }
               }
@@ -2076,7 +2076,7 @@ namespace fcf {
             }
 
             void _callFixtures(std::set<Test>::const_iterator a_beginIt, std::set<Test>::const_iterator a_currentIt, std::set<Test>::const_iterator a_endIt,
-                               const std::string& a_part, const std::string& a_group, const std::string& a_test,
+                               const std::string& a_part, const std::string& a_group,
                                std::set<FixtureInfo>& a_fixtures, bool a_start, bool a_onlyGlobal) {
               for(const FixtureInfo& fi : a_fixtures) {
                 int enable = false;
@@ -2223,10 +2223,6 @@ namespace fcf {
                       }
 
                       if (set) {
-                        int levelMask = fixture.level == 3 ? 0x08 :
-                                        fixture.level == 2 ? 0x04 :
-                                        fixture.level == 1 ? 0x02 :
-                                                             0x01;
                         set->insert( { fixture, 0, 0 } );
                       }
 
@@ -3479,7 +3475,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void LogJunitFormatter::format(Logger& a_logger, Logger::MessageContext& a_messageContext) {
+      void LogJunitFormatter::format(Logger& /*a_logger*/, Logger::MessageContext& a_messageContext) {
         std::ostringstream output;
 
         switch (a_messageContext.category) {
@@ -3538,7 +3534,7 @@ namespace fcf {
                        << "skipped=\"" << totalTestSkipped << "\" "
                        << "time=\"" << state().duration().totalDurationStr(false) << "\""
                        << ">\n";
-                for(const std::pair< std::string, std::set<Test> >& currentSuite : suites ) {
+                for(const std::pair< const std::string, std::set<Test> >& currentSuite : suites ) {
                   const std::string& currentSuiteName = currentSuite.first;
                   const std::set<Test>& currentTests = currentSuite.second;
                   size_t currentTestCount = currentTests.size();
