@@ -1232,6 +1232,7 @@ namespace fcf {
         typedef std::map<std::string, SharedPtrAny> HandlerDataMap;
         class OutputTarget;
         typedef std::list<OutputTarget> OutputTargets;
+        typedef std::function<SharedPtrAny(Logger&, OutputTarget&)>  DataFactory;
 
         class FCF_TEST_API Writer;
 
@@ -1344,6 +1345,7 @@ namespace fcf {
           std::string  name;
           bool         multiLine;
           unsigned int messageCategory;
+          DataFactory  dataFactory;
           PrefixSettings()
             : name("")
             , multiLine(false)
@@ -1353,6 +1355,7 @@ namespace fcf {
 
         struct FormatSettings {
           std::string name;
+          DataFactory dataFactory;
         };
 
         struct Format {
@@ -3301,7 +3304,8 @@ namespace fcf {
                   const char* prefixName = prefix.options.name.empty() ? "default" : prefix.options.name.c_str();
                   HandlerDataMap::iterator dataIt = stream.prefixData.find(prefixName);
                   if (dataIt == stream.prefixData.end()) {
-                    dataIt = stream.prefixData.insert({prefixName, SharedPtrAny()}).first;
+                    SharedPtrAny data = prefix.options.dataFactory ? prefix.options.dataFactory(*this, stream) : SharedPtrAny();
+                    dataIt = stream.prefixData.insert({prefixName, data}).first;
                   }
                   lms.data = &dataIt->second;
 
@@ -3338,7 +3342,8 @@ namespace fcf {
             if (formatName == currentFormatName) {
               HandlerDataMap::iterator dataIt = stream.formatData.find(formatName);
               if (dataIt == stream.formatData.end()) {
-                dataIt = stream.formatData.insert({formatName, SharedPtrAny()}).first;
+                SharedPtrAny data = format.options.dataFactory ? format.options.dataFactory(*this, stream) : SharedPtrAny();
+                dataIt = stream.formatData.insert({formatName, data}).first;
               }
               lms.data = &dataIt->second;
               format.func(*this, lms);
