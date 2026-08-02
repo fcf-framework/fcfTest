@@ -3228,8 +3228,8 @@ namespace fcf {
               size_t lastPos = 0;
               std::string currentMessage = lms.message;
               std::string resultMessage;
-              size_t prefLength;
               while(lastPos < currentMessage.length()) {
+                size_t prefLength = 0;
                 size_t pos = prefix.multiLine ? currentMessage.find("\n", lastPos)
                                               : currentMessage.length()-1;
                 if (pos == std::string::npos) {
@@ -3253,11 +3253,12 @@ namespace fcf {
                     size_t lastPrefEnd = lms.line < prefposv.size() ? prefposv[lms.line] : 0;
                     lms.message = lms.message.substr(0, lastPrefEnd) +  prefixPart + lms.message.substr(lastPrefEnd, lms.message.length() - lastPrefEnd);
                   }
-                  prefLength = prefixPart.length();
-                } else {
+                  prefLength += prefixPart.length();
+                }
+                if (prefix.prefix.length()) {
                   size_t lastPrefEnd = lms.line < prefposv.size() ? prefposv[lms.line] : 0;
                   lms.message = lms.message.substr(0, lastPrefEnd) +  prefix.prefix + lms.message.substr(lastPrefEnd, lms.message.length() - lastPrefEnd);
-                  prefLength = prefix.prefix.length();
+                  prefLength += prefix.prefix.length();
                 }
 
                 if (prefposv.size() <= lms.line) {

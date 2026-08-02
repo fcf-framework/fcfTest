@@ -80,5 +80,28 @@ FCF_TEST_DECLARE("fcfTest", "Logger", "Log prefix", LogPrefixTester) {
     FCF_TEST(ss.str() == "[1][2]456\n[2]123\n", ss.str());
     ss.str(std::string());
   }
-  
+
+  // double prefix in one settings
+  {
+    std::stringstream ss;
+    fcf::NTest::Logger logger;
+
+    fcf::NTest::Logger::OutputTarget target;
+    target.name = "default";
+    target.stream = &ss;
+    logger.targets({target});
+
+    fcf::NTest::Logger::Prefix prefix;
+    prefix.name = "my";
+    prefix.prefix = "a1b";
+    prefix.handler = [](fcf::NTest::Logger&, fcf::NTest::Logger::MessageContext&){
+      return "c2d";
+    };
+    logger.prefixes({prefix});
+
+    logger.log() << "TEST" << std::endl;
+
+    FCF_TEST(ss.str() == "a1bc2dTEST\n", ss.str());
+  }
+
 }
