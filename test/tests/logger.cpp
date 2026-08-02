@@ -42,16 +42,18 @@ FCF_TEST_DECLARE("fcfTest", "Logger", "Log prefix", LogPrefixTester) {
     logger.clearPrefixes();
     ss.str(std::string());
 
-    fcf::NTest::Logger::PrefixSettings ps;
-    ps.name = "custom1";
-    ps.multiLine = true;
-    ps.messageCategory = fcf::NTest::LMC_ALL;
-    logger.appendPrefixStr("[1]", ps);
+    fcf::NTest::Logger::Prefix prefix;
+    prefix.name = "custom1";
+    prefix.prefix = "[1]";
+    prefix.multiLine = true;
+    prefix.category = fcf::NTest::LMC_ALL;
+    logger.appendPrefix(prefix);
 
-    ps.name = "custom2";
-    ps.multiLine = true;
-    ps.messageCategory = fcf::NTest::LMC_ALL;
-    logger.appendPrefixStr("[2]", ps);
+    prefix.name = "custom2";
+    prefix.prefix = "[2]";
+    prefix.multiLine = true;
+    prefix.category = fcf::NTest::LMC_ALL;
+    logger.appendPrefix(prefix);
 
     logger.log() << "456\n123\n";
     FCF_TEST(ss.str() == "[1][2]456\n[1][2]123\n", ss.str());
@@ -62,15 +64,17 @@ FCF_TEST_DECLARE("fcfTest", "Logger", "Log prefix", LogPrefixTester) {
     logger.clearPrefixes();
     ss.str(std::string());
 
-    ps.name = "custom1";
-    ps.multiLine = false;
-    ps.messageCategory = fcf::NTest::LMC_ALL;
-    logger.appendPrefixStr("[1]", ps);
+    prefix.name = "custom1";
+    prefix.prefix = "[1]";
+    prefix.multiLine = false;
+    prefix.category = fcf::NTest::LMC_ALL;
+    logger.appendPrefix(prefix);
 
-    ps.name = "custom2";
-    ps.multiLine = true;
-    ps.messageCategory = fcf::NTest::LMC_ALL;
-    logger.appendPrefixStr("[2]", ps);
+    prefix.name = "custom2";
+    prefix.prefix = "[2]";
+    prefix.multiLine = true;
+    prefix.category = fcf::NTest::LMC_ALL;
+    logger.appendPrefix(prefix);
 
     logger.log() << "456\n123\n";
     FCF_TEST(ss.str() == "[1][2]456\n[2]123\n", ss.str());

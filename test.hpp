@@ -1224,8 +1224,6 @@ namespace fcf {
         class MessageContext;
         typedef std::function<std::string(Logger&, MessageContext&)> PrefixFunction;
         typedef std::function<void(Logger&, MessageContext&)>        FormatFunction;
-        struct PrefixSettings;
-        struct FormatSettings;
         struct Format;
         typedef std::list<Format> Formats;
         struct Prefix;
@@ -1273,14 +1271,6 @@ namespace fcf {
 
         void clearPrefixes(bool a_defaultState = false);
 
-        void appendPrefixStr(const std::string& a_prefix);
-
-        void appendPrefixStr(const std::string& a_prefix, const PrefixSettings& a_options);
-
-        void appendPrefixFunc(const PrefixFunction& a_prefix);
-
-        void appendPrefixFunc(const PrefixFunction& a_prefix, const PrefixSettings& a_options);
-
         void appendPrefix(const Prefix& a_prefix);
 
         Formats formats();
@@ -1290,8 +1280,6 @@ namespace fcf {
         void clearFormats(bool a_defaultState = false);
 
         void appendFormat(const Format& a_format);
-
-        void appendFormatFunc(const FormatFunction& a_prefix, const FormatSettings& a_options);
 
         OutputTargets targets();
 
@@ -1343,32 +1331,19 @@ namespace fcf {
           }
         };
 
-        struct PrefixSettings {
-          std::string  name;
-          bool         multiLine;
-          unsigned int messageCategory;
-          DataFactory  dataFactory;
-          PrefixSettings()
-            : name("")
-            , multiLine(false)
-            , messageCategory(LMC_USER_GROUP)
-          {}
-        };
-
-        struct FormatSettings {
-          std::string name;
-          DataFactory dataFactory;
-        };
-
         struct Format {
-          FormatFunction handler;
-          FormatSettings settings;
+          std::string     name;
+          DataFactory     dataFactory;
+          FormatFunction  handler;
         };
 
         struct Prefix {
-          std::string            str;
+          std::string            name;
+          bool                   multiLine;
+          unsigned int           category;
+          DataFactory            dataFactory;
+          std::string            prefix;
           Logger::PrefixFunction handler;
-          Logger::PrefixSettings settings;
         };
 
         struct OutputTarget {
@@ -1568,7 +1543,7 @@ namespace fcf {
         std::string formats;
         for(auto format : logger().formats()) {
           formats += ", ";
-          formats += format.settings.name;
+          formats += format.name;
         }
         std::cout << "  --test-format FORMAT - Output format (default" + formats + ")." << std::endl;
 
@@ -1576,7 +1551,7 @@ namespace fcf {
                   << "                          Use the default format or specify the --test-format parameter" << std::endl;
         std::cout << "  --test-file-default FILE_PATH - Log file (format: default)." << std::endl;
         for(auto format : logger().formats()) {
-          std::cout << "  --test-file-" << format.settings.name << " FILE_PATH - Log file (format: " << format.settings.name << ")." << std::endl;
+          std::cout << "  --test-file-" << format.name << " FILE_PATH - Log file (format: " << format.name << ")." << std::endl;
         }
         std::cout << "  --test-help  - Help message" << std::endl;
         std::cout << std::endl;
@@ -1926,10 +1901,10 @@ namespace fcf {
                 }
               }
               for(auto format : logger().formats()) {
-                std::string param = "--test-file-" + format.settings.name;
+                std::string param = "--test-file-" + format.name;
                 if (args[i] == param) {
                   if ((i+1) < args.size()) {
-                    a_dstOptions.files.push_back({args[i+1], format.settings.name});
+                    a_dstOptions.files.push_back({args[i+1], format.name});
                     ++i;
                     break;
                   } else {
@@ -3077,57 +3052,26 @@ namespace fcf {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         _prefixes.clear();
         if (a_defaultState) {
-          PrefixSettings lpo;
-          lpo.name               = "test-offset";
-          lpo.multiLine          = true;
-          lpo.messageCategory    = LMC_TEST_GROUP;
-          appendPrefixStr("    ", lpo);
-          lpo.name               = "user-offset";
-          lpo.multiLine          = true;
-          lpo.messageCategory    = LMC_USER_GROUP;
-          appendPrefixStr("  > ", lpo);
+          Prefix prefix;
+          prefix.name        = "test-offset";
+          prefix.prefix      = "    ";
+          prefix.multiLine   = true;
+          prefix.category    = LMC_TEST_GROUP;
+          appendPrefix(prefix);
+
+          prefix.name        = "user-offset";
+          prefix.prefix      = "  > ";
+          prefix.multiLine   = true;
+          prefix.category    = LMC_USER_GROUP;
+          appendPrefix(prefix);
         }
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendPrefixStr(const std::string& a_prefix) {
-        Prefix prefix;
-        prefix.str = a_prefix;
-        appendPrefix(prefix);
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendPrefixStr(const std::string& a_prefix, const PrefixSettings& a_options) {
-        Prefix prefix;
-        prefix.str = a_prefix;
-        prefix.settings = a_options;
-        appendPrefix(prefix);
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendPrefixFunc(const PrefixFunction& a_prefix) {
-        Prefix prefix;
-        prefix.handler = a_prefix;
-        appendPrefix(prefix);
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendPrefixFunc(const PrefixFunction& a_prefix, const PrefixSettings& a_options) {
-        Prefix prefix;
-        prefix.handler = a_prefix;
-        prefix.settings = a_options;
-        appendPrefix(prefix);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
       void Logger::appendPrefix(const Prefix& a_prefix) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
-        auto existIt = std::find_if(_prefixes.begin(), _prefixes.end(), [&a_prefix](const Prefix& a_item) { return a_prefix.settings.name == a_item.settings.name; });
+        auto existIt = std::find_if(_prefixes.begin(), _prefixes.end(), [&a_prefix](const Prefix& a_item) { return a_prefix.name == a_item.name; });
         if (existIt != _prefixes.end()) {
           *existIt = a_prefix;
         } else {
@@ -3159,9 +3103,10 @@ namespace fcf {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         _formats.clear();
         if (a_defaultState){
-          FormatSettings lfo;
-          lfo.name          = "junit";
-          appendFormatFunc(LogJunitFormatter::format, lfo);
+          Format format;
+          format.name = "junit";
+          format.handler = LogJunitFormatter::format;
+          appendFormat(format);
         }
       }
     #endif
@@ -3169,21 +3114,12 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       void Logger::appendFormat(const Format& a_format) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
-        auto existIt = std::find_if(_formats.begin(), _formats.end(), [&a_format](const Format& a_item) { return a_format.settings.name == a_item.settings.name; });
+        auto existIt = std::find_if(_formats.begin(), _formats.end(), [&a_format](const Format& a_item) { return a_format.name == a_item.name; });
         if (existIt != _formats.end()) {
           *existIt = a_format;
         } else {
           _formats.push_back(a_format);
         }
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendFormatFunc(const FormatFunction& a_prefix, const FormatSettings& a_settings) {
-        Format format;
-        format.handler = a_prefix;
-        format.settings = a_settings;
-        appendFormat(format);
       }
     #endif
 
@@ -3278,8 +3214,8 @@ namespace fcf {
 
           if (lms.origin.length()) {
             for(Prefix prefix : _prefixes) {
-              const unsigned int hmask = 0xffff0000 & prefix.settings.messageCategory;
-              const unsigned int lmask = 0x0000ffff & prefix.settings.messageCategory;
+              const unsigned int hmask = 0xffff0000 & prefix.category;
+              const unsigned int lmask = 0x0000ffff & prefix.category;
               if (!(a_messageCategory & hmask) || ( lmask && lmask !=  (0x0000ffff & a_messageCategory)) ) {
                 continue;
               }
@@ -3294,8 +3230,8 @@ namespace fcf {
               std::string resultMessage;
               size_t prefLength;
               while(lastPos < currentMessage.length()) {
-                size_t pos = prefix.settings.multiLine ? currentMessage.find("\n", lastPos)
-                                                      : currentMessage.length()-1;
+                size_t pos = prefix.multiLine ? currentMessage.find("\n", lastPos)
+                                              : currentMessage.length()-1;
                 if (pos == std::string::npos) {
                   pos = currentMessage.length();
                 } else {
@@ -3304,10 +3240,10 @@ namespace fcf {
                 lms.message = currentMessage.substr(lastPos, pos - lastPos);
 
                 if (prefix.handler) {
-                  const char* prefixName = prefix.settings.name.empty() ? "default" : prefix.settings.name.c_str();
+                  const char* prefixName = prefix.name.empty() ? "default" : prefix.name.c_str();
                   HandlerDataMap::iterator dataIt = stream.prefixData.find(prefixName);
                   if (dataIt == stream.prefixData.end()) {
-                    SharedPtrAny data = prefix.settings.dataFactory ? prefix.settings.dataFactory(*this, stream) : SharedPtrAny();
+                    SharedPtrAny data = prefix.dataFactory ? prefix.dataFactory(*this, stream) : SharedPtrAny();
                     dataIt = stream.prefixData.insert({prefixName, data}).first;
                   }
                   lms.data = &dataIt->second;
@@ -3320,8 +3256,8 @@ namespace fcf {
                   prefLength = prefixPart.length();
                 } else {
                   size_t lastPrefEnd = lms.line < prefposv.size() ? prefposv[lms.line] : 0;
-                  lms.message = lms.message.substr(0, lastPrefEnd) +  prefix.str + lms.message.substr(lastPrefEnd, lms.message.length() - lastPrefEnd);
-                  prefLength = prefix.str.length();
+                  lms.message = lms.message.substr(0, lastPrefEnd) +  prefix.prefix + lms.message.substr(lastPrefEnd, lms.message.length() - lastPrefEnd);
+                  prefLength = prefix.prefix.length();
                 }
 
                 if (prefposv.size() <= lms.line) {
@@ -3341,11 +3277,11 @@ namespace fcf {
           lms.line = 0;
 
           for(Format format : _formats) {
-            const char* formatName = format.settings.name.empty() ? "default" : format.settings.name.c_str();
+            const char* formatName = format.name.empty() ? "default" : format.name.c_str();
             if (formatName == currentFormatName) {
               HandlerDataMap::iterator dataIt = stream.formatData.find(formatName);
               if (dataIt == stream.formatData.end()) {
-                SharedPtrAny data = format.settings.dataFactory ? format.settings.dataFactory(*this, stream) : SharedPtrAny();
+                SharedPtrAny data = format.dataFactory ? format.dataFactory(*this, stream) : SharedPtrAny();
                 dataIt = stream.formatData.insert({formatName, data}).first;
               }
               lms.data = &dataIt->second;

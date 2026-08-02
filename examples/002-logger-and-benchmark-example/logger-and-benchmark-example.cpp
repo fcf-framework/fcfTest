@@ -88,18 +88,20 @@ int main(int a_argc, char* a_argv[]) {
     fcf::NTest::logger().clearPrefixes(false);
 
     // Add a static string prefix to all log messages to indent them.
-    fcf::NTest::Logger::PrefixSettings pls;
-    pls.name = "custom-offset";
-    pls.multiLine = true;
-    pls.messageCategory = fcf::NTest::LMC_TEST_GROUP | fcf::NTest::LMC_USER_GROUP;
-    fcf::NTest::logger().appendPrefixStr("  ", pls);
+    fcf::NTest::Logger::Prefix prefix;
+    prefix.name = "custom-offset";
+    prefix.multiLine = true;
+    prefix.category = fcf::NTest::LMC_TEST_GROUP | fcf::NTest::LMC_USER_GROUP;
+    prefix.prefix = "  ";
+    fcf::NTest::logger().appendPrefix(prefix);
 
     // Register a functional prefix that dynamically generates a timestamp and log level string.
     // This function is called by the logger every time a message is written.
-    pls.name = "info";
-    pls.multiLine = false;
-    pls.messageCategory = fcf::NTest::LMC_ALL;
-    fcf::NTest::logger().appendPrefixFunc([](fcf::NTest::Logger& a_logger, fcf::NTest::Logger::MessageContext& a_status){
+    prefix.name = "info";
+    prefix.multiLine = false;
+    prefix.category = fcf::NTest::LMC_ALL;
+    prefix.prefix = "";
+    prefix.handler = [](fcf::NTest::Logger& a_logger, fcf::NTest::Logger::MessageContext& a_status){
         // Get current system time
         auto time = std::time(nullptr);
         // Format the output as: "YYYY-MM-DD HH:MM:SS [LEVEL]: "
@@ -109,7 +111,8 @@ int main(int a_argc, char* a_argv[]) {
                   << a_logger.toLevelStr(a_status.level) 
                   << "]: "
                 ).str();
-    }, pls);
+    };
+    fcf::NTest::logger().appendPrefix(prefix);
 
     // Run tests.
     // To see debug and trace messages, run with the flag
