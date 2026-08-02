@@ -3278,6 +3278,9 @@ namespace fcf {
           lms.line = 0;
 
           for(Format format : _formats) {
+            if (!format.handler){
+              continue;
+            }
             const char* formatName = format.name.empty() ? "default" : format.name.c_str();
             if (formatName == currentFormatName) {
               HandlerDataMap::iterator dataIt = stream.formatData.find(formatName);
