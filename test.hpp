@@ -1361,13 +1361,13 @@ namespace fcf {
         };
 
         struct Format {
-          FormatFunction func;
+          FormatFunction handler;
           FormatSettings settings;
         };
 
         struct Prefix {
           std::string            str;
-          Logger::PrefixFunction func;
+          Logger::PrefixFunction handler;
           Logger::PrefixSettings settings;
         };
 
@@ -3110,7 +3110,7 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       void Logger::appendPrefixFunc(const PrefixFunction& a_prefix) {
         Prefix prefix;
-        prefix.func = a_prefix;
+        prefix.handler = a_prefix;
         appendPrefix(prefix);
       }
     #endif
@@ -3118,7 +3118,7 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       void Logger::appendPrefixFunc(const PrefixFunction& a_prefix, const PrefixSettings& a_options) {
         Prefix prefix;
-        prefix.func = a_prefix;
+        prefix.handler = a_prefix;
         prefix.settings = a_options;
         appendPrefix(prefix);
       }
@@ -3181,7 +3181,7 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       void Logger::appendFormatFunc(const FormatFunction& a_prefix, const FormatSettings& a_settings) {
         Format format;
-        format.func = a_prefix;
+        format.handler = a_prefix;
         format.settings = a_settings;
         appendFormat(format);
       }
@@ -3303,7 +3303,7 @@ namespace fcf {
                 }
                 lms.message = currentMessage.substr(lastPos, pos - lastPos);
 
-                if (prefix.func) {
+                if (prefix.handler) {
                   const char* prefixName = prefix.settings.name.empty() ? "default" : prefix.settings.name.c_str();
                   HandlerDataMap::iterator dataIt = stream.prefixData.find(prefixName);
                   if (dataIt == stream.prefixData.end()) {
@@ -3312,7 +3312,7 @@ namespace fcf {
                   }
                   lms.data = &dataIt->second;
 
-                  std::string prefixPart = prefix.func(*this, lms);
+                  std::string prefixPart = prefix.handler(*this, lms);
                   if (prefixPart.length()) {
                     size_t lastPrefEnd = lms.line < prefposv.size() ? prefposv[lms.line] : 0;
                     lms.message = lms.message.substr(0, lastPrefEnd) +  prefixPart + lms.message.substr(lastPrefEnd, lms.message.length() - lastPrefEnd);
@@ -3349,7 +3349,7 @@ namespace fcf {
                 dataIt = stream.formatData.insert({formatName, data}).first;
               }
               lms.data = &dataIt->second;
-              format.func(*this, lms);
+              format.handler(*this, lms);
             }
           }
           if (lms.message.length() && !lms.system) {
