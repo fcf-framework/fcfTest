@@ -199,6 +199,51 @@ if (!FCF_TEST_THROW_CHECK(safeFunction(), std::exception)) {
 }
 ```
 
+### `FCF_TEST_FIXTURE_DECLARE_START(am_part, am_group, am_test, am_level, )`
+### `FCF_TEST_FIXTURE_DECLARE_START(am_part, am_group, am_test, am_level, TYPE am_fixtureClassName)`
+### `FCF_TEST_FIXTURE_DECLARE_END(am_part, am_group, am_test, am_level, )`
+### `FCF_TEST_FIXTURE_DECLARE_END(am_part, am_group, am_test, am_level, TYPE am_fixtureClassName)`
+
+Macros to define a test fixture that wraps test execution. Fixtures allow you to perform setup and teardown operations at different levels of the test hierarchy.
+
+- **Behavior**:
+  - `START` macro: Executes the provided code block **before** the target tests (or groups/parts) are run.
+  - `END` macro: Executes the provided code block **after** the target tests (or groups/parts) have finished.
+- **Parameters**:
+  - `am_part`: The name of the part.
+  - `am_group`: The name of the group.
+  - `am_test`: The name of the specific test (or `*` to apply to all tests in the group/part).
+  - `am_level`: The scope of the fixture. Use one of the following:
+    - `FL_GLOBAL`: Runs once at the very beginning and once at the very end of the entire test suite.
+    - `FL_PART`: Runs before and after all tests within a specific part.
+    - `FL_GROUP`: Runs before and after all tests within a specific group.
+    - `FL_TEST`: Runs before and after a specific individual test.
+  - `am_fixtureClassName`: The name of the tester class. Can be used to specify a 'friend' test.
+
+**Example:**
+```c++
+// A global fixture that runs once for the whole suite
+FCF_TEST_FIXTURE_DECLARE_START("MyLib", "*", "*", fcf::NTest::FL_GLOBAL) {
+    // Setup: Initialize global resources
+    fcf::NTest::log() << "Global Setup" << std::endl;
+}
+
+FCF_TEST_FIXTURE_DECLARE_END("MyLib", "*", "*", fcf::NTest::FL_GLOBAL) {
+    // Teardown: Clean up global resources
+    fcf::NTest::log() << "Global Teardown" << std::endl;
+}
+
+// A group-level fixture
+FCF_TEST_FIXTURE_DECLARE_START("MyLib", "Database", "*", fcf::NTest::FL_GROUP) {
+    // Setup: Connect to database before any DB tests
+    fcf::NTest::log() << "Connecting to DB..." << std::endl;
+}
+
+FCF_TEST_FIXTURE_DECLARE_END("MyLib", "Database", "*", fcf::NTest::FL_GROUP) {
+    // Teardown: Disconnect from database
+    fcf::NTest::log() << "Disconnecting from DB..." << std::endl;
+}
+```
 
 ## Testing Organization Macros
 
