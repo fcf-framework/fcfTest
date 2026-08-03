@@ -1349,6 +1349,21 @@ namespace fcf {
             : multiLine(false)
             , category(LMC_ALL)
           { }
+
+          Prefix(const std::string& a_name,
+                 bool a_multiLine,
+                 unsigned int a_category,
+                 const DataFactory& a_dataFactory,
+                 std::string a_prefix,
+                 Logger::PrefixFunction a_handler)
+            : name(a_name)
+            , multiLine(a_multiLine)
+            , category(a_category)
+            , dataFactory(a_dataFactory)
+            , prefix(a_prefix)
+            , handler(a_handler)
+          { }
+
         };
 
         struct OutputTarget {
@@ -1359,8 +1374,21 @@ namespace fcf {
           HandlerDataMap  formatData;
 
           OutputTarget()
-            : stream(0)
+            : stream(nullptr)
           {}
+
+          OutputTarget(const std::string& a_name,
+                       std::ostream* a_stream,
+                       const std::string& a_format,
+                       const HandlerDataMap&  a_prefixData,
+                       const HandlerDataMap&  a_formatData)
+            : name(a_name)
+            , stream(a_stream)
+            , format(a_format)
+            , prefixData(a_prefixData)
+            , formatData(a_formatData)
+          {
+          }
         };
 
       protected:
