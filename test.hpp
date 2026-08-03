@@ -1346,7 +1346,8 @@ namespace fcf {
           Logger::PrefixFunction handler;
 
           Prefix()
-            : category(LMC_ALL)
+            : multiLine(false)
+            , category(LMC_ALL)
           { }
         };
 
