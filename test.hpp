@@ -1344,6 +1344,10 @@ namespace fcf {
           DataFactory            dataFactory;
           std::string            prefix;
           Logger::PrefixFunction handler;
+
+          Prefix()
+            : category(LMC_ALL)
+          { }
         };
 
         struct OutputTarget {
