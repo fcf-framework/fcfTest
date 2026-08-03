@@ -1357,6 +1357,10 @@ namespace fcf {
           std::string     format;
           HandlerDataMap  prefixData;
           HandlerDataMap  formatData;
+
+          OutputTarget()
+            : stream(0)
+          {}
         };
 
       protected:
