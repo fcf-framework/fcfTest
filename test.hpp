@@ -2418,7 +2418,11 @@ namespace fcf {
           std::stringstream ss;
           std::string name = a_begName != a_endName ? *a_begName : "arg";
           name = name.length() && (unsigned char)name[0] <= (unsigned char)' ' ? name.substr(1, std::string::npos) : name;
-          ss << "    " << name << ": " << a_arg << std::endl;
+          if (name.length() && name[0]=='\"') {
+            ss << "    " << name << std::endl;
+          } else {
+            ss << "    " << name << ": " << a_arg << std::endl;
+          }
           if (a_begName != a_endName) {
             ++a_begName;
           }
