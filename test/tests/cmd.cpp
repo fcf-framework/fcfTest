@@ -1,6 +1,6 @@
 #include <fcfTest/test.hpp>
 
-FCF_TEST_DECLARE("fcfTest", "cmd", "parser"){
+FCF_TEST_DEFINE("fcfTest", "cmd", "parser"){
   {
     const char* argv[] = {"--test=12"};
     int   argc = sizeof(argv) / sizeof(argv[0]);

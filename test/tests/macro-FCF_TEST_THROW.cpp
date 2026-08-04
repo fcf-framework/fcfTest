@@ -15,7 +15,7 @@ namespace {
   }
 }
 
-FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST_THROW") {
+FCF_TEST_DEFINE("fcfTest", "macro", "FCF_TEST_THROW") {
   {
     fcf::NTest::Options options;
     options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun"}, {"FCF_TEST_THROW"}, {"no except"}} );
@@ -150,37 +150,37 @@ FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST_THROW") {
   }
 }
 
-FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "no except") {
+FCF_TEST_DEFINE("subrun", "FCF_TEST_THROW", "no except") {
   fcf::NTest::log() << "1" << std::endl;
   FCF_TEST_THROW(callNoThrow(), std::exception);
   fcf::NTest::log() << "2" << std::endl;
 }
 
-FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "no except (parenthesis)") {
+FCF_TEST_DEFINE("subrun", "FCF_TEST_THROW", "no except (parenthesis)") {
   fcf::NTest::log() << "1" << std::endl;
   FCF_TEST_THROW((callNoThrowWithParams<int, int>(std::map<int,int>().size(), 1)), std::exception, (std::map<int,int>().size()), 1);
   fcf::NTest::log() << "2" << std::endl;
 }
 
-FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "except") {
+FCF_TEST_DEFINE("subrun", "FCF_TEST_THROW", "except") {
   fcf::NTest::log() << "1" << std::endl;
   FCF_TEST_THROW(callThrow(), std::exception);
   fcf::NTest::log() << "2" << std::endl;
 }
 
-FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "no except a2") {
+FCF_TEST_DEFINE("subrun", "FCF_TEST_THROW", "no except a2") {
   int a1 = 1;
   fcf::NTest::log() << "1" << std::endl;
   FCF_TEST_THROW(callNoThrowWithParams(a1), std::exception, a1);
   fcf::NTest::log() << "2" << std::endl;
 }
 
-FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "except std::out_of_range != std::runtime_error") {
+FCF_TEST_DEFINE("subrun", "FCF_TEST_THROW", "except std::out_of_range != std::runtime_error") {
   FCF_TEST_THROW(callThrow(), std::out_of_range);
   fcf::NTest::log() << "end" << std::endl;
 }
 
-FCF_TEST_DECLARE("subrun", "FCF_TEST_THROW", "except std::out_of_range == std::out_of_range") {
+FCF_TEST_DEFINE("subrun", "FCF_TEST_THROW", "except std::out_of_range == std::out_of_range") {
   FCF_TEST_THROW(callThrowOutOfRange(), std::out_of_range);
   fcf::NTest::log() << "end" << std::endl;
 }

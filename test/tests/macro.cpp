@@ -6,7 +6,7 @@
 
 
 
-FCF_TEST_DECLARE("fcfTest", "macro", "FCF_TEST"){
+FCF_TEST_DEFINE("fcfTest", "macro", "FCF_TEST"){
   {
     std::string macro   = STR( Z__FCF_TEST__APPEND_TO_LIST(list, ));
     std::string expeced = "";

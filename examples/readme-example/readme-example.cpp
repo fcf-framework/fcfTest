@@ -3,7 +3,7 @@
 #include <vector>
 
 // Declare a test case
-FCF_TEST_DECLARE("MyLibraryPartName", "ExamplesGroupName", "VectorSizeTestName"){
+FCF_TEST_DEFINE("MyLibraryPartName", "ExamplesGroupName", "VectorSizeTestName"){
   std::vector<std::string> vec;
   vec.push_back("test");
 

@@ -3,7 +3,7 @@
 
 
 
-FCF_TEST_DECLARE("fcfTest", "order", "macro") {
+FCF_TEST_DEFINE("fcfTest", "order", "macro") {
   {
     fcf::NTest::Options options;
     options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun-order 1"}, {}, {}} );
@@ -42,25 +42,25 @@ FCF_TEST_DECLARE("fcfTest", "order", "macro") {
 
 }
 
-FCF_TEST_DECLARE("subrun-order 1", "subrun-order group 1", "Mathematical functions subrun-order"){
+FCF_TEST_DEFINE("subrun-order 1", "subrun-order group 1", "Mathematical functions subrun-order"){
 }
 
-FCF_TEST_DECLARE("subrun-order 1", "subrun-order group 1", "Algorithm (sort) subrun-order"){
+FCF_TEST_DEFINE("subrun-order 1", "subrun-order group 1", "Algorithm (sort) subrun-order"){
 }
 
-FCF_TEST_DECLARE("subrun-order 1", "subrun-order group 1", "Algorithm (analysis) subrun-order"){
+FCF_TEST_DEFINE("subrun-order 1", "subrun-order group 1", "Algorithm (analysis) subrun-order"){
 }
 
-FCF_TEST_DECLARE("subrun-order 1", "subrun-order group 2", "subrun-order group 1 test"){
+FCF_TEST_DEFINE("subrun-order 1", "subrun-order group 2", "subrun-order group 1 test"){
 }
 
-FCF_TEST_DECLARE("subrun-order 1", "subrun-order group 3", "subrun-order group 1 test"){
+FCF_TEST_DEFINE("subrun-order 1", "subrun-order group 3", "subrun-order group 1 test"){
 }
 
-FCF_TEST_DECLARE("subrun-order 2", "subrun-order group 1", "subrun-order test"){
+FCF_TEST_DEFINE("subrun-order 2", "subrun-order group 1", "subrun-order test"){
 }
 
-FCF_TEST_DECLARE("subrun-order 3", "subrun-order group 1", "subrun-order test"){
+FCF_TEST_DEFINE("subrun-order 3", "subrun-order group 1", "subrun-order test"){
 }
 
 

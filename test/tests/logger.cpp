@@ -2,7 +2,7 @@
 #include <fcfTest/test.hpp>
 #include "helpers.hpp"
 
-FCF_TEST_DECLARE("fcfTest", "Logger", "Log prefix", LogPrefixTester) {
+FCF_TEST_DEFINE("fcfTest", "Logger", "Log prefix", LogPrefixTester) {
   {
     fcf::NTest::Logger logger;
     std::stringstream ss;

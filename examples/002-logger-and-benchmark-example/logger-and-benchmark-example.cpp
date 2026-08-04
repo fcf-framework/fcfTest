@@ -11,7 +11,7 @@
 #include <algorithm>
 
 // Test demonstrating logger functionality
-FCF_TEST_DECLARE("Logging", "Levels", "LogLevelsDemo") {
+FCF_TEST_DEFINE("Logging", "Levels", "LogLevelsDemo") {
     // Demonstration of all logging levels.
     // By default, the logging level is LL_LOG.
     // Messages with a level lower than the current one (e.g., dbg, trc)
@@ -31,7 +31,7 @@ FCF_TEST_DECLARE("Logging", "Levels", "LogLevelsDemo") {
 }
 
 // Test demonstrating benchmarking
-FCF_TEST_DECLARE("Benchmark", "Sorting", "VectorSortBenchmark") {
+FCF_TEST_DEFINE("Benchmark", "Sorting", "VectorSortBenchmark") {
     // Create a Duration object for 1000 iterations
     fcf::NTest::Duration bench(1000);
 
@@ -59,7 +59,7 @@ FCF_TEST_DECLARE("Benchmark", "Sorting", "VectorSortBenchmark") {
 }
 
 // Test demonstrating manual control of Duration with a for loop
-FCF_TEST_DECLARE("Benchmark", "Manual", "ManualLoopBenchmark") {
+FCF_TEST_DEFINE("Benchmark", "Manual", "ManualLoopBenchmark") {
     const unsigned long long iterations = 5000;
     fcf::NTest::Duration bench(iterations);
 

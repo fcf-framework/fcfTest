@@ -8,7 +8,7 @@
 #include <string>
 
 // Declare a test: Part -> Group -> Test Name
-FCF_TEST_DECLARE("Core", "Containers", "VectorPushBackCheck") {
+FCF_TEST_DEFINE("Core", "Containers", "VectorPushBackCheck") {
     std::vector<std::string> items;
     items.push_back("apple");
     items.push_back("banana");
@@ -17,7 +17,7 @@ FCF_TEST_DECLARE("Core", "Containers", "VectorPushBackCheck") {
     FCF_TEST(items.size() == 2, items.size());
 }
 
-FCF_TEST_DECLARE("Core", "Math", "SimpleAddition") {
+FCF_TEST_DEFINE("Core", "Math", "SimpleAddition") {
     int a = 10;
     int b = 20;
     int sum = a + b;

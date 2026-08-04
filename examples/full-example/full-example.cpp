@@ -15,7 +15,7 @@
 
 
 // --- Test Declarations ---
-FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Addition" /*TEST NAME*/) {
+FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Addition" /*TEST NAME*/) {
   // We create an object to measure execution duration
   // over 10,000 iterations.
   fcf::NTest::Duration bench(10000);
@@ -37,7 +37,7 @@ FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Additi
   fcf::NTest::inf() << "Avg: " << bench.duration().count() << " ns" << std::endl;
 }
 
-FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtraction" /*TEST NAME*/) {
+FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtraction" /*TEST NAME*/) {
   // We create an object to measure execution duration
   // over 10,000 iterations.
   fcf::NTest::Duration bench(10000);
@@ -56,7 +56,7 @@ FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtra
   fcf::NTest::inf() << "Avg: " << bench.duration().count() << " ns" << std::endl;
 }
 
-FCF_TEST_DECLARE("Vector" /*PART NAME*/, "SizeCheck" /*GROUP NAME*/, "EmptyVector" /*TEST NAME*/) {
+FCF_TEST_DEFINE("Vector" /*PART NAME*/, "SizeCheck" /*GROUP NAME*/, "EmptyVector" /*TEST NAME*/) {
     std::vector<int> v;
     FCF_TEST(v.size() == 0, v.size());
 }

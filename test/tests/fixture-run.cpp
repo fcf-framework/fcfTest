@@ -4,7 +4,7 @@
 
 
 
-FCF_TEST_DECLARE("fcfTest", "fixture-run", "fixture") {
+FCF_TEST_DEFINE("fcfTest", "fixture-run", "fixture") {
   {
     fcf::NTest::Options options;
     options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun-fixture"}, {"*"}, {"*"}} );
@@ -33,21 +33,21 @@ FCF_TEST_DECLARE("fcfTest", "fixture-run", "fixture") {
   }
 }
 
-FCF_TEST_FIXTURE_DECLARE_START("subrun-fixture", "fixture", "*", fcf::NTest::FL_GROUP) {
+FCF_TEST_BEFORE_DEFINE("subrun-fixture", "fixture", "*", fcf::NTest::FL_GROUP) {
   fcf::NTest::log() << "fixture begin" << std::endl;
 }
 
-FCF_TEST_FIXTURE_DECLARE_END("subrun-fixture", "fixture", "*", fcf::NTest::FL_GROUP) {
+FCF_TEST_AFTER_DEFINE("subrun-fixture", "fixture", "*", fcf::NTest::FL_GROUP) {
   fcf::NTest::log() << "fixture end" << std::endl;
 }
 
-FCF_TEST_DECLARE("subrun-fixture", "fixture", "fixture") {
+FCF_TEST_DEFINE("subrun-fixture", "fixture", "fixture") {
 }
 
-FCF_TEST_DECLARE("subrun-fixture", "fixture", "fixture-001") {
+FCF_TEST_DEFINE("subrun-fixture", "fixture", "fixture-001") {
   throw std::runtime_error("error");
 }
 
-FCF_TEST_DECLARE("subrun-fixture", "fixture", "fixture-002") {
+FCF_TEST_DEFINE("subrun-fixture", "fixture", "fixture-002") {
 }
 

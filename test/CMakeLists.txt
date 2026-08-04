@@ -18,7 +18,7 @@ add_executable(fcf-test-test
                   tests/macro.cpp
                   tests/macro-FCF_TEST_THROW.cpp
                   tests/macro-FCF_TEST_THROW_CHECK.cpp
-                  tests/macro-FCF_TEST_DECLARE.cpp
+                  tests/macro-FCF_TEST_DEFINE.cpp
                   tests/order.cpp
                   tests/storage.cpp
               )

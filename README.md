@@ -36,7 +36,7 @@ If something doesn't work for you, please report it quickly in Issues and we'll 
 #include <vector>
 
 // Declare a test case
-FCF_TEST_DECLARE("MyLibraryPartName", "ExamplesGroupName", "VectorSizeTestName"){
+FCF_TEST_DEFINE("MyLibraryPartName", "ExamplesGroupName", "VectorSizeTestName"){
   std::vector<std::string> vec;
   vec.push_back("test");
 
@@ -113,7 +113,7 @@ A non-throwing version of the assertion macro.
 
 **Example:**
 ```c++
-FCF_TEST_DECLARE("MyLib", "Base", "Simple test"){
+FCF_TEST_DEFINE("MyLib", "Base", "Simple test"){
   fcf::NTest::log() << "Test started" << std::endl;
   int v1 = 1;
   int v2 = 2;
@@ -199,10 +199,10 @@ if (!FCF_TEST_THROW_CHECK(safeFunction(), std::exception)) {
 }
 ```
 
-### `FCF_TEST_FIXTURE_DECLARE_START(am_part, am_group, am_test, am_level, )`
-### `FCF_TEST_FIXTURE_DECLARE_START(am_part, am_group, am_test, am_level, TYPE am_fixtureClassName)`
-### `FCF_TEST_FIXTURE_DECLARE_END(am_part, am_group, am_test, am_level, )`
-### `FCF_TEST_FIXTURE_DECLARE_END(am_part, am_group, am_test, am_level, TYPE am_fixtureClassName)`
+### `FCF_TEST_BEFORE_DEFINE(am_part, am_group, am_test, am_level, )`
+### `FCF_TEST_BEFORE_DEFINE(am_part, am_group, am_test, am_level, TYPE am_fixtureClassName)`
+### `FCF_TEST_AFTER_DEFINE(am_part, am_group, am_test, am_level, )`
+### `FCF_TEST_AFTER_DEFINE(am_part, am_group, am_test, am_level, TYPE am_fixtureClassName)`
 
 Macros to define a test fixture that wraps test execution. Fixtures allow you to perform setup and teardown operations at different levels of the test hierarchy.
 
@@ -223,23 +223,23 @@ Macros to define a test fixture that wraps test execution. Fixtures allow you to
 **Example:**
 ```c++
 // A global fixture that runs once for the whole suite
-FCF_TEST_FIXTURE_DECLARE_START("MyLib", "*", "*", fcf::NTest::FL_GLOBAL) {
+FCF_TEST_BEFORE_DEFINE("MyLib", "*", "*", fcf::NTest::FL_GLOBAL) {
     // Setup: Initialize global resources
     fcf::NTest::log() << "Global Setup" << std::endl;
 }
 
-FCF_TEST_FIXTURE_DECLARE_END("MyLib", "*", "*", fcf::NTest::FL_GLOBAL) {
+FCF_TEST_AFTER_DEFINE("MyLib", "*", "*", fcf::NTest::FL_GLOBAL) {
     // Teardown: Clean up global resources
     fcf::NTest::log() << "Global Teardown" << std::endl;
 }
 
 // A group-level fixture
-FCF_TEST_FIXTURE_DECLARE_START("MyLib", "Database", "*", fcf::NTest::FL_GROUP) {
+FCF_TEST_BEFORE_DEFINE("MyLib", "Database", "*", fcf::NTest::FL_GROUP) {
     // Setup: Connect to database before any DB tests
     fcf::NTest::log() << "Connecting to DB..." << std::endl;
 }
 
-FCF_TEST_FIXTURE_DECLARE_END("MyLib", "Database", "*", fcf::NTest::FL_GROUP) {
+FCF_TEST_AFTER_DEFINE("MyLib", "Database", "*", fcf::NTest::FL_GROUP) {
     // Teardown: Disconnect from database
     fcf::NTest::log() << "Disconnecting from DB..." << std::endl;
 }
@@ -249,7 +249,7 @@ FCF_TEST_FIXTURE_DECLARE_END("MyLib", "Database", "*", fcf::NTest::FL_GROUP) {
 
 Tests are organized hierarchically into Parts, Groups, and Tests. This allows for filtering execution based on these levels.
 
-### `FCF_TEST_DECLARE(const char* am_part, const char* am_group, const char* am_test)`
+### `FCF_TEST_DEFINE(const char* am_part, const char* am_group, const char* am_test)`
 
 Declares a new test case.
 - **Parameters**:
@@ -260,10 +260,10 @@ Declares a new test case.
 
 **Example:**
 ```c++
-FCF_TEST_DECLARE("Network", "HTTP", "GetRequestTest") {
+FCF_TEST_DEFINE("Network", "HTTP", "GetRequestTest") {
     // Test implementation
 }
-FCF_TEST_DECLARE("Network", "HTTP", "PostRequestTest") {
+FCF_TEST_DEFINE("Network", "HTTP", "PostRequestTest") {
     // Test implementation
 }
 ```
@@ -594,7 +594,7 @@ int main(int a_argc, char* a_argv[]) {
 
 
 // --- Test Declarations ---
-FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Addition" /*TEST NAME*/) {
+FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Addition" /*TEST NAME*/) {
   // We create an object to measure execution duration
   // over 10,000 iterations.
   fcf::NTest::Duration bench(10000);
@@ -616,7 +616,7 @@ FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Additi
   fcf::NTest::inf() << "Avg: " << bench.duration().count() << " ns" << std::endl;
 }
 
-FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtraction" /*TEST NAME*/) {
+FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtraction" /*TEST NAME*/) {
   // We create an object to measure execution duration
   // over 10,000 iterations.
   fcf::NTest::Duration bench(10000);
@@ -635,7 +635,7 @@ FCF_TEST_DECLARE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtra
   fcf::NTest::inf() << "Avg: " << bench.duration().count() << " ns" << std::endl;
 }
 
-FCF_TEST_DECLARE("Vector" /*PART NAME*/, "SizeCheck" /*GROUP NAME*/, "EmptyVector" /*TEST NAME*/) {
+FCF_TEST_DEFINE("Vector" /*PART NAME*/, "SizeCheck" /*GROUP NAME*/, "EmptyVector" /*TEST NAME*/) {
     std::vector<int> v;
     FCF_TEST(v.size() == 0, v.size());
 }

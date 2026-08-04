@@ -150,8 +150,8 @@
 
 
 /**
- * @brief FCF_TEST_DECLARE(const char* am_part, const char* am_group, const char* am_test)
- * @brief FCF_TEST_DECLARE(const char* am_part, const char* am_group, const char* am_test, TYPE am_testerClassName)
+ * @brief FCF_TEST_DEFINE(const char* am_part, const char* am_group, const char* am_test)
+ * @brief FCF_TEST_DEFINE(const char* am_part, const char* am_group, const char* am_test, TYPE am_testerClassName)
  * Macro to declare a new test case.
  * Registers the test function with the storage system and assigns it to a group and part.
  *
@@ -160,15 +160,15 @@
  * @param am_test The name or identifier of the test function.
  * @param am_testerClassName The name of the tester class. Can be used to specify a 'friend' test.
  */
-#ifndef FCF_TEST_DECLARE
-  #define Z_FCF_TEST_DECLARE__EXPAND(am_arg) am_arg
-  #define Z_FCF_TEST_DECLARE__IMPL__SELECT_LIST() , AUTO
-  #define Z_FCF_TEST_DECLARE__IMPL__SELECT_ARG(am_a1, am_a2, ...) am_a2
-  #define Z_FCF_TEST_DECLARE__IMPL__SELECT(...) \
-                      Z_FCF_TEST_DECLARE__EXPAND(Z_FCF_TEST_DECLARE__IMPL__SELECT_ARG(__VA_ARGS__))
-  #define Z_FCF_TEST_DECLARE__IMPL__MACRO_NAME(...)\
-                      Z_FCF_TEST_DECLARE__EXPAND(Z__FCF_TEST__CONCAT2(Z_FCF_TEST_DECLARE__IMPL__DEFINITION, Z_FCF_TEST_DECLARE__IMPL__SELECT(Z_FCF_TEST_DECLARE__IMPL__SELECT_LIST __VA_ARGS__ () , )))
-  #define Z_FCF_TEST_DECLARE__IMPL__DEFINITION(am_part,  am_group, am_test, am_autoTesterClassName, am_testerClassName)\
+#ifndef FCF_TEST_DEFINE
+  #define Z_FCF_TEST_DEFINE__EXPAND(am_arg) am_arg
+  #define Z_FCF_TEST_DEFINE__IMPL__SELECT_LIST() , AUTO
+  #define Z_FCF_TEST_DEFINE__IMPL__SELECT_ARG(am_a1, am_a2, ...) am_a2
+  #define Z_FCF_TEST_DEFINE__IMPL__SELECT(...) \
+                      Z_FCF_TEST_DEFINE__EXPAND(Z_FCF_TEST_DEFINE__IMPL__SELECT_ARG(__VA_ARGS__))
+  #define Z_FCF_TEST_DEFINE__IMPL__MACRO_NAME(...)\
+                      Z_FCF_TEST_DEFINE__EXPAND(Z__FCF_TEST__CONCAT2(Z_FCF_TEST_DEFINE__IMPL__DEFINITION, Z_FCF_TEST_DEFINE__IMPL__SELECT(Z_FCF_TEST_DEFINE__IMPL__SELECT_LIST __VA_ARGS__ () , )))
+  #define Z_FCF_TEST_DEFINE__IMPL__DEFINITION(am_part,  am_group, am_test, am_autoTesterClassName, am_testerClassName)\
     class  am_testerClassName { \
       public:\
       am_testerClassName() {\
@@ -181,7 +181,7 @@
     }\
     void am_testerClassName::test()
 
-  #define Z_FCF_TEST_DECLARE__IMPL__DEFINITIONAUTO(am_part,  am_group, am_test, am_autoTesterClassName, ...) \
+  #define Z_FCF_TEST_DEFINE__IMPL__DEFINITIONAUTO(am_part,  am_group, am_test, am_autoTesterClassName, ...) \
     namespace {\
       class  am_autoTesterClassName { \
         public:\
@@ -195,24 +195,29 @@
     void am_autoTesterClassName::test()
 
 
-  #define Z_FCF_TEST_DECLARE__IMPL(am_macro, am_part,  am_group, am_test, am_autoTesterClassName, ...)\
+  #define Z_FCF_TEST_DEFINE__IMPL(am_macro, am_part,  am_group, am_test, am_autoTesterClassName, ...)\
     am_macro(am_part,  am_group, am_test, am_autoTesterClassName, __VA_ARGS__)
 
+  #define FCF_TEST_DEFINE(am_part, am_group, am_test, ...)\
+    Z_FCF_TEST_DEFINE__IMPL(Z_FCF_TEST_DEFINE__IMPL__MACRO_NAME(__VA_ARGS__), am_part,  am_group, am_test, Z__FCF_TEST__CONCAT2(_fcf_test_,__COUNTER__), __VA_ARGS__)
+
+  // This macro is retained for compatibility with older versions.
+  // This is the old name of FCF_TEST_DEFINE.
   #define FCF_TEST_DECLARE(am_part, am_group, am_test, ...)\
-    Z_FCF_TEST_DECLARE__IMPL(Z_FCF_TEST_DECLARE__IMPL__MACRO_NAME(__VA_ARGS__), am_part,  am_group, am_test, Z__FCF_TEST__CONCAT2(_fcf_test_,__COUNTER__), __VA_ARGS__)
+    FCF_TEST_DEFINE(am_part, am_group, am_test, __VA_ARGS__)
 #endif
 
 
 
-#ifndef FCF_TEST_FIXTURE_DECLARE_START
-  #define Z_FCF_TEST_FIXTURE_DECLARE__EXPAND(am_arg) am_arg
-  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT_LIST() , AUTO
-  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT_ARG(am_a1, am_a2, ...) am_a2
-  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT(...) \
-                      Z_FCF_TEST_FIXTURE_DECLARE__EXPAND(Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT_ARG(__VA_ARGS__))
-  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__MACRO_NAME(...)\
-                      Z_FCF_TEST_FIXTURE_DECLARE__EXPAND(Z__FCF_TEST__CONCAT2(Z_FCF_TEST_FIXTURE_DECLARE__IMPL__DEFINITION, Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT(Z_FCF_TEST_FIXTURE_DECLARE__IMPL__SELECT_LIST __VA_ARGS__ () , )))
-  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__DEFINITION(am_part,  am_group, am_test, am_start, am_level, am_autoFixtureClassName, am_fixtureClassName)\
+#ifndef FCF_TEST_BEFORE_DEFINE
+  #define Z_FCF_TEST_BEFORE_DEFINE__EXPAND(am_arg) am_arg
+  #define Z_FCF_TEST_BEFORE_DEFINE__IMPL__SELECT_LIST() , AUTO
+  #define Z_FCF_TEST_BEFORE_DEFINE__IMPL__SELECT_ARG(am_a1, am_a2, ...) am_a2
+  #define Z_FCF_TEST_BEFORE_DEFINE__IMPL__SELECT(...) \
+                      Z_FCF_TEST_BEFORE_DEFINE__EXPAND(Z_FCF_TEST_BEFORE_DEFINE__IMPL__SELECT_ARG(__VA_ARGS__))
+  #define Z_FCF_TEST_BEFORE_DEFINE__IMPL__MACRO_NAME(...)\
+                      Z_FCF_TEST_BEFORE_DEFINE__EXPAND(Z__FCF_TEST__CONCAT2(Z_FCF_TEST_BEFORE_DEFINE__IMPL__DEFINITION, Z_FCF_TEST_BEFORE_DEFINE__IMPL__SELECT(Z_FCF_TEST_BEFORE_DEFINE__IMPL__SELECT_LIST __VA_ARGS__ () , )))
+  #define Z_FCF_TEST_BEFORE_DEFINE__IMPL__DEFINITION(am_part,  am_group, am_test, am_start, am_level, am_autoFixtureClassName, am_fixtureClassName)\
     class  am_fixtureClassName { \
       public:\
       am_fixtureClassName() {\
@@ -228,7 +233,7 @@
     }\
     void am_fixtureClassName::fixture()
 
-  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL__DEFINITIONAUTO(am_part,  am_group, am_test, am_start, am_level, am_autoFixtureClassName, ...) \
+  #define Z_FCF_TEST_BEFORE_DEFINE__IMPL__DEFINITIONAUTO(am_part,  am_group, am_test, am_start, am_level, am_autoFixtureClassName, ...) \
     namespace {\
       class  am_autoFixtureClassName { \
         public:\
@@ -244,16 +249,16 @@
     }\
     void am_autoFixtureClassName::fixture()
 
-  #define Z_FCF_TEST_FIXTURE_DECLARE__IMPL(am_macro, am_part,  am_group, am_test, am_start, am_level, am_autoFixtureClassName, ...)\
+  #define Z_FCF_TEST_BEFORE_DEFINE__IMPL(am_macro, am_part,  am_group, am_test, am_start, am_level, am_autoFixtureClassName, ...)\
     am_macro(am_part,  am_group, am_test, am_start, am_level, am_autoFixtureClassName, __VA_ARGS__)
 
-  #define FCF_TEST_FIXTURE_DECLARE_START(am_part, am_group, am_test, am_level, ...)\
-    Z_FCF_TEST_FIXTURE_DECLARE__IMPL(Z_FCF_TEST_FIXTURE_DECLARE__IMPL__MACRO_NAME(__VA_ARGS__), am_part,  am_group, am_test, true, am_level, Z__FCF_TEST__CONCAT2(_fcf_fixture_,__COUNTER__), __VA_ARGS__)
+  #define FCF_TEST_BEFORE_DEFINE(am_part, am_group, am_test, am_level, ...)\
+    Z_FCF_TEST_BEFORE_DEFINE__IMPL(Z_FCF_TEST_BEFORE_DEFINE__IMPL__MACRO_NAME(__VA_ARGS__), am_part,  am_group, am_test, true, am_level, Z__FCF_TEST__CONCAT2(_fcf_fixture_,__COUNTER__), __VA_ARGS__)
 #endif
 
-#ifndef FCF_TEST_FIXTURE_DECLARE_END
-  #define FCF_TEST_FIXTURE_DECLARE_END(am_part, am_group, am_test, am_level, ...)\
-    Z_FCF_TEST_FIXTURE_DECLARE__IMPL(Z_FCF_TEST_FIXTURE_DECLARE__IMPL__MACRO_NAME(__VA_ARGS__), am_part,  am_group, am_test, false, am_level, Z__FCF_TEST__CONCAT2(_fcf_fixture_,__COUNTER__), __VA_ARGS__)
+#ifndef FCF_TEST_AFTER_DEFINE
+  #define FCF_TEST_AFTER_DEFINE(am_part, am_group, am_test, am_level, ...)\
+    Z_FCF_TEST_BEFORE_DEFINE__IMPL(Z_FCF_TEST_BEFORE_DEFINE__IMPL__MACRO_NAME(__VA_ARGS__), am_part,  am_group, am_test, false, am_level, Z__FCF_TEST__CONCAT2(_fcf_fixture_,__COUNTER__), __VA_ARGS__)
 #endif
 
 

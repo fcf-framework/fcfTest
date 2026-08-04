@@ -5,30 +5,30 @@
 #include "tests/helpers.hpp"
 
 
-FCF_TEST_DECLARE("subrun", "default", "subrun ok"){
+FCF_TEST_DEFINE("subrun", "default", "subrun ok"){
 
 }
 
-FCF_TEST_DECLARE("subrun", "default", "subrun error 0"){
+FCF_TEST_DEFINE("subrun", "default", "subrun error 0"){
   int v1 = 1;
   int v2 = 2;
   FCF_TEST(v1 == v2);
 }
 
-FCF_TEST_DECLARE("subrun", "default", "subrun error 1"){
+FCF_TEST_DEFINE("subrun", "default", "subrun error 1"){
   int v1 = 1;
   int v2 = 2;
   FCF_TEST(v1 == v2, v1);
 }
 
-FCF_TEST_DECLARE("subrun", "default", "subrun error 2"){
+FCF_TEST_DEFINE("subrun", "default", "subrun error 2"){
   int v1 = 1;
   int v2 = 2;
   FCF_TEST(v1 == v2, v1, v2);
 }
 
 
-FCF_TEST_DECLARE("subrun", "default", "subrun error check 1"){
+FCF_TEST_DEFINE("subrun", "default", "subrun error check 1"){
   fcf::NTest::log() << "1" << std::endl;
   int v1 = 1;
   int v2 = 2;
@@ -38,7 +38,7 @@ FCF_TEST_DECLARE("subrun", "default", "subrun error check 1"){
   fcf::NTest::log() << "2" << std::endl;
 }
 
-FCF_TEST_DECLARE("subrun", "default", "subrun error check 2"){
+FCF_TEST_DEFINE("subrun", "default", "subrun error check 2"){
   fcf::NTest::log() << "1" << std::endl;
   int v1 = 1;
   int v2 = 2;
@@ -53,7 +53,7 @@ FCF_TEST_DECLARE("subrun", "default", "subrun error check 2"){
 }
 
 /*
-FCF_TEST_DECLARE("MyLib", "Base", "Simple test"){
+FCF_TEST_DEFINE("MyLib", "Base", "Simple test"){
   fcf::NTest::log() << "Test started" << std::endl;
   int v1 = 1;
   int v2 = 2;
@@ -63,7 +63,7 @@ FCF_TEST_DECLARE("MyLib", "Base", "Simple test"){
   fcf::NTest::log() << "Test resumed" << std::endl;
 }
 */
-FCF_TEST_DECLARE("subrun", "default", "subrun check 1"){
+FCF_TEST_DEFINE("subrun", "default", "subrun check 1"){
   fcf::NTest::log() << "1" << std::endl;
   int v1 = 1;
   int v2 = 1;
@@ -78,7 +78,7 @@ FCF_TEST_DECLARE("subrun", "default", "subrun check 1"){
 
 
 
-FCF_TEST_DECLARE("fcfTest", "cmdRun", "simple run"){
+FCF_TEST_DEFINE("fcfTest", "cmdRun", "simple run"){
   {
     std::stringstream ss;
     fcf::NTest::Options options;

@@ -1,7 +1,7 @@
 #define FCF_TEST_IMPLEMENTATION
 #include <fcfTest/test.hpp>
 
-FCF_TEST_DECLARE("Library", "Math", "sum"){
+FCF_TEST_DEFINE("Library", "Math", "sum"){
   fcf::NTest::log() << "Example asda\nasdas" << std::endl;
 }
 

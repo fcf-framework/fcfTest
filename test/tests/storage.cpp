@@ -15,7 +15,7 @@ namespace {
   }
 }
 
-FCF_TEST_DECLARE("fcfTest", "storage", "select") {
+FCF_TEST_DEFINE("fcfTest", "storage", "select") {
   fcf::NTest::Storage storage;
 
   fcf::NTest::Test testP1G1T1 = {"p1", 0, "g1", 0, "t1", 0, nullptr};
@@ -129,7 +129,7 @@ FCF_TEST_DECLARE("fcfTest", "storage", "select") {
 
 
 
-FCF_TEST_DECLARE("fcfTest", "storage", "select (ignore)") {
+FCF_TEST_DEFINE("fcfTest", "storage", "select (ignore)") {
   fcf::NTest::Storage storage;
 
   fcf::NTest::Test testP1G1T1 = {"p1", 0, "g1", 0, "t1", 0, nullptr};
@@ -187,7 +187,7 @@ FCF_TEST_DECLARE("fcfTest", "storage", "select (ignore)") {
 }
 
 
-FCF_TEST_DECLARE("fcfTest", "storage", "select (throw)") {
+FCF_TEST_DEFINE("fcfTest", "storage", "select (throw)") {
   fcf::NTest::Storage storage;
   fcf::NTest::Test testP1G1T1 = {"p1", 0, "g1", 0, "t1", 0, nullptr};
   storage.append(testP1G1T1);

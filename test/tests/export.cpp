@@ -1,7 +1,7 @@
 #include <fcfTest/test.hpp>
 #include "helpers.hpp"
 
-FCF_TEST_DECLARE("fcfTest", "export", "run"){
+FCF_TEST_DEFINE("fcfTest", "export", "run"){
   {
     fcf::NTest::Options options;
     options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun-export"}, {}, {}} );
@@ -61,7 +61,7 @@ FCF_TEST_DECLARE("fcfTest", "export", "run"){
 
 
 // A simple test case for demonstration
-FCF_TEST_DECLARE("subrun-export", "Files", "MultiLogTest") {
+FCF_TEST_DEFINE("subrun-export", "Files", "MultiLogTest") {
     FCF_TEST(1 + 1 == 2);
 }
 
