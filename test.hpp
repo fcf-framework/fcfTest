@@ -666,8 +666,8 @@ namespace fcf {
       int         partOrder;       ///< Execution order within the part.
       std::string group;           ///< Name of the test group.
       int         groupOrder;      ///< Execution order within the group.
-      std::string name;            ///< Name of the test function.
-      int         nameOrder;       ///< Execution order within the test.
+      std::string test;            ///< Name of the test function.
+      int         testOrder;       ///< Execution order within the test.
       void (*testFunction)();      ///< Pointer to the test function to execute.
 
       /**
@@ -686,10 +686,10 @@ namespace fcf {
                groupOrder > a_test.groupOrder ? false :
                group < a_test.group ? true :
                group > a_test.group ? false :
-               nameOrder < a_test.nameOrder ? true :
-               nameOrder > a_test.nameOrder ? false :
-               name < a_test.name ? true :
-               name > a_test.name ? false :
+               testOrder < a_test.testOrder ? true :
+               testOrder > a_test.testOrder ? false :
+               test < a_test.test ? true :
+               test > a_test.test ? false :
                                    false;
       }
 
@@ -702,10 +702,10 @@ namespace fcf {
                groupOrder == a_test.groupOrder &&
                group == a_test.group &&
                group == a_test.group &&
-               nameOrder == a_test.nameOrder &&
-               nameOrder == a_test.nameOrder &&
-               name == a_test.name &&
-               name == a_test.name;
+               testOrder == a_test.testOrder &&
+               testOrder == a_test.testOrder &&
+               test == a_test.test &&
+               test == a_test.test;
       }
     };
 
@@ -757,7 +757,7 @@ namespace fcf {
       /**
        * @brief A selector used to filter tests based on hierarchy.
        *
-       * A selector can match tests by their part, group, or name.
+       * A selector can match tests by their part, group, or test.
        * If the vector is empty, all elements from the given level are selected.
        * If the element is "*" or an empty string, all elements from the specified level are selected.
        */
@@ -1611,7 +1611,7 @@ namespace fcf {
         getStorage().select(tests, options);
         std::cout << "List of tests:" << std::endl;
         for(const Test& test : tests) {
-          std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.name  << "\""<< std::endl;
+          std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.test  << "\""<< std::endl;
         }
       }
     #endif
@@ -2029,13 +2029,13 @@ namespace fcf {
 
             void start(const std::set<Test>& a_tests) {
               for(std::set<Test>::const_iterator it = a_tests.begin(); it != a_tests.end(); ++it) {
-                _call(std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), it->part, it->group, it->name, true, true);
+                _call(std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), it->part, it->group, it->test, true, true);
               }
             }
 
             void end(const std::set<Test>& a_tests) {
               for(std::set<Test>::const_iterator it = a_tests.begin(); it != a_tests.end(); ++it) {
-                _call(std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), it->part, it->group, it->name, false, true);
+                _call(std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), std::set<Test>::const_iterator(), it->part, it->group, it->test, false, true);
               }
             }
 
@@ -2118,7 +2118,7 @@ namespace fcf {
                       if (it->group != a_group) {
                         break;
                       }
-                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->name);
+                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->test);
                     };
                     if (!match) {
                       enable = true;
@@ -2131,7 +2131,7 @@ namespace fcf {
                       if (it->part != a_part) {
                         break;
                       }
-                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->name);
+                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->test);
                     };
                     if (!match) {
                       enable = true;
@@ -2148,7 +2148,7 @@ namespace fcf {
                       if (it->group != a_group){
                         break;
                       }
-                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->name);
+                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->test);
                     }
                     if (!match) {
                       enable = true;
@@ -2163,7 +2163,7 @@ namespace fcf {
                       if (it->part != a_part) {
                         break;
                       }
-                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->name);
+                      match |= _fixureMatch(fi.fixture, it->part, it->group, it->test);
                     }
                     if (!match) {
                       enable = true;
@@ -2193,7 +2193,7 @@ namespace fcf {
 
                 try {
                   fi.fixture.fixtureFunction();
-                } catch(const std::exception& e){
+                } catch(const std::exception& e) {
                   err() << "Fixture error: " << e.what() << std::endl;
                 }
               }
@@ -2331,10 +2331,10 @@ namespace fcf {
               state().test(test);
               state().errors({});
 
-              fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.name, true);
+              fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, true);
 
               log(LMC_LAUNCH_START);
-              log(LMC_LAUNCH_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.name + "\" ..." << std::endl;
+              log(LMC_LAUNCH_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.test + "\" ..." << std::endl;
 
               state()._resumeDuration();
 
@@ -2352,7 +2352,7 @@ namespace fcf {
                 log(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET
                                        << " Test completed successfully (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
                 log(LMC_LAUNCH_END);
-                fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.name, false);
+                fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, false);
               } else {
                 totalErrorFlag = true;
                 ++errorCounter;
@@ -2363,7 +2363,7 @@ namespace fcf {
                 log(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
                 log(LMC_LAUNCH_END);
 
-                fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.name, false);
+                fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, false);
                 if (a_options.noBreak) {
                   continue;
                 } else {
@@ -2700,7 +2700,7 @@ namespace fcf {
         }
 
         for(const Test& test : _tests) {
-          const std::string* levels[3] = {&test.part, &test.group, &test.name};
+          const std::string* levels[3] = {&test.part, &test.group, &test.test};
           for(size_t i = 0; i < 3; ++i) {
             std::map<std::string, bool>::iterator existsIt = exists[i].find(*levels[i]);
             if (existsIt != exists[i].end()){
@@ -2717,7 +2717,7 @@ namespace fcf {
             if (!selector.groups.empty() && !_suitability(selector.groups, test.group, suitability)){
               continue;
             }
-            if (!selector.tests.empty() && !_suitability(selector.tests, test.name, suitability)){
+            if (!selector.tests.empty() && !_suitability(selector.tests, test.test, suitability)){
               continue;
             }
             break;
@@ -2734,7 +2734,7 @@ namespace fcf {
             if (!selector.groups.empty() && _suitability(selector.groups, test.group, ignore)){
               break;
             }
-            if (!selector.tests.empty() && _suitability(selector.tests, test.name, ignore)){
+            if (!selector.tests.empty() && _suitability(selector.tests, test.test, ignore)){
               break;
             }
           }
@@ -2756,9 +2756,9 @@ namespace fcf {
             }
           }
           {
-            Storage::OrderMap::const_iterator it = _testOrders.find(test.name);
+            Storage::OrderMap::const_iterator it = _testOrders.find(test.test);
             if (it != _testOrders.end()) {
-              resultTest.nameOrder = it->second;
+              resultTest.testOrder = it->second;
             }
           }
           a_dst.insert(resultTest);
@@ -3566,7 +3566,7 @@ namespace fcf {
                     bool isSkipped = processedIt == formatHandler->_processed.end();
                     if (isSkipped) {
                       output << "    <testcase classname=\"" << xmlAttribute(currentSuiteName) << "\" "
-                             << "name=\"" << xmlAttribute(currentTest.name) << "\" "
+                             << "name=\"" << xmlAttribute(currentTest.test) << "\" "
                              << "time=\"" << Duration::nsToStr(0, false) << "\""
                              << ">\n";
                       output << "      <skipped message=\"The test was skipped because the fail-on-error mode was enabled.\"/>\n";
@@ -3579,7 +3579,7 @@ namespace fcf {
                       shortMessage.erase(shortMessage.find_last_not_of(" \t\n\r\f\v") + 1);
                       output << "    <testcase "
                              << "classname=\"" << xmlAttribute(currentSuiteName) << "\" "
-                             << "name=\"" << xmlAttribute(currentTest.name) << "\" "
+                             << "name=\"" << xmlAttribute(currentTest.test) << "\" "
                              << "time=\"" << Duration::nsToStr(processedIt->second.duration, false) << "\""
                              << ">\n";
                       output << "      <failure message=\"" << xmlAttribute(shortMessage) << "\" type=\"AssertionError\">\n";
@@ -3589,7 +3589,7 @@ namespace fcf {
                     } else {
                       output << "    <testcase "
                              << "classname=\"" << xmlAttribute(currentSuiteName) << "\" "
-                             << "name=\"" << xmlAttribute(currentTest.name) << "\" "
+                             << "name=\"" << xmlAttribute(currentTest.test) << "\" "
                              << "time=\"" << Duration::nsToStr(processedIt->second.duration, false) << "\""
                              << "/>\n";
                     }

@@ -2,7 +2,7 @@
 
 namespace {
   std::string testToStr(const fcf::NTest::Test& a_test){
-    return std::string() + a_test.part + "->" + a_test.group + "->" + a_test.name;
+    return std::string() + a_test.part + "->" + a_test.group + "->" + a_test.test;
   }
 
   std::string testsToStr(const std::set<fcf::NTest::Test>& a_tests) {
