@@ -1182,7 +1182,7 @@ namespace fcf {
         Test                      test();
         void                      test(const Test& a_test);
         std::set<Test>            tests();
-        size_t                    testsCount();
+        size_t                    testCount();
         void                      tests(const std::set<Test>& a_tests);
         Duration                  duration();
         void                      duration(const Duration& a_duration);
@@ -1703,7 +1703,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      size_t State::testsCount(){
+      size_t State::testCount(){
         std::lock_guard<std::mutex> lock(_mutex);
         return _tests.size();
       }
@@ -3502,7 +3502,7 @@ namespace fcf {
               if (formatHandler) {
                 a_messageContext.system = false;
 
-                size_t totalTestCount   = state().testsCount();
+                size_t totalTestCount   = state().testCount();
                 size_t totalTestFailure = std::count_if(formatHandler->_processed.begin(),
                                                         formatHandler->_processed.end(),
                                                         [](const std::pair<Test, ProcessedInfo>& a_item) {
