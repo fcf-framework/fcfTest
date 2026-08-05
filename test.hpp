@@ -1182,8 +1182,8 @@ namespace fcf {
         Test                      test();
         void                      test(const Test& a_test);
         std::set<Test>            tests();
-        size_t                    testCount();
         void                      tests(const std::set<Test>& a_tests);
+        size_t                    testCount();
         Duration                  duration();
         void                      duration(const Duration& a_duration);
         void                      error(const char* a_error, bool a_ignoreExists);
@@ -1703,16 +1703,16 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      size_t State::testCount(){
+      void State::tests(const std::set<Test>& a_tests){
         std::lock_guard<std::mutex> lock(_mutex);
-        return _tests.size();
+        _tests = a_tests;
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void State::tests(const std::set<Test>& a_tests){
+      size_t State::testCount(){
         std::lock_guard<std::mutex> lock(_mutex);
-        _tests = a_tests;
+        return _tests.size();
       }
     #endif
 
