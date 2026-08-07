@@ -191,23 +191,23 @@ FCF_TEST_DEFINE("fcfTest", "cmdRun", "simple run"){
     const char* argv[] = {""};
     InnerTestRunner()(options, ss, 1, &argv[0]);
     std::string expected = std::string()+
-                            "Performing the test: \"subrun\" -> \"default\" -> \"subrun error check 2\" ...\n" + 
-                            "  > 1\n" + 
-                            "  > error\n" + 
-                            "  > error\n" + 
-                            "  > 2\n" + 
-                            "    Test error: v1 == v2  [FILE: XXX]\n" + 
-                            "      Values:\n" + 
-                            "        v1: 1\n" + 
-                            "        v2: 2\n" + 
-                            "    Test error: v1 == v3  [FILE: XXX]\n" + 
-                            "      Values:\n" + 
-                            "        v1: 1\n" + 
-                            "        v3: 3\n" + 
-                            "    [FAILED] Test failed (XXX sec)\n" + 
-                            "\n" + 
-                            "[FAILED] Testing completed with failures.\n" + 
-                            "Tests: 0 passed, 1 failed, 0 skipped, 1 total\n" + 
+                            "Performing the test: \"subrun\" -> \"default\" -> \"subrun error check 2\" ...\n" +
+                            "  > 1\n" +
+                            "  > error\n" +
+                            "  > error\n" +
+                            "  > 2\n" +
+                            "    Test error: v1 == v2  [FILE: XXX]\n" +
+                            "      Values:\n" +
+                            "        v1: 1\n" +
+                            "        v2: 2\n" +
+                            "    Test error: v1 == v3  [FILE: XXX]\n" +
+                            "      Values:\n" +
+                            "        v1: 1\n" +
+                            "        v3: 3\n" +
+                            "    [FAILED] Test failed (XXX sec)\n" +
+                            "\n" +
+                            "[FAILED] Testing completed with failures.\n" +
+                            "Tests: 0 passed, 1 failed, 0 skipped, 1 total\n" +
                             "Duration: XXX sec\n"
                             ;
     FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
@@ -220,23 +220,23 @@ FCF_TEST_DEFINE("fcfTest", "cmdRun", "simple run"){
     InnerTestRunner()(options, ss, 1, &argv[0]);
 
     std::string expected = std::string()+
-                          "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
-                          "<testsuites tests=\"1\" failure=\"1\" skipped=\"0\" time=\"XXX\">\n" + 
-                          "  <testsuite name=\"subrun/default\" tests=\"1\" failure=\"1\" skipped=\"0\" time=\"XXX\">\n" + 
-                          "    <testcase classname=\"subrun/default\" name=\"subrun error check 2\" time=\"XXX\">\n" + 
-                          "      <failure message=\"Test error: v1 == v2\" type=\"AssertionError\">\n" + 
-                          "Test error: v1 == v2  [FILE: XXX]\n" + 
-                          "  Values:\n" + 
-                          "    v1: 1\n" + 
-                          "    v2: 2\n" + 
-                          "\n" + 
-                          "Test error: v1 == v3  [FILE: XXX]\n" + 
-                          "  Values:\n" + 
-                          "    v1: 1\n" + 
-                          "    v3: 3\n" + 
-                          "      </failure>\n" + 
-                          "    </testcase>\n" + 
-                          "  </testsuite>\n" + 
+                          "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                          "<testsuites tests=\"1\" failure=\"1\" skipped=\"0\" time=\"XXX\">\n" +
+                          "  <testsuite name=\"subrun/default\" tests=\"1\" failure=\"1\" skipped=\"0\" time=\"XXX\">\n" +
+                          "    <testcase classname=\"subrun/default\" name=\"subrun error check 2\" time=\"XXX\">\n" +
+                          "      <failure message=\"Test error: v1 == v2\" type=\"AssertionError\">\n" +
+                          "Test error: v1 == v2  [FILE: XXX]\n" +
+                          "  Values:\n" +
+                          "    v1: 1\n" +
+                          "    v2: 2\n" +
+                          "\n" +
+                          "Test error: v1 == v3  [FILE: XXX]\n" +
+                          "  Values:\n" +
+                          "    v1: 1\n" +
+                          "    v3: 3\n" +
+                          "      </failure>\n" +
+                          "    </testcase>\n" +
+                          "  </testsuite>\n" +
                           "</testsuites>\n"
                           ;
     FCF_TEST(expected == uniout(ss.str()), uniout(expected, true), uniout(ss.str(), true));
@@ -272,8 +272,28 @@ int main(int a_argc, char* a_argv[]) {
   fcf::NTest::Options options;
   options.ignoreSelectors.push_back(
     fcf::NTest::Options::Selector{
-      {"subrun", "subrun-export", "subrun-order 1", "subrun-order 2", "subrun-order 3", "subrun-fixture"}, 
-      {}, 
+      {
+        "subrun",
+        "subrun-export",
+        "subrun-order 1",
+        "subrun-order 2",
+        "subrun-order 3",
+        "subrun-fixture",
+        "subrun-fixture-part-001",
+        "subrun-fixture-part-002",
+        "subrun-fixture-part-003",
+        "subrun-fixture-part_error-all-001",
+        "subrun-fixture-part_error-all-002",
+        "subrun-fixture-part_error-all-003",
+        "subrun-fixture-part_error-nobreak-all-001",
+        "subrun-fixture-part_error-nobreak-all-002",
+        "subrun-fixture-part_error-nobreak-all-003",
+        "subrun-fixture-part_error-nobreak-all-004",
+        "subrun-fixture-group-multi-001", 
+        "subrun-fixture-group-multi-002", 
+        "subrun-fixture-group-multi-003"
+      },
+      {},
       {}
     }
   );

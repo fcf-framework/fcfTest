@@ -1,13 +1,10 @@
 #include <fcfTest/test.hpp>
 #include "helpers.hpp"
 
-
-
-
 FCF_TEST_DEFINE("fcfTest", "fixture-run", "fixture") {
   {
     fcf::NTest::Options options;
-    options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun-fixture"}, {"*"}, {"*"}} );
+    options.selectors.push_back( fcf::NTest::Options::Selector{{"subrun-fixture"}, {"fixture"}, {"*"}} );
     std::stringstream ss;
     bool error = InnerTestRunner().run(options, ss);
 

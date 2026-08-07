@@ -15,7 +15,7 @@ inline std::string uniout(std::string a_string, bool a_wrap = false){
   result = std::regex_replace(result, pattern3, "[FILE: XXX");
   result = std::regex_replace(result, pattern4, "");
   if (a_wrap) {
-    return std::string() + "<<<" + result + ">>>";
+    return std::string() + "<<<\n" + result + ">>>";
   } else {
     return result;
   }

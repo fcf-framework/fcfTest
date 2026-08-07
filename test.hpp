@@ -47,6 +47,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <utility>
+#include <memory>
 #include <atomic>
 #include <cstddef>
 #include <typeinfo>
@@ -224,7 +225,8 @@
         ::fcf::NTest::getStorage().append( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
                                                                   ::fcf::NTest::NDetails::splitSelector(am_group), 1000000, \
                                                                   ::fcf::NTest::NDetails::splitSelector(am_test), 1000000, \
-                                                                  am_start, am_level, am_fixtureClassName::fixture } );\
+                                                                  am_start, am_level, am_fixtureClassName::fixture,\
+                                                                  __FILE__, __LINE__ } );\
       }\
       static void fixture();\
     };\
@@ -241,7 +243,8 @@
           ::fcf::NTest::getStorage().append( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
                                                                     ::fcf::NTest::NDetails::splitSelector(am_group), 1000000, \
                                                                     ::fcf::NTest::NDetails::splitSelector(am_test), 1000000, \
-                                                                    am_start, am_level, am_autoFixtureClassName::fixture } );\
+                                                                    am_start, am_level, am_autoFixtureClassName::fixture,\
+                                                                    __FILE__, __LINE__ } );\
         }\
         static void fixture();\
       };\
@@ -721,6 +724,8 @@ namespace fcf {
       bool                      start;
       EFixtureLevel             level;
       void (*fixtureFunction)();   ///< Pointer to the fixture function to execute.
+      std::string               file;
+      unsigned int              line;
 
       bool operator<(const Fixture& a_fixture) const {
         return partOrder        < a_fixture.partOrder        ? true :
@@ -1992,11 +1997,17 @@ namespace fcf {
       #ifdef FCF_TEST_IMPLEMENTATION
         class FixtureHandler {
           private:
+            struct FixtureError {
+              std::string message;
+              size_t      index;
+              size_t      count;
+            };
 
             struct FixtureInfo {
-              Fixture      fixture;
-              mutable int  active;
-              mutable int  close;
+              Fixture                                 fixture;
+              mutable int                             active;
+              mutable std::shared_ptr< int >          close;
+              mutable std::shared_ptr< FixtureError > errors;
               bool operator<(const FixtureInfo& a_info) const {
                 return fixture < a_info.fixture;
               }
@@ -2022,9 +2033,18 @@ namespace fcf {
             };
 
           public:
+            struct Error {
+              std::string   message;
+              std::string   file;
+              unsigned int  line;
+              size_t        count;
+              size_t        index;
+            };
+            typedef std::vector<Error> Errors;
 
             FixtureHandler()
-              : _graph(_build()) {
+              : _graph(_build())
+              , _errorCounter(0) {
             }
 
             void start(const std::set<Test>& a_tests) {
@@ -2040,12 +2060,57 @@ namespace fcf {
             }
 
             void call(std::set<Test>::const_iterator a_beginIt, std::set<Test>::const_iterator a_currentIt, std::set<Test>::const_iterator a_endIt,
-                      const std::string& a_part, const std::string& a_group, const std::string& a_test, 
+                      const std::string& a_part, const std::string& a_group, const std::string& a_test,
                       bool a_start) {
               _call(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, a_start, false);
             }
 
+            Errors errors(const Test& a_test) {
+              Errors errors;
+
+              _fillErrors(a_test, _graph.fixtures, errors);
+
+              std::map<std::string, FixturePartGraph>::iterator pitv[2] = {_graph.parts.find(a_test.part), _graph.parts.find("*")};
+              for(size_t i = 0; i < 2; ++i) {
+                if (pitv[i] == _graph.parts.end()) {
+                  continue;
+                }
+
+                _fillErrors(a_test, pitv[i]->second.fixtures, errors);
+
+                std::map<std::string, FixtureGroupGraph>::iterator gitv[2] = { pitv[i]->second.groups.find(a_test.group), pitv[i]->second.groups.find("*")};
+
+                for(size_t j = 0; j < 2; ++j) {
+                  if (gitv[j] == pitv[i]->second.groups.end()) {
+                    continue;
+                  }
+
+                  _fillErrors(a_test, gitv[j]->second.fixtures, errors);
+
+                  std::map<std::string, FixtureTestGraph>::iterator titv[2] = { gitv[j]->second.tests.find(a_test.test), gitv[j]->second.tests.find("*")};
+
+                  for(size_t k = 0; k < 2; ++k) {
+                    if (titv[k] == gitv[j]->second.tests.end()) {
+                      continue;
+                    }
+                    _fillErrors(a_test, titv[k]->second.fixtures, errors);
+                  }
+                }
+              }
+
+              return errors;
+            }
+
           private:
+            void _fillErrors(const Test& a_test, std::set<FixtureInfo>& a_fixtures, Errors& a_dst) {
+              for(const FixtureInfo& info : a_fixtures) {
+                if (!info.errors->message.empty()) {
+                  a_dst.push_back( Error{info.errors->message, info.fixture.file, info.fixture.line, info.errors->count, info.errors->index} );
+                  ++info.errors->count;
+                }
+              }
+            }
+
             void _call(std::set<Test>::const_iterator a_beginIt, std::set<Test>::const_iterator a_currentIt, std::set<Test>::const_iterator a_endIt,
                        const std::string& a_part, const std::string& a_group, const std::string& a_test,
                        bool a_start, int a_onlyGlobal) {
@@ -2103,8 +2168,8 @@ namespace fcf {
               for(const FixtureInfo& fi : a_fixtures) {
                 int enable = false;
                 if (a_onlyGlobal) {
-                  enable = (fi.active == 0 && fi.fixture.level == FL_GLOBAL) ||
-                           (!a_start && fi.close);
+                  enable = ((fi.fixture.level == FL_GLOBAL && fi.active == 0) || ( fi.fixture.level != FL_GLOBAL && !a_start && *fi.close)) &&
+                           a_start == fi.fixture.start;
                 } else if (fi.fixture.level == FL_GLOBAL) {
                   enable = false;
                 } else if (fi.fixture.level == FL_TEST) {
@@ -2115,7 +2180,7 @@ namespace fcf {
                     std::set<Test>::const_iterator it = a_currentIt;
                     while (a_beginIt != it && !match) {
                       --it;
-                      if (it->group != a_group) {
+                      if (it->part != a_part || it->group != a_group){
                         break;
                       }
                       match |= _fixureMatch(fi.fixture, it->part, it->group, it->test);
@@ -2145,7 +2210,7 @@ namespace fcf {
                       ++it;
                     }
                     for (; it != a_endIt; ++it) {
-                      if (it->group != a_group){
+                      if (it->part != a_part || it->group != a_group){
                         break;
                       }
                       match |= _fixureMatch(fi.fixture, it->part, it->group, it->test);
@@ -2176,12 +2241,16 @@ namespace fcf {
                 }
 
                 if (a_start) {
-                  if (!fi.fixture.start){
-                    ++fi.close;
+                  if (!a_onlyGlobal && !fi.fixture.start){
+                    ++*fi.close;
                   }
                 } else {
                   if (!fi.fixture.start){
-                    --fi.close;
+                    if (a_onlyGlobal) {
+                      *fi.close = 0;
+                    } else {
+                      --*fi.close;
+                    }
                   }
                 }
 
@@ -2191,10 +2260,15 @@ namespace fcf {
 
                 ++fi.active;
 
+                fi.errors->message.clear();
+                fi.errors->count = 0;
+                fi.errors->index = 0;
+
                 try {
                   fi.fixture.fixtureFunction();
                 } catch(const std::exception& e) {
-                  err() << "Fixture error: " << e.what() << std::endl;
+                  fi.errors->message = e.what();
+                  fi.errors->index = ++_errorCounter;
                 }
               }
             }
@@ -2204,6 +2278,8 @@ namespace fcf {
               int level = 3;
               std::vector< Fixture > fixtures(getStorage().fixtures());
               for(const Fixture& fixture : fixtures) {
+                std::shared_ptr< FixtureError > errors( new FixtureError{"", 0} );
+                std::shared_ptr< int > count( new int{0} );
                 for(const std::string& part : fixture.parts) {
                   for(const std::string& group : fixture.groups) {
                     for(const std::string& test : fixture.tests) {
@@ -2245,7 +2321,7 @@ namespace fcf {
                       }
 
                       if (set) {
-                        set->insert( { fixture, 0, 0 } );
+                        set->insert( { fixture, 0,  count, errors } );
                       }
 
                     }
@@ -2256,9 +2332,41 @@ namespace fcf {
             }
 
             FixtureGraph _graph;
+            size_t       _errorCounter;
         };
       #endif
     }
+
+    namespace NDetails {
+      #ifdef FCF_TEST_IMPLEMENTATION
+        inline void attachFixtureErrors(const FixtureHandler::Errors* a_errors, const FixtureHandler::Errors* a_startErrors) {
+          std::set<size_t> processed;
+          const FixtureHandler::Errors* verrors[] = {a_startErrors, a_errors};
+          for(size_t i = 0; i < 2; ++i) {
+            if (!verrors[i]){
+              continue;
+            }
+            for(const FixtureHandler::Error& error : *verrors[i]) {
+              if (processed.count(error.index)) {
+                continue;
+              }
+              std::string message = "Fixture error [FILE:" + error.file + ":" + std::to_string(error.line)  + "]";
+              if (error.count == 0){
+                message += ":\n";
+                std::stringstream ss(error.message);
+                std::string line;
+                while(std::getline(ss, line)){
+                  message += "  ";
+                  message += line;
+                }
+              }
+              state().error(message.c_str(), false);
+              processed.insert(error.index);
+            }
+          }
+        }
+      #endif
+    } // NDetails namespace
 
     namespace NDetails {
       #ifdef FCF_TEST_IMPLEMENTATION
@@ -2321,60 +2429,73 @@ namespace fcf {
 
             log(LMC_ROOT_START);
 
-            fixtureHandler.start(tests);
-
             unsigned int errorCounter  = 0;
             unsigned int passedCounter = 0;
-            std::set<Test>::const_iterator testIt = tests.begin();
-            for(; testIt != tests.end(); ++testIt) {
-              const Test& test = *testIt;
-              state().test(test);
-              state().errors({});
 
-              fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, true);
+            if (tests.size()) {
+              state().test(*tests.begin());
 
-              log(LMC_LAUNCH_START);
-              log(LMC_LAUNCH_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.test + "\" ..." << std::endl;
+              fixtureHandler.start(tests);
 
-              state()._resumeDuration();
+              FixtureHandler::Errors startFixtureErrors = fixtureHandler.errors(*tests.begin());
 
-              try {
-                test.testFunction();
-                state()._endDuration();
-              } catch(std::exception& e) {
-                state()._endDuration();
-                state().error(e.what(), true);
-              }
+              std::set<Test>::const_iterator testIt = tests.begin();
+              for(; testIt != tests.end(); ++testIt) {
+                const Test& test = *testIt;
+                state().test(test);
+                state().errors({});
 
-              std::list<std::string> errors = state().errors();
-              if (!errors.size()) {
-                ++passedCounter;
-                log(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET
-                                       << " Test completed successfully (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
-                log(LMC_LAUNCH_END);
-                fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, false);
-              } else {
-                totalErrorFlag = true;
-                ++errorCounter;
-                for(std::string errorMesssage : errors) {
-                  errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
-                  log(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
+                fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, true);
+
+                FixtureHandler::Errors fixtureErrors = fixtureHandler.errors(*testIt);
+
+                attachFixtureErrors(&fixtureErrors, (testIt == tests.begin() ? &startFixtureErrors : (FixtureHandler::Errors*) nullptr ));
+
+                log(LMC_LAUNCH_START);
+                log(LMC_LAUNCH_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.test + "\" ..." << std::endl;
+
+                state()._resumeDuration();
+
+                try {
+                  if (fixtureErrors.empty()) {
+                    test.testFunction();
+                  }
+                  state()._endDuration();
+                } catch(std::exception& e) {
+                  state()._endDuration();
+                  state().error(e.what(), true);
                 }
-                log(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
-                log(LMC_LAUNCH_END);
 
-                fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, false);
-                if (a_options.noBreak) {
-                  continue;
+                std::list<std::string> errors = state().errors();
+                if (!errors.size()) {
+                  ++passedCounter;
+                  log(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET
+                                         << " Test completed successfully (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
+                  log(LMC_LAUNCH_END);
+                  fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, false);
                 } else {
-                  break;
+                  totalErrorFlag = true;
+                  ++errorCounter;
+                  for(std::string errorMesssage : errors) {
+                    errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
+                    log(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
+                  }
+                  log(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
+                  log(LMC_LAUNCH_END);
+
+                  fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, false);
+                  if (a_options.noBreak) {
+                    continue;
+                  } else {
+                    break;
+                  }
                 }
               }
+
+              fixtureHandler.end(tests);
             }
 
             unsigned int skippedCounter = tests.size() - passedCounter - errorCounter;
-
-            fixtureHandler.end(tests);
 
             if (!errorCounter) {
               log(LMC_ROOT_NEW_LINE) << std::endl;
@@ -2691,7 +2812,7 @@ namespace fcf {
         for(const Options::Selector& selector : a_options.selectors) {
           const std::vector<std::string>* selectors[3] = {&selector.parts, &selector.groups, &selector.tests};
           for(size_t i = 0; i < 3; ++i) {
-            for(const std::string& element : *selectors[i]){
+            for(const std::string& element : *selectors[i]) {
               if (element.length() && element != "*" && element != "") {
                 exists[i].insert({element, false});
               }

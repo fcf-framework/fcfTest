@@ -13,6 +13,7 @@ add_executable(fcf-test-test
                   tests/cmd.cpp
                   tests/export.cpp
                   tests/fixture.cpp
+                  tests/fixture-error.cpp
                   tests/fixture-run.cpp
                   tests/logger.cpp
                   tests/macro.cpp
