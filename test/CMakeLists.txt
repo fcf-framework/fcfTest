@@ -11,6 +11,7 @@ endif()
 add_executable(fcf-test-test 
                   main.cpp
                   tests/cmd.cpp
+                  tests/cmdRun.cpp
                   tests/export.cpp
                   tests/fixture.cpp
                   tests/fixture-error.cpp
