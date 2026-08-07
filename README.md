@@ -199,10 +199,10 @@ if (!FCF_TEST_THROW_CHECK(safeFunction(), std::exception)) {
 }
 ```
 
-### `FCF_TEST_BEFORE_DEFINE(am_part, am_group, am_test, am_level, )`
-### `FCF_TEST_BEFORE_DEFINE(am_part, am_group, am_test, am_level, TYPE am_fixtureClassName)`
-### `FCF_TEST_AFTER_DEFINE(am_part, am_group, am_test, am_level, )`
-### `FCF_TEST_AFTER_DEFINE(am_part, am_group, am_test, am_level, TYPE am_fixtureClassName)`
+### `FCF_TEST_BEFORE_DEFINE(const char* am_part, const char* am_group, const char* am_test, EFixtureLevel am_level, )`
+### `FCF_TEST_BEFORE_DEFINE(const char* am_part, const char* am_group, const char* am_test, EFixtureLevel am_level, TYPE am_fixtureClassName)`
+### `FCF_TEST_AFTER_DEFINE(const char* am_part, const char* am_group, const char* am_test, EFixtureLevel am_level, )`
+### `FCF_TEST_AFTER_DEFINE(const char* am_part, const char* am_group, const char* am_test, EFixtureLevel am_level, TYPE am_fixtureClassName)`
 
 Macros to define a test fixture that wraps test execution. Fixtures allow you to perform setup and teardown operations at different levels of the test hierarchy.
 
