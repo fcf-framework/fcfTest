@@ -173,7 +173,7 @@
     class  am_testerClassName { \
       public:\
       am_testerClassName() {\
-        ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ am_part, 1000000, am_group, 1000000, am_test, 1000000, am_testerClassName::test } );\
+        ::fcf::NTest::storage().append( ::fcf::NTest::Test{ am_part, 1000000, am_group, 1000000, am_test, 1000000, am_testerClassName::test } );\
       }\
       static void test();\
     };\
@@ -187,7 +187,7 @@
       class  am_autoTesterClassName { \
         public:\
         am_autoTesterClassName() {\
-          ::fcf::NTest::getStorage().append( ::fcf::NTest::Test{ am_part, 1000000, am_group, 1000000, am_test, 1000000, am_autoTesterClassName::test } );\
+          ::fcf::NTest::storage().append( ::fcf::NTest::Test{ am_part, 1000000, am_group, 1000000, am_test, 1000000, am_autoTesterClassName::test } );\
         }\
         static void test();\
       };\
@@ -222,7 +222,7 @@
     class  am_fixtureClassName { \
       public:\
       am_fixtureClassName() {\
-        ::fcf::NTest::getStorage().append( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
+        ::fcf::NTest::storage().append( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
                                                                   ::fcf::NTest::NDetails::splitSelector(am_group), 1000000, \
                                                                   ::fcf::NTest::NDetails::splitSelector(am_test), 1000000, \
                                                                   am_start, am_level, am_fixtureClassName::fixture,\
@@ -240,7 +240,7 @@
       class  am_autoFixtureClassName { \
         public:\
         am_autoFixtureClassName() {\
-          ::fcf::NTest::getStorage().append( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
+          ::fcf::NTest::storage().append( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
                                                                     ::fcf::NTest::NDetails::splitSelector(am_group), 1000000, \
                                                                     ::fcf::NTest::NDetails::splitSelector(am_test), 1000000, \
                                                                     am_start, am_level, am_autoFixtureClassName::fixture,\
@@ -646,7 +646,7 @@ namespace fcf {
      * @brief Declaration for the global storage instance.
      * @return Reference to the Storage instance.
      */
-    FCF_TEST_API Storage& getStorage();
+    FCF_TEST_API Storage& storage();
 
   } // NTest namespace
 } // fcf namespace
@@ -1520,25 +1520,25 @@ namespace fcf {
 
       struct Registrator {
         Registrator(const Test& a_test) {
-          getStorage().append(a_test);
+          storage().append(a_test);
         }
       };
 
       struct PartOrderRegistrator {
         PartOrderRegistrator(const char* a_name, int a_order) {
-          getStorage().partOrder(a_name, a_order);
+          storage().partOrder(a_name, a_order);
         }
       };
 
       struct GroupOrderRegistrator {
         GroupOrderRegistrator(const char* a_name, int a_order) {
-          getStorage().groupOrder(a_name, a_order);
+          storage().groupOrder(a_name, a_order);
         }
       };
 
       struct TestOrderRegistrator {
         TestOrderRegistrator(const char* a_name, int a_order) {
-          getStorage().testOrder(a_name, a_order);
+          storage().testOrder(a_name, a_order);
         }
       };
 
@@ -1613,7 +1613,7 @@ namespace fcf {
       FCF_TEST_API void cmdList() {
         Options options;
         std::set<Test> tests;
-        getStorage().select(tests, options);
+        storage().select(tests, options);
         std::cout << "List of tests:" << std::endl;
         for(const Test& test : tests) {
           std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.test  << "\""<< std::endl;
@@ -1673,7 +1673,7 @@ namespace fcf {
     }
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      FCF_TEST_API Storage& getStorage() {
+      FCF_TEST_API Storage& storage() {
         static Storage* storage = nullptr;
         static std::once_flag flag;
 
@@ -2276,7 +2276,7 @@ namespace fcf {
             FixtureGraph _build() {
               FixtureGraph graph;
               int level = 3;
-              std::vector< Fixture > fixtures(getStorage().fixtures());
+              std::vector< Fixture > fixtures(storage().fixtures());
               for(const Fixture& fixture : fixtures) {
                 std::shared_ptr< FixtureError > errors( new FixtureError{"", 0} );
                 std::shared_ptr< int > count( new int{0} );
@@ -2418,7 +2418,7 @@ namespace fcf {
             logger()._setEnvironment(newEnv);
 
             std::set<Test> tests;
-            getStorage().select(tests, a_options);
+            storage().select(tests, a_options);
 
             state().duration({});
             state().tests(tests);
