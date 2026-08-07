@@ -1294,23 +1294,103 @@ namespace fcf {
       FCF_TEST_API void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
     } // NDetails namespace
 
+    /**
+     * @brief Central repository for the current execution state of the test runner.
+     *
+     * The State class maintains real-time information about the ongoing test execution,
+     * including the currently active test, the set of all tests being run,
+     * accumulated duration, recorded errors, and a thread-safe storage for
+     * arbitrary user-defined data.
+     */
     class FCF_TEST_API State {
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
 
       public:
+        /**
+         * @brief Gets the currently active test.
+         * @return The Test object representing the test currently being executed.
+         */
         Test                      test();
+
+        /**
+         * @brief Sets the currently active test.
+         * @param a_test The Test object to set as active.
+         */
         void                      test(const Test& a_test);
+
+        /**
+         * @brief Gets the set of all tests currently in the execution queue.
+         * @return A set containing all registered Test objects.
+         */
         std::set<Test>            tests();
+
+        /**
+         * @brief Sets the set of all tests in the execution queue.
+         * @param a_tests The set of Test objects to set.
+         */
         void                      tests(const std::set<Test>& a_tests);
+
+        /**
+         * @brief Gets the total number of tests in the current execution.
+         * @return The count of tests.
+         */
         size_t                    testCount();
+
+        /**
+         * @brief Gets the total accumulated duration of the test execution.
+         * @return The Duration object containing timing information.
+         */
         Duration                  duration();
+
+        /**
+         * @brief Sets the total accumulated duration.
+         * @param a_duration The Duration object to set.
+         */
         void                      duration(const Duration& a_duration);
+
+        /**
+         * @brief Records an error message.
+         * @param a_error The error message string.
+         * @param a_ignoreExists If true, the error will not be added if it is already present in the list.
+         */
         void                      error(const char* a_error, bool a_ignoreExists);
+
+        /**
+         * @brief Gets the list of all recorded error messages.
+         * @return A list of error message strings.
+         */
         std::list<std::string>    errors();
+
+        /**
+         * @brief Sets the list of recorded error messages.
+         * @param a_errors The list of error message strings to set.
+         */
         void                      errors(const std::list<std::string>& a_errors);
+
+        /**
+         * @brief Stores arbitrary user data associated with a key.
+         * @param a_key The unique identifier for the data.
+         * @param a_data The SharedPtrAny object containing the data.
+         */
         void                      data(const char* a_key, SharedPtrAny a_data);
+
+        /**
+         * @brief Retrieves arbitrary user data associated with a key.
+         * @param a_key The unique identifier for the data.
+         * @return The SharedPtrAny object containing the data, or an empty object if not found.
+         */
         SharedPtrAny              data(const char* a_key);
+
+        /**
+         * @brief Removes user data associated with a specific key.
+         * @param a_key The unique identifier of the data to erase.
+         */
         void                      eraseData(const char* a_key);
+
+        /**
+         * @brief Gets all keys currently present in the user data storage.
+         * @return A set of strings containing all data keys.
+         */
         std::set<std::string>     dataKeys();
 
       private:
