@@ -1404,6 +1404,15 @@ namespace fcf {
         std::map<std::string, SharedPtrAny> _data;
     };
 
+    /**
+     * @brief Provides access to the global singleton instance of the State class.
+     *
+     * This function returns a reference to the central repository that manages
+     * the current execution state, including test results, errors, and user data.
+     * The instance is lazily initialized upon the first call.
+     *
+     * @return A reference to the global State instance.
+     */
     FCF_TEST_API State& state();
 
   } // NTest namespace
