@@ -235,9 +235,9 @@
     class  am_fixtureClassName { \
       public:\
       am_fixtureClassName() {\
-        ::fcf::NTest::storage().appendFixture( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
-                                                                  ::fcf::NTest::NDetails::splitSelector(am_group), 1000000, \
-                                                                  ::fcf::NTest::NDetails::splitSelector(am_test), 1000000, \
+        ::fcf::NTest::storage().appendFixture( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), \
+                                                                  ::fcf::NTest::NDetails::splitSelector(am_group), \
+                                                                  ::fcf::NTest::NDetails::splitSelector(am_test), \
                                                                   am_start, am_level, am_fixtureClassName::fixture,\
                                                                   __FILE__, __LINE__ } );\
       }\
@@ -253,9 +253,9 @@
       class  am_autoFixtureClassName { \
         public:\
         am_autoFixtureClassName() {\
-          ::fcf::NTest::storage().appendFixture( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
-                                                                    ::fcf::NTest::NDetails::splitSelector(am_group), 1000000, \
-                                                                    ::fcf::NTest::NDetails::splitSelector(am_test), 1000000, \
+          ::fcf::NTest::storage().appendFixture( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), \
+                                                                    ::fcf::NTest::NDetails::splitSelector(am_group), \
+                                                                    ::fcf::NTest::NDetails::splitSelector(am_test), \
                                                                     am_start, am_level, am_autoFixtureClassName::fixture,\
                                                                     __FILE__, __LINE__ } );\
         }\
@@ -726,35 +726,22 @@ namespace fcf {
     };
 
 
-
+    /**
+     * @brief Represents a test fixture used for setup and teardown operations.
+     *
+     * A fixture can be applied at different levels of the test hierarchy
+     * (Global, Part, Group, or Test) and is executed before and after
+     * the target tests.
+     */
     struct Fixture {
-      std::vector<std::string>  parts;
-      int                       partOrder;
-      std::vector<std::string>  groups;
-      int                       groupOrder;
-      std::vector<std::string>  tests;
-      int                       testOrder;
-      bool                      start;
-      EFixtureLevel             level;
-      void (*fixtureFunction)();   ///< Pointer to the fixture function to execute.
-      std::string               file;
-      unsigned int              line;
-
-      bool operator<(const Fixture& a_fixture) const {
-        return partOrder        < a_fixture.partOrder        ? true :
-               partOrder        > a_fixture.partOrder        ? false :
-               groupOrder       < a_fixture.groupOrder       ? true :
-               groupOrder       > a_fixture.groupOrder       ? false :
-               testOrder        < a_fixture.testOrder        ? true :
-               testOrder        > a_fixture.testOrder        ? false :
-               level            < a_fixture.level            ? true :
-               level            > a_fixture.level            ? false :
-               start            < a_fixture.start            ? true :
-               start            > a_fixture.start            ? false :
-               (void*)fixtureFunction  < (void*)a_fixture.fixtureFunction  ? true :
-               (void*)fixtureFunction  > (void*)a_fixture.fixtureFunction  ? false :
-                                                               false;
-      }
+      std::vector<std::string>  parts;    ///< List of part names to which this fixture applies. Empty means all parts.
+      std::vector<std::string>  groups;   ///< List of group names to which this fixture applies. Empty means all groups.
+      std::vector<std::string>  tests;    ///< List of specific test names to which this fixture applies. Empty means all tests.
+      bool                      start;   ///< True if this is a setup fixture (runs before), false if it is a teardown fixture (runs after).
+      EFixtureLevel             level;   ///< The scope/level of the fixture (FL_GLOBAL, FL_PART, FL_GROUP, or FL_TEST).
+      void (*fixtureFunction)();        ///< Pointer to the function containing the fixture logic.
+      std::string               file;    ///< Source file where the fixture was defined.
+      unsigned int              line;    ///< Source line number where the fixture was defined.
     };
 
     /**
@@ -894,7 +881,7 @@ namespace fcf {
          * @brief Returns a constant reference to the collection of registered fixtures.
          * @return A vector containing all registered Fixture objects.
          */
-        std::vector<Fixture> fixtures();
+        std::list<Fixture> fixtures();
 
         /**
          * @brief Adds a new fixture to the storage, organizing it into parts and groups.
@@ -2064,28 +2051,25 @@ namespace fcf {
               mutable int                             active;
               mutable std::shared_ptr< int >          close;
               mutable std::shared_ptr< FixtureError > errors;
-              bool operator<(const FixtureInfo& a_info) const {
-                return fixture < a_info.fixture;
-              }
             };
 
             struct FixtureTestGraph {
-              std::set<FixtureInfo> fixtures;
+              std::vector<FixtureInfo> fixtures;
             };
 
             struct FixtureGroupGraph {
               std::map<std::string, FixtureTestGraph> tests;
-              std::set<FixtureInfo>                   fixtures;
+              std::vector<FixtureInfo>                fixtures;
             };
 
             struct FixturePartGraph {
               std::map<std::string, FixtureGroupGraph> groups;
-              std::set<FixtureInfo>                    fixtures;
+              std::vector<FixtureInfo>                 fixtures;
             };
 
             struct FixtureGraph {
               std::map<std::string, FixturePartGraph> parts;
-              std::set<FixtureInfo>                   fixtures;
+              std::vector<FixtureInfo>                fixtures;
             };
 
           public:
@@ -2158,7 +2142,7 @@ namespace fcf {
             }
 
           private:
-            void _fillErrors(const Test& a_test, std::set<FixtureInfo>& a_fixtures, Errors& a_dst) {
+            void _fillErrors(const Test& a_test, std::vector<FixtureInfo>& a_fixtures, Errors& a_dst) {
               for(const FixtureInfo& info : a_fixtures) {
                 if (!info.errors->message.empty()) {
                   a_dst.push_back( Error{info.errors->message, info.fixture.file, info.fixture.line, info.errors->count, info.errors->index} );
@@ -2220,7 +2204,7 @@ namespace fcf {
 
             void _callFixtures(std::set<Test>::const_iterator a_beginIt, std::set<Test>::const_iterator a_currentIt, std::set<Test>::const_iterator a_endIt,
                                const std::string& a_part, const std::string& a_group,
-                               std::set<FixtureInfo>& a_fixtures, bool a_start, bool a_onlyGlobal) {
+                               std::vector<FixtureInfo>& a_fixtures, bool a_start, bool a_onlyGlobal) {
               for(const FixtureInfo& fi : a_fixtures) {
                 int enable = false;
                 if (a_onlyGlobal) {
@@ -2332,7 +2316,7 @@ namespace fcf {
             FixtureGraph _build() {
               FixtureGraph graph;
               int level = 3;
-              std::vector< Fixture > fixtures(storage().fixtures());
+              std::list< Fixture > fixtures(storage().fixtures());
               for(const Fixture& fixture : fixtures) {
                 std::shared_ptr< FixtureError > errors( new FixtureError{"", 0} );
                 std::shared_ptr< int > count( new int{0} );
@@ -2350,7 +2334,7 @@ namespace fcf {
                         }
                       }
 
-                      std::set<FixtureInfo>* set = &graph.fixtures;
+                      std::vector<FixtureInfo>* set = &graph.fixtures;
                       std::map<std::string, FixturePartGraph>::iterator  pit;
                       std::map<std::string, FixtureGroupGraph>::iterator git;
                       std::map<std::string, FixtureTestGraph>::iterator  tit;
@@ -2377,7 +2361,7 @@ namespace fcf {
                       }
 
                       if (set) {
-                        set->insert( { fixture, 0,  count, errors } );
+                        set->push_back( { fixture, 0,  count, errors } );
                       }
 
                     }
@@ -2978,9 +2962,9 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      std::vector<Fixture>  Storage::fixtures(){
+      std::list<Fixture> Storage::fixtures(){
         std::lock_guard<std::mutex> lock(_mutex);
-        std::vector<Fixture> fixtures(_fixtures);
+        std::list<Fixture> fixtures(_fixtures.begin(), _fixtures.end());
         return fixtures;
       }
     #endif
