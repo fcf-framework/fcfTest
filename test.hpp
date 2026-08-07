@@ -737,7 +737,7 @@ namespace fcf {
       std::vector<std::string>  parts;    ///< List of part names to which this fixture applies. Empty means all parts.
       std::vector<std::string>  groups;   ///< List of group names to which this fixture applies. Empty means all groups.
       std::vector<std::string>  tests;    ///< List of specific test names to which this fixture applies. Empty means all tests.
-      bool                      start;   ///< True if this is a setup fixture (runs before), false if it is a teardown fixture (runs after).
+      bool                      before;   ///< True if this is a setup fixture (runs before), false if it is a teardown fixture (runs after).
       EFixtureLevel             level;   ///< The scope/level of the fixture (FL_GLOBAL, FL_PART, FL_GROUP, or FL_TEST).
       void (*fixtureFunction)();         ///< Pointer to the function containing the fixture logic.
       std::string               file;    ///< Source file where the fixture was defined.
@@ -991,7 +991,7 @@ namespace fcf {
          *
          * If called for the very first time (before begin()), it automatically falls back
          * to act as begin() for seamless code integration.
-         * On subsequent calls, it mathematically shifts the global start timestamp forward
+         * On subsequent calls, it mathematically shifts the global before timestamp forward
          * to exclude the paused duration from the total score, and opens a new local segment.
          */
         void resume() {
@@ -2508,8 +2508,8 @@ namespace fcf {
 
             void call(std::set<Test>::const_iterator a_beginIt, std::set<Test>::const_iterator a_currentIt, std::set<Test>::const_iterator a_endIt,
                       const std::string& a_part, const std::string& a_group, const std::string& a_test,
-                      bool a_start) {
-              _call(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, a_start, false);
+                      bool a_before) {
+              _call(a_beginIt, a_currentIt, a_endIt, a_part, a_group, a_test, a_before, false);
             }
 
             Errors errors(const Test& a_test) {
@@ -2560,9 +2560,9 @@ namespace fcf {
 
             void _call(std::set<Test>::const_iterator a_beginIt, std::set<Test>::const_iterator a_currentIt, std::set<Test>::const_iterator a_endIt,
                        const std::string& a_part, const std::string& a_group, const std::string& a_test,
-                       bool a_start, int a_onlyGlobal) {
+                       bool a_before, int a_onlyGlobal) {
 
-              _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, _graph.fixtures, a_start, a_onlyGlobal);
+              _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, _graph.fixtures, a_before, a_onlyGlobal);
 
               std::map<std::string, FixturePartGraph>::iterator pitv[2] = {_graph.parts.find(a_part), _graph.parts.find("*")};
               for(size_t i = 0; i < 2; ++i) {
@@ -2570,7 +2570,7 @@ namespace fcf {
                   continue;
                 }
 
-                _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, pitv[i]->second.fixtures, a_start, a_onlyGlobal);
+                _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, pitv[i]->second.fixtures, a_before, a_onlyGlobal);
 
                 std::map<std::string, FixtureGroupGraph>::iterator gitv[2] = { pitv[i]->second.groups.find(a_group), pitv[i]->second.groups.find("*")};
 
@@ -2578,7 +2578,7 @@ namespace fcf {
                   if (gitv[j] == pitv[i]->second.groups.end()) {
                     continue;
                   }
-                  _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, gitv[j]->second.fixtures, a_start, a_onlyGlobal);
+                  _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, gitv[j]->second.fixtures, a_before, a_onlyGlobal);
 
                   std::map<std::string, FixtureTestGraph>::iterator titv[2] = { gitv[j]->second.tests.find(a_test), gitv[j]->second.tests.find("*")};
 
@@ -2586,7 +2586,7 @@ namespace fcf {
                     if (titv[k] == gitv[j]->second.tests.end()) {
                       continue;
                     }
-                    _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, titv[k]->second.fixtures, a_start, a_onlyGlobal);
+                    _callFixtures(a_beginIt, a_currentIt, a_endIt, a_part, a_group, titv[k]->second.fixtures, a_before, a_onlyGlobal);
                   }
                 }
               }
@@ -2611,17 +2611,17 @@ namespace fcf {
 
             void _callFixtures(std::set<Test>::const_iterator a_beginIt, std::set<Test>::const_iterator a_currentIt, std::set<Test>::const_iterator a_endIt,
                                const std::string& a_part, const std::string& a_group,
-                               std::vector<FixtureInfo>& a_fixtures, bool a_start, bool a_onlyGlobal) {
+                               std::vector<FixtureInfo>& a_fixtures, bool a_before, bool a_onlyGlobal) {
               for(const FixtureInfo& fi : a_fixtures) {
                 int enable = false;
                 if (a_onlyGlobal) {
-                  enable = ((fi.fixture.level == FL_GLOBAL && fi.active == 0) || ( fi.fixture.level != FL_GLOBAL && !a_start && *fi.close)) &&
-                           a_start == fi.fixture.start;
+                  enable = ((fi.fixture.level == FL_GLOBAL && fi.active == 0) || ( fi.fixture.level != FL_GLOBAL && !a_before && *fi.close)) &&
+                           a_before == fi.fixture.before;
                 } else if (fi.fixture.level == FL_GLOBAL) {
                   enable = false;
                 } else if (fi.fixture.level == FL_TEST) {
                   enable = true;
-                } else if (a_start) {
+                } else if (a_before) {
                   if (fi.fixture.level == FL_GROUP) {
                     bool match = false;
                     std::set<Test>::const_iterator it = a_currentIt;
@@ -2687,12 +2687,12 @@ namespace fcf {
                   continue;
                 }
 
-                if (a_start) {
-                  if (!a_onlyGlobal && !fi.fixture.start){
+                if (a_before) {
+                  if (!a_onlyGlobal && !fi.fixture.before){
                     ++*fi.close;
                   }
                 } else {
-                  if (!fi.fixture.start){
+                  if (!fi.fixture.before){
                     if (a_onlyGlobal) {
                       *fi.close = 0;
                     } else {
@@ -2701,7 +2701,7 @@ namespace fcf {
                   }
                 }
 
-                if (fi.fixture.start != a_start) {
+                if (fi.fixture.before != a_before) {
                   continue;
                 }
 
