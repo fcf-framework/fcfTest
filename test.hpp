@@ -150,6 +150,19 @@
 #endif
 
 
+
+/**
+ * @brief Defines the default priority order for tests, groups, and parts.
+ *
+ * A higher value indicates a lower priority (executed later).
+ * This constant is used when no specific order is provided via
+ * FCF_TEST_PART_ORDER, FCF_TEST_GROUP_ORDER, or FCF_TEST_TEST_ORDER.
+ */
+#ifndef FCF_TEST_DEFAULT_ORDER
+  #define FCF_TEST_DEFAULT_ORDER 1000000
+#endif
+
+
 /**
  * @brief FCF_TEST_DEFINE(const char* am_part, const char* am_group, const char* am_test)
  * @brief FCF_TEST_DEFINE(const char* am_part, const char* am_group, const char* am_test, TYPE am_testerClassName)
@@ -173,7 +186,7 @@
     class  am_testerClassName { \
       public:\
       am_testerClassName() {\
-        ::fcf::NTest::storage().append( ::fcf::NTest::Test{ am_part, 1000000, am_group, 1000000, am_test, 1000000, am_testerClassName::test } );\
+        ::fcf::NTest::storage().appendTest( ::fcf::NTest::Test{ am_part, FCF_TEST_DEFAULT_ORDER, am_group, FCF_TEST_DEFAULT_ORDER, am_test, FCF_TEST_DEFAULT_ORDER, am_testerClassName::test } );\
       }\
       static void test();\
     };\
@@ -187,7 +200,7 @@
       class  am_autoTesterClassName { \
         public:\
         am_autoTesterClassName() {\
-          ::fcf::NTest::storage().append( ::fcf::NTest::Test{ am_part, 1000000, am_group, 1000000, am_test, 1000000, am_autoTesterClassName::test } );\
+          ::fcf::NTest::storage().appendTest( ::fcf::NTest::Test{ am_part, FCF_TEST_DEFAULT_ORDER, am_group, FCF_TEST_DEFAULT_ORDER, am_test, FCF_TEST_DEFAULT_ORDER, am_autoTesterClassName::test } );\
         }\
         static void test();\
       };\
@@ -222,7 +235,7 @@
     class  am_fixtureClassName { \
       public:\
       am_fixtureClassName() {\
-        ::fcf::NTest::storage().append( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
+        ::fcf::NTest::storage().appendFixture( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
                                                                   ::fcf::NTest::NDetails::splitSelector(am_group), 1000000, \
                                                                   ::fcf::NTest::NDetails::splitSelector(am_test), 1000000, \
                                                                   am_start, am_level, am_fixtureClassName::fixture,\
@@ -240,7 +253,7 @@
       class  am_autoFixtureClassName { \
         public:\
         am_autoFixtureClassName() {\
-          ::fcf::NTest::storage().append( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
+          ::fcf::NTest::storage().appendFixture( ::fcf::NTest::Fixture{ ::fcf::NTest::NDetails::splitSelector(am_part), 1000000, \
                                                                     ::fcf::NTest::NDetails::splitSelector(am_group), 1000000, \
                                                                     ::fcf::NTest::NDetails::splitSelector(am_test), 1000000, \
                                                                     am_start, am_level, am_autoFixtureClassName::fixture,\
@@ -359,7 +372,7 @@
  * arguments, then logs the error and throws a std::runtime_error.
  *
  * @param am_code The code block or expression to be executed and checked for an exception.
- * @param am_exception The name of the expected exception. 
+ * @param am_exception The name of the expected exception.
  *                     To catch all exceptions, this parameter must be ...
  * @param ... Variable list of arguments whose values will be included in the error message if no exception is thrown.
  */
@@ -402,7 +415,7 @@
  * @return true if an exception was caught, false if no exception was thrown.
  *
  * @param am_code The code block or expression to be executed and checked for an exception.
- * @param am_exception The name of the expected exception. 
+ * @param am_exception The name of the expected exception.
  *                     To catch all exceptions, this parameter must be ...
  * @param ... Variable list of arguments whose values will be included in the error message if no exception is thrown.
  */
@@ -525,19 +538,19 @@ namespace fcf {
      * @brief Enumerates message categories for the logger.
      * Used for filtering and prefixing log messages.
      *
-     * The fcf::NTest::ELogMessageCategory enumeration is used to 
-     * categorize every log message produced by the framework. 
-     * It is designed as a bitmask, which allows a single log message 
-     * to belong to multiple categories simultaneously, 
+     * The fcf::NTest::ELogMessageCategory enumeration is used to
+     * categorize every log message produced by the framework.
+     * It is designed as a bitmask, which allows a single log message
+     * to belong to multiple categories simultaneously,
      * or for a logger to filter messages based on a combination of categories.
      *
      * The high two bytes are the message category/type.
-     * When determining whether a message matches a given type, 
+     * When determining whether a message matches a given type,
      * a check is performed using the & operator.
      *
-     * The low two bytes are the message number. 
+     * The low two bytes are the message number.
      * And the equality check is performed if it is not zero.
-     * If the low-order bytes are zero, then all common 
+     * If the low-order bytes are zero, then all common
      * bytes from the specified group are selected.
      *
      * The first two bytes can be set by the user to
@@ -810,54 +823,97 @@ namespace fcf {
       Map values; ///< Map of part names to Groups containers.
     };
 
+
+
     /**
-     * @brief Central storage for registered tests, parts, and groups.
+     * @brief Central storage for registered tests, parts, groups, and fixtures.
+     *
+     * This class acts as a thread-safe repository for all test metadata,
+     * including test functions, hierarchical organization (parts and groups),
+     * execution orders, and setup/teardown fixtures.
      */
     class FCF_TEST_API Storage {
       public:
 
+        /**
+         * @brief Sets the execution order for a specific part.
+         * @param a_name The name of the part.
+         * @param a_order The priority order (lower values run first).
+         */
         void partOrder(const char* a_name, int a_order);
 
+        /**
+         * @brief Gets the execution order of a specific part.
+         * @param a_name The name of the part.
+         * @return The assigned order, or FCF_TEST_DEFAULT_ORDER if not set.
+         */
+        int partOrder(const char* a_name) const;
+
+        /**
+         * @brief Sets the execution order for a specific group.
+         * @param a_name The name of the group.
+         * @param a_order The priority order (lower values run first).
+         */
         void groupOrder(const char* a_name, int a_order);
 
+        /**
+         * @brief Gets the execution order of a specific group.
+         * @param a_name The name of the group.
+         * @return The assigned order, or FCF_TEST_DEFAULT_ORDER if not set.
+         */
+        int groupOrder(const char* a_name) const;
+
+        /**
+         * @brief Sets the execution order for a specific test.
+         * @param a_name The name of the test.
+         * @param a_order The priority order (lower values run first).
+         */
         void testOrder(const char* a_name, int a_order);
 
         /**
+         * @brief Gets the execution order of a specific test.
+         * @param a_name The name of the test.
+         * @return The assigned order, or FCF_TEST_DEFAULT_ORDER if not set.
+         */
+        int testOrder(const char* a_name)  const;
+
+        /**
+         * @brief Recursively selects tests based on the provided options and filters.
+         * @param a_dst Destination set where selected tests will be inserted.
+         * @param a_options Configuration options containing selectors and ignore rules.
+         */
+        void selectTests(std::set<Test>& a_dst, const Options& a_options) const;
+
+        /**
          * @brief Adds a new test to the storage, organizing it into parts and groups.
-         *
          * @param a_test The Test object containing metadata and function pointer.
          */
-        void append(const Test& a_test);
+        void appendTest(const Test& a_test);
+
+        /**
+         * @brief Returns a constant reference to the collection of registered fixtures.
+         * @return A vector containing all registered Fixture objects.
+         */
+        std::vector<Fixture> fixtures();
 
         /**
          * @brief Adds a new fixture to the storage, organizing it into parts and groups.
-         *
          * @param a_fixture The Fixture object containing metadata and function pointer.
          */
-        void append(Fixture a_fixture);
+        void appendFixture(const Fixture& a_fixture);
 
-        /**
-         * @brief Recursively selects tests based on parts.
-         *
-         * @param a_dst Destination set where selected tests will be inserted.
-         * @param a_options Configuration options (filters).
-         */
-        void select(std::set<Test>& a_dst, const Options& a_options);
-
-        const std::vector< Fixture >& fixtures();
 
       private:
         typedef std::map<std::string, int> OrderMap;
 
-        bool _suitability(const std::vector<std::string>& a_items, const std::string& a_rule, bool& a_dstSuitability);
+        bool _suitability(const std::vector<std::string>& a_items, const std::string& a_rule, bool& a_dstSuitability) const;
 
-        std::vector<Test>     _tests;       ///< Registered tests
-        OrderMap              _partOrders;  ///< Execution order for each part.
-        OrderMap              _groupOrders; ///< Execution order for each group.
-        OrderMap              _testOrders;  ///< Execution order for each test.
+        std::vector<Test>     _tests;
+        OrderMap              _partOrders;
+        OrderMap              _groupOrders;
+        OrderMap              _testOrders;
         std::vector<Fixture>  _fixtures;
-        std::mutex            _mutex;
-
+        mutable std::mutex    _mutex;
     };
 
 
@@ -1520,7 +1576,7 @@ namespace fcf {
 
       struct Registrator {
         Registrator(const Test& a_test) {
-          storage().append(a_test);
+          storage().appendTest(a_test);
         }
       };
 
@@ -1572,18 +1628,18 @@ namespace fcf {
         std::cout << "  --test-group GROUP_NAME - Run only tests from the group. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-test  TEST_NAME - Run only this test. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-select PART GROUP TEST - Runs only tests that satisfy the selector specified by the three parameters." << std::endl
-                  << "                                  If a parameter is an empty string or '*', it is assumed that " << std::endl 
-                  << "                                  the selector selects all elements from the group." << std::endl 
-                  << "                                  Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl 
+                  << "                                  If a parameter is an empty string or '*', it is assumed that " << std::endl
+                  << "                                  the selector selects all elements from the group." << std::endl
+                  << "                                  Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl
                   << "                                    Example: test --test-select Library \"\" \"func2|func2\"" << std::endl
                   << "                                  The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-part PART_NAME - Exclude tests in the specified part(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-group GROUP_NAME - Exclude tests in the specified group(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-test TEST_NAME - Exclude the specified test(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-select PART GROUP TEST - Exclude tests that satisfy the selector specified by the three parameters." << std::endl
-                  << "                                  If a parameter is an empty string or '*', it is assumed that " << std::endl 
-                  << "                                  the selector selects all elements from the group." << std::endl 
-                  << "                                  Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl 
+                  << "                                  If a parameter is an empty string or '*', it is assumed that " << std::endl
+                  << "                                  the selector selects all elements from the group." << std::endl
+                  << "                                  Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl
                   << "                                  The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-log-level LEVEL - Logging level (VALUES: def, off, ftl, err, wrn, att, log, inf, dbg, trc, all)" << std::endl;
         std::cout << "  --test-no-break - In case of an error, testing does not stop" << std::endl;
@@ -1613,7 +1669,7 @@ namespace fcf {
       FCF_TEST_API void cmdList() {
         Options options;
         std::set<Test> tests;
-        storage().select(tests, options);
+        storage().selectTests(tests, options);
         std::cout << "List of tests:" << std::endl;
         for(const Test& test : tests) {
           std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.test  << "\""<< std::endl;
@@ -2418,7 +2474,7 @@ namespace fcf {
             logger()._setEnvironment(newEnv);
 
             std::set<Test> tests;
-            storage().select(tests, a_options);
+            storage().selectTests(tests, a_options);
 
             state().duration({});
             state().tests(tests);
@@ -2753,9 +2809,25 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
+      int Storage::partOrder(const char* a_name) const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        OrderMap::const_iterator it = _partOrders.find(a_name);
+        return it != _partOrders.end() ? it->second : FCF_TEST_DEFAULT_ORDER;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
       void Storage::groupOrder(const char* a_name, int a_order) {
         std::lock_guard<std::mutex> lock(_mutex);
         _groupOrders[a_name] = a_order;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      int Storage::groupOrder(const char* a_name) const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        OrderMap::const_iterator it = _groupOrders.find(a_name);
+        return it != _groupOrders.end() ? it->second : FCF_TEST_DEFAULT_ORDER;
       }
     #endif
 
@@ -2767,45 +2839,54 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Storage::append(const Test& a_test) {
+      int Storage::testOrder(const char* a_name) const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        OrderMap::const_iterator it = _testOrders.find(a_name);
+        return it != _testOrders.end() ? it->second : FCF_TEST_DEFAULT_ORDER;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::appendTest(const Test& a_test) {
         std::lock_guard<std::mutex> lock(_mutex);
         _tests.push_back(a_test);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Storage::append(Fixture a_fixture) {
+      void Storage::appendFixture(const Fixture& a_fixture) {
+        Fixture fixture(a_fixture);
         std::lock_guard<std::mutex> lock(_mutex);
-        if (!a_fixture.parts.size()) {
-          a_fixture.parts.push_back("*");
+        if (!fixture.parts.size()) {
+          fixture.parts.push_back("*");
         }
-        for(size_t i = 0; i < a_fixture.parts.size(); ++i) {
-          if (!a_fixture.parts[i].length()) {
-            a_fixture.parts[i] = "*";
+        for(size_t i = 0; i < fixture.parts.size(); ++i) {
+          if (!fixture.parts[i].length()) {
+            fixture.parts[i] = "*";
           }
         }
-        if (!a_fixture.groups.size()) {
-          a_fixture.groups.push_back("*");
+        if (!fixture.groups.size()) {
+          fixture.groups.push_back("*");
         }
-        for(size_t i = 0; i < a_fixture.groups.size(); ++i) {
-          if (!a_fixture.groups[i].length()) {
-            a_fixture.groups[i] = "*";
+        for(size_t i = 0; i < fixture.groups.size(); ++i) {
+          if (!fixture.groups[i].length()) {
+            fixture.groups[i] = "*";
           }
         }
-        if (!a_fixture.tests.size()) {
-          a_fixture.tests.push_back("*");
+        if (!fixture.tests.size()) {
+          fixture.tests.push_back("*");
         }
-        for(size_t i = 0; i < a_fixture.tests.size(); ++i) {
-          if (!a_fixture.tests[i].length()) {
-            a_fixture.tests[i] = "*";
+        for(size_t i = 0; i < fixture.tests.size(); ++i) {
+          if (!fixture.tests[i].length()) {
+            fixture.tests[i] = "*";
           }
         }
-        _fixtures.push_back(a_fixture);
+        _fixtures.push_back(fixture);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Storage::select(std::set<Test>& a_dst, const Options& a_options) {
+      void Storage::selectTests(std::set<Test>& a_dst, const Options& a_options) const{
         std::lock_guard<std::mutex> lock(_mutex);
         std::map<std::string, bool> exists[3];
 
@@ -2897,13 +2978,15 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      const std::vector< Fixture >&  Storage::fixtures(){
-        return _fixtures;
+      std::vector<Fixture>  Storage::fixtures(){
+        std::lock_guard<std::mutex> lock(_mutex);
+        std::vector<Fixture> fixtures(_fixtures);
+        return fixtures;
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      bool Storage::_suitability(const std::vector<std::string>& a_items, const std::string& a_rule, bool& a_dstSuitability) {
+      bool Storage::_suitability(const std::vector<std::string>& a_items, const std::string& a_rule, bool& a_dstSuitability) const{
         std::vector<std::string>::const_iterator foundIt = std::find(a_items.begin(), a_items.end(), "*");
         if (foundIt == a_items.end()) {
           foundIt = std::find(a_items.begin(), a_items.end(), "");
