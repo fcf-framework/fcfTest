@@ -1150,6 +1150,15 @@ namespace fcf {
 namespace fcf {
   namespace NTest {
 
+
+    /**
+     * @brief A type-erased smart pointer that manages the lifetime of an object of any type.
+     *
+     * SharedPtrAny provides a way to store and manage objects of different types
+     * within a single container, using reference counting to ensure proper
+     * memory management. It is designed to be used for storing arbitrary
+     * user data within the testing framework.
+     */
     class FCF_TEST_API SharedPtrAny {
       private:
         struct ControlBlockBase {
@@ -1173,33 +1182,95 @@ namespace fcf {
 
           const std::type_info& type() const noexcept override;
         };
-
       public:
+        /**
+         * @brief Creates a new SharedPtrAny managing an object of type Ty.
+         *
+         * This is the equivalent of std::make_shared for arbitrary types.
+         *
+         * @tparam Ty The type of the object to be managed.
+         * @tparam ArgPack The types of the arguments to pass to the constructor of Ty.
+         * @param a_args The arguments to be forwarded to the constructor of Ty.
+         * @return A new SharedPtrAny instance.
+         */
         template <typename Ty, typename... ArgPack>
         static SharedPtrAny make(ArgPack&&... a_args);
 
+        /**
+         * @brief Default constructor.
+         * Initializes an empty SharedPtrAny.
+         */
         SharedPtrAny() noexcept;
+
+        /**
+         * @brief Nullptr constructor.
+         * @param a_source std::nullptr_t.
+         */
         SharedPtrAny(std::nullptr_t) noexcept;
+
+        /**
+         * @brief Copy constructor.
+         * Increments the reference count of the managed object.
+         * @param a_source The source SharedPtrAny instance.
+         */
         SharedPtrAny(const SharedPtrAny& a_source) noexcept;
+
+        /**
+         * @brief Move constructor.
+         * Transfers ownership from the source instance without changing the reference count.
+         * @param a_source The source SharedPtrAny instance.
+         */
         SharedPtrAny(SharedPtrAny&& a_source) noexcept;
 
+        /**
+         * @brief Destructor.
+         * Decrements the reference count and deletes the object if it reaches zero.
+         */
         ~SharedPtrAny();
 
+        /**
+         * @brief Copy assignment operator.
+         * @param a_source The source SharedPtrAny instance.
+         * @return Reference to this instance.
+         */
         SharedPtrAny& operator=(const SharedPtrAny& a_source) noexcept;
+
+        /**
+         * @brief Move assignment operator.
+         * @param a_source The source SharedPtrAny instance.
+         * @return Reference to this instance.
+         */
         SharedPtrAny& operator=(SharedPtrAny&& a_source) noexcept;
 
+        /**
+         * @brief Attempts to cast the managed object to a specific type.
+         *
+         * @tparam Ty The target type to cast to.
+         * @return A pointer to the managed object if the type matches, otherwise nullptr.
+         */
         template <typename Ty>
         Ty* cast() const noexcept;
 
+        /**
+         * @brief Gets the current reference count of the managed object.
+         * @return The number of SharedPtrAny instances pointing to the same object.
+         */
         int count() const noexcept;
 
+        /**
+         * @brief Checks if the SharedPtrAny is not empty.
+         * @return true if it manages an object, false otherwise.
+         */
         explicit operator bool() const noexcept;
 
+        /**
+         * @brief Releases ownership of the managed object.
+         * Decrements the reference count.
+         */
         void release();
 
       private:
         explicit SharedPtrAny(ControlBlockBase* a_block) noexcept;
-
         ControlBlockBase* _block;
     };
 
