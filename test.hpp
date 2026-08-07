@@ -1430,93 +1430,300 @@ class LogPrefixTester;
 namespace fcf {
   namespace NTest {
 
+    /**
+     * @class Logger
+     * @brief Thread-safe logging system for the fcfTest framework.
+     *
+     * The Logger provides a flexible way to output messages at various severity levels
+     * (Fatal, Error, Warning, Attention, Log, Info, Debug, Trace). It supports:
+     * - **Multiple Output Targets**: Simultaneously log to multiple streams (e.g., std::cout, files).
+     * - **Custom Formatting**: Apply different formatting rules (like JUnit XML) to specific targets.
+     * - **Dynamic Prefixes**: Use static or functional prefixes to add context (like timestamps
+     *   or log levels) to every message.
+     * - **Category Filtering**: Categorize messages using bitmask-based categories for granular control.
+     * - **Thread Safety**: Uses recursive mutexes to ensure safe logging from multithreaded tests.
+     *
+     * The Logger uses a `Writer` pattern to allow for fluent, chained syntax:
+     * @code
+     * fcf::NTest::log() << "Message with level: " << level << std::endl;
+     * @endcode
+     */
     class FCF_TEST_API Logger {
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
         friend class ::LogPrefixTester;
       public:
         class MessageContext;
+
+        /**
+         * @brief Function type for generating dynamic log prefixes.
+         * @param a_logger Reference to the logger instance.
+         * @param a_context The context of the current message.
+         * @return A string representing the generated prefix.
+         */
         typedef std::function<std::string(Logger&, MessageContext&)> PrefixFunction;
+
+        /**
+         * @brief Function type for handling log message formatting.
+         * @param a_logger Reference to the logger instance.
+         * @param a_context The context of the current message.
+         */
         typedef std::function<void(Logger&, MessageContext&)>        FormatFunction;
+
         struct Format;
+
+        /**
+         * @brief Collection of log formats.
+         */
         typedef std::list<Format> Formats;
+
         struct Prefix;
+
+        /**
+         * @brief Collection of log prefixes.
+         */
         typedef std::list<Prefix> Prefixes;
+
+        /**
+         * @brief Map used to store data associated with handlers.
+         */
         typedef std::map<std::string, SharedPtrAny> HandlerDataMap;
+
         class OutputTarget;
+
+        /**
+         * @brief Collection of output targets.
+         */
         typedef std::list<OutputTarget> OutputTargets;
+
+        /**
+         * @brief Function type for creating data for targets or handlers.
+         * @param a_logger Reference to the logger instance.
+         * @param a_target The target being processed.
+         * @return A SharedPtrAny containing the created data.
+         */
         typedef std::function<SharedPtrAny(Logger&, OutputTarget&)>  DataFactory;
 
         class FCF_TEST_API Writer;
 
+        /**
+         * @brief Default constructor for the Logger.
+         */
         Logger();
 
+        /**
+         * @brief Returns a Writer for fatal level messages.
+         * @param a_category The message category.
+         * @return A Writer object for fatal logs.
+         */
         Writer ftl(unsigned int a_category = LMC_USER_GROUP);
 
+        /**
+         * @brief Returns a Writer for error level messages.
+         * @param a_category The message category.
+         * @return A Writer object for error logs.
+         */
         Writer err(unsigned int a_category = LMC_USER_GROUP);
 
+        /**
+         * @brief Returns a Writer for warning level messages.
+         * @param a_category The message category.
+         * @return A Writer object for warning logs.
+         */
         Writer wrn(unsigned int a_category = LMC_USER_GROUP);
 
+        /**
+         * @brief Returns a Writer for attention level messages.
+         * @param a_category The message category.
+         * @return A Writer object for attention logs.
+         */
         Writer att(unsigned int a_category = LMC_USER_GROUP);
 
+        /**
+         * @brief Returns a Writer for standard log level messages.
+         * @param a_category The message category.
+         * @return A Writer object for log messages.
+         */
         Writer log(unsigned int a_category = LMC_USER_GROUP);
 
+        /**
+         * @brief Returns a Writer for information level messages.
+         * @param a_category The message category.
+         * @return A Writer object for info logs.
+         */
         Writer inf(unsigned int a_category = LMC_USER_GROUP);
 
+        /**
+         * @brief Returns a Writer for debug level messages.
+         * @param a_category The message category.
+         * @return A Writer object for debug logs.
+         */
         Writer dbg(unsigned int a_category = LMC_USER_GROUP);
 
+        /**
+         * @brief Returns a Writer for trace level messages.
+         * @param a_category The message category.
+         * @return A Writer object for trace logs.
+         */
         Writer trc(unsigned int a_category = LMC_USER_GROUP);
 
+        /**
+         * @brief Gets the current log level as a string.
+         * @return A constant pointer to the level string.
+         */
         const char* levelStr() const;
 
+        /**
+         * @brief Sets the current log level from a string.
+         * @param a_level The level string.
+         */
         void levelStr(const char* a_level);
 
+        /**
+         * @brief Gets the current log level.
+         * @return The current ELogLevel.
+         */
         ELogLevel level() const;
 
+        /**
+         * @brief Sets the current log level.
+         * @param a_level The new ELogLevel.
+         */
         void level(ELogLevel a_level);
 
+        /**
+         * @brief Converts a string to an ELogLevel.
+         * @param a_level The input string.
+         * @param a_default The default level if conversion fails.
+         * @return The converted ELogLevel.
+         */
         static ELogLevel toLevel(std::string a_level, ELogLevel a_default = LL_LOG);
 
+        /**
+         * @brief Converts an ELogLevel to a string.
+         * @param a_level The level to convert.
+         * @return A constant pointer to the level string.
+         */
         static const char* toLevelStr(ELogLevel a_level);
 
+        /**
+         * @brief Gets the current list of prefixes.
+         * @return A list of prefixes.
+         */
         Prefixes prefixes();
 
+        /**
+         * @brief Replaces all current prefixes with the provided list.
+         * @param a_prefixes The new list of prefixes.
+         */
         void prefixes(const Prefixes& a_prefixes);
 
+        /**
+         * @brief Removes all current prefixes.
+         * @param a_defaultState If true, applies default prefixes.
+         */
         void clearPrefixes(bool a_defaultState = false);
 
+        /**
+         * @brief Adds a new prefix to the current list.
+         * @param a_prefix The prefix to append.
+         */
         void appendPrefix(const Prefix& a_prefix);
 
+        /**
+         * @brief Gets the current list of formats.
+         * @return A list of formats.
+         */
         Formats formats();
 
+        /**
+         * @brief Replaces all current formats with the provided list.
+         * @param a_formats The new list of formats.
+         */
         void formats(Formats& a_formats);
 
+        /**
+         * @brief Clears all current formats.
+         * @param a_defaultState If true, applies default formats.
+         */
         void clearFormats(bool a_defaultState = false);
 
+        /**
+         * @brief Adds a new format to the current list.
+         * @param a_format The format to append.
+         */
         void appendFormat(const Format& a_format);
 
+        /**
+         * @brief Gets the current list of output targets.
+         * @return A list of output targets.
+         */
         OutputTargets targets();
 
+        /**
+         * @brief Replaces all current targets with the provided list.
+         * @param a_targets The new list of targets.
+         */
         void targets(const OutputTargets& a_targets);
 
+        /**
+         * @brief Clears all current targets.
+         * @param a_defaultState If true, applies default targets.
+         */
         void clearTargets(bool a_defaultState = false);
 
+        /**
+         * @brief Adds a new output target to the current list.
+         * @param a_stream The target to append.
+         */
         void appendTarget(const OutputTarget& a_stream);
 
+        /**
+         * @brief A thread-safe wrapper for writing log messages to a stream.
+         */
         class FCF_TEST_API Writer {
           public:
+            /**
+             * @brief Default constructor for Writer.
+             */
             Writer();
 
+            /**
+             * @brief Deleted copy constructor to prevent accidental copies.
+             */
             Writer(const Writer& a_output)  = delete;
 
+            /**
+             * @brief Move constructor for Writer.
+             */
             Writer(Writer&& a_output);
 
+            /**
+             * @brief Parameterized constructor for Writer.
+             * @param a_logger Reference to the parent logger.
+             * @param a_level The log level for this writer.
+             * @param a_loggerMessageCategory The category for this writer.
+             */
             Writer(Logger& a_logger, ELogLevel a_level, unsigned int a_loggerMessageCategory);
 
+            /**
+             * @brief Destructor for Writer. Triggers the actual write operation.
+             */
             ~Writer();
 
+            /**
+             * @brief Appends a value to the log stream.
+             * @tparam Ty Type of the value.
+             * @param a_value The value to append.
+             * @return Reference to the Writer for chaining.
+             */
             template <typename Ty>
             Writer& operator<<(const Ty& a_value);
 
+            /**
+             * @brief Appends a stream manipulator to the log stream.
+             * @param a_manipulator The manipulator function.
+             * @return Reference to the Writer for chaining.
+             */
             Writer& operator<<(std::ostream& (*a_manipulator)(std::ostream&));
 
           private:
@@ -1526,6 +1733,9 @@ namespace fcf {
             std::stringstream   _sstream;
         };
 
+        /**
+         * @brief Contextual information for a single log message.
+         */
         struct MessageContext {
           unsigned int        category;
           bool                system;
@@ -1539,17 +1749,28 @@ namespace fcf {
           MessageContext() = delete;
           MessageContext(const MessageContext&) = delete;
           MessageContext& operator=(const MessageContext&) = delete;
+
+          /**
+           * @brief Constructs a context with an origin message.
+           * @param a_message The origin message string.
+           */
           MessageContext(const std::string& a_message)
             : origin(a_message) {
           }
         };
 
+        /**
+         * @brief Configuration for a log format.
+         */
         struct Format {
           std::string     name;
           DataFactory     dataFactory;
           FormatFunction  handler;
         };
 
+        /**
+         * @brief Configuration for a log prefix.
+         */
         struct Prefix {
           std::string            name;
           bool                   multiLine;
@@ -1558,11 +1779,23 @@ namespace fcf {
           std::string            prefix;
           Logger::PrefixFunction handler;
 
+          /**
+           * @brief Default constructor for Prefix.
+           */
           Prefix()
             : multiLine(false)
             , category(LMC_ALL)
           { }
 
+          /**
+           * @brief Parameterized constructor for Prefix.
+           * @param a_name Name of the prefix.
+           * @param a_multiLine Whether the prefix applies to multiple lines.
+           * @param a_category The category this prefix applies to.
+           * @param a_dataFactory Factory for prefix-specific data.
+           * @param a_prefix The actual prefix string.
+           * @param a_handler The handler function for dynamic prefixes.
+           */
           Prefix(const std::string& a_name,
                  bool a_multiLine,
                  unsigned int a_category,
@@ -1579,6 +1812,9 @@ namespace fcf {
 
         };
 
+        /**
+         * @brief Configuration for a log output target.
+         */
         struct OutputTarget {
           std::string     name;
           std::ostream*   stream;
@@ -1586,10 +1822,21 @@ namespace fcf {
           HandlerDataMap  prefixData;
           HandlerDataMap  formatData;
 
+          /**
+           * @brief Default constructor for OutputTarget.
+           */
           OutputTarget()
             : stream(nullptr)
           {}
 
+          /**
+           * @brief Parameterized constructor for OutputTarget.
+           * @param a_name Name of the target.
+           * @param a_stream Pointer to the output stream.
+           * @param a_format Format name for this target.
+           * @param a_prefixData Data map for prefixes.
+           * @param a_formatData Data map for formats.
+           */
           OutputTarget(const std::string& a_name,
                        std::ostream* a_stream,
                        const std::string& a_format,
