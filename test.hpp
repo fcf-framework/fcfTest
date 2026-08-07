@@ -739,7 +739,7 @@ namespace fcf {
       std::vector<std::string>  tests;    ///< List of specific test names to which this fixture applies. Empty means all tests.
       bool                      start;   ///< True if this is a setup fixture (runs before), false if it is a teardown fixture (runs after).
       EFixtureLevel             level;   ///< The scope/level of the fixture (FL_GLOBAL, FL_PART, FL_GROUP, or FL_TEST).
-      void (*fixtureFunction)();        ///< Pointer to the function containing the fixture logic.
+      void (*fixtureFunction)();         ///< Pointer to the function containing the fixture logic.
       std::string               file;    ///< Source file where the fixture was defined.
       unsigned int              line;    ///< Source line number where the fixture was defined.
     };
