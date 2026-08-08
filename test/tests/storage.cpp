@@ -41,7 +41,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1, testP1G1T2, testP2G1T1, testP2G1T2, testP2G2T1, testP2G2T2 };
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -49,7 +49,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1, testP1G1T2, testP2G1T1, testP2G1T2, testP2G2T1, testP2G2T2 };
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {}, {}, {} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -57,7 +57,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1, testP1G1T2, testP2G1T1, testP2G1T2, testP2G2T1, testP2G2T2 };
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {""}, {}, {} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -65,7 +65,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1 };
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"p1"}, {"g1"}, {"t1"} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -73,7 +73,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1, testP1G1T2 };
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"p1"}, {"g1"}, {"t1", "t2"} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -81,7 +81,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1, testP1G1T2 };
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"p1"}, {}, {"*"} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -89,7 +89,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1, testP1G1T2 };
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"p1"}, {"*"}, {} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -98,7 +98,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select") {
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"p1"}, {"g1"}, {"t1"} });
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"p1"}, {"g1"}, {"t2"} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -106,7 +106,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1 };
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"p1"}, {}, {"t1"} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -114,7 +114,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1,testP1G1T2 };
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"p1"}, {}, {} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -122,7 +122,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1, testP2G1T1, testP2G2T1 };
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {}, {}, {"t1"} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
 }
@@ -155,7 +155,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select (ignore)") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1, testP1G1T2 };
     fcf::NTest::Options options;
     options.ignoreSelectors.push_back(fcf::NTest::Options::Selector{ {"p2"}, {}, {} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -164,7 +164,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select (ignore)") {
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {}, {}, {"t1", "t2"} });
     options.ignoreSelectors.push_back(fcf::NTest::Options::Selector{ {"p2"}, {}, {} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -173,7 +173,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select (ignore)") {
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {}, {}, {"t1", "t2"} });
     options.ignoreSelectors.push_back(fcf::NTest::Options::Selector{ {"*"}, {}, {} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
   {
@@ -181,7 +181,7 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select (ignore)") {
     std::set<fcf::NTest::Test> expected = { testP1G1T1, testP2G1T1 };
     fcf::NTest::Options options;
     options.ignoreSelectors.push_back(fcf::NTest::Options::Selector{ {}, {"g2"}, {"t2"} });
-    storage.selectTests(tests,options);
+    tests = storage.selectTests(options);
     FCF_TEST(tests == expected, testsToStr(tests), testsToStr(expected));
   }
 }
@@ -195,25 +195,25 @@ FCF_TEST_DEFINE("fcfTest", "storage", "select (throw)") {
     std::set<fcf::NTest::Test> tests;
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"w"}, {}, {} });
-    FCF_TEST_THROW(storage.selectTests(tests, options), std::exception, testsToStr(tests));
+    FCF_TEST_THROW(storage.selectTests(options), std::exception, testsToStr(tests));
   }
   {
     std::set<fcf::NTest::Test> tests;
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {}, {"w"}, {} });
-    FCF_TEST_THROW(storage.selectTests(tests, options), std::exception, testsToStr(tests));
+    FCF_TEST_THROW(storage.selectTests(options), std::exception, testsToStr(tests));
   }
   {
     std::set<fcf::NTest::Test> tests;
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {}, {}, {"w"} });
-    FCF_TEST_THROW(storage.selectTests(tests, options), std::exception, testsToStr(tests));
+    FCF_TEST_THROW(storage.selectTests(options), std::exception, testsToStr(tests));
   }
   {
     std::set<fcf::NTest::Test> tests;
     fcf::NTest::Options options;
     options.selectors.push_back(fcf::NTest::Options::Selector{ {"w"}, {}, {"w"} });
-    FCF_TEST_THROW(storage.selectTests(tests, options), std::exception, testsToStr(tests));
+    FCF_TEST_THROW(storage.selectTests(options), std::exception, testsToStr(tests));
   }
 
 }

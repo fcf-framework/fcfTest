@@ -869,7 +869,7 @@ namespace fcf {
          * @param a_dst Destination set where selected tests will be inserted.
          * @param a_options Configuration options containing selectors and ignore rules.
          */
-        void selectTests(std::set<Test>& a_dst, const Options& a_options) const;
+        std::set<Test> selectTests(const Options& a_options) const;
 
         /**
          * @brief Adds a new test to the storage, organizing it into parts and groups.
@@ -2062,8 +2062,7 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       FCF_TEST_API void cmdList() {
         Options options;
-        std::set<Test> tests;
-        storage().selectTests(tests, options);
+        std::set<Test> tests = storage().selectTests(options);
         std::cout << "List of tests:" << std::endl;
         for(const Test& test : tests) {
           std::cout << "  \"" << test.part << "\" -> \"" << test.group << "\" -> \"" << test.test  << "\""<< std::endl;
@@ -2864,8 +2863,7 @@ namespace fcf {
           try {
             logger()._setEnvironment(newEnv);
 
-            std::set<Test> tests;
-            storage().selectTests(tests, a_options);
+            std::set<Test> tests = storage().selectTests(a_options);
 
             state().duration({});
             state().tests(tests);
@@ -3277,7 +3275,8 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Storage::selectTests(std::set<Test>& a_dst, const Options& a_options) const{
+      std::set<Test> Storage::selectTests(const Options& a_options) const{
+        std::set<Test> result;
         std::lock_guard<std::mutex> lock(_mutex);
         std::map<std::string, bool> exists[3];
 
@@ -3354,7 +3353,7 @@ namespace fcf {
               resultTest.testOrder = it->second;
             }
           }
-          a_dst.insert(resultTest);
+          result.insert(resultTest);
         }
 
         const char* throwPrefixes[3] = { "parts ", "groups ", "" };
@@ -3365,6 +3364,8 @@ namespace fcf {
             }
           }
         }
+
+        return result;
       }
     #endif
 
