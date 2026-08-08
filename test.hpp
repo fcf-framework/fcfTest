@@ -881,7 +881,7 @@ namespace fcf {
          * @brief Returns a constant reference to the collection of registered fixtures.
          * @return A vector containing all registered Fixture objects.
          */
-        std::list<Fixture> fixtures();
+        std::vector<Fixture> fixtures();
 
         /**
          * @brief Adds a new fixture to the storage, organizing it into parts and groups.
@@ -1359,13 +1359,13 @@ namespace fcf {
          * @brief Gets the list of all recorded error messages.
          * @return A list of error message strings.
          */
-        std::list<std::string>    errors();
+        std::vector<std::string>  errors();
 
         /**
          * @brief Sets the list of recorded error messages.
          * @param a_errors The list of error message strings to set.
          */
-        void                      errors(const std::list<std::string>& a_errors);
+        void                      errors(const std::vector<std::string>& a_errors);
 
         /**
          * @brief Stores arbitrary user data associated with a key.
@@ -1399,7 +1399,7 @@ namespace fcf {
         Test                                _test;
         std::set<Test>                      _tests;
         Duration                            _duration;
-        std::list<std::string>              _errors;
+        std::vector<std::string>            _errors;
         std::mutex                          _mutex;
         std::map<std::string, SharedPtrAny> _data;
     };
@@ -1452,7 +1452,7 @@ namespace fcf {
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
         friend class ::LogPrefixTester;
       public:
-        class MessageContext;
+        struct MessageContext;
 
         /**
          * @brief Function type for generating dynamic log prefixes.
@@ -1474,26 +1474,26 @@ namespace fcf {
         /**
          * @brief Collection of log formats.
          */
-        typedef std::list<Format> Formats;
+        typedef std::vector<Format> Formats;
 
         struct Prefix;
 
         /**
          * @brief Collection of log prefixes.
          */
-        typedef std::list<Prefix> Prefixes;
+        typedef std::vector<Prefix> Prefixes;
 
         /**
          * @brief Map used to store data associated with handlers.
          */
         typedef std::map<std::string, SharedPtrAny> HandlerDataMap;
 
-        class OutputTarget;
+        struct OutputTarget;
 
         /**
          * @brief Collection of output targets.
          */
-        typedef std::list<OutputTarget> OutputTargets;
+        typedef std::vector<OutputTarget> OutputTargets;
 
         /**
          * @brief Function type for creating data for targets or handlers.
@@ -1870,8 +1870,8 @@ namespace fcf {
         Writer _log(ELogLevel a_level, unsigned int a_messageCategory);
 
         Environment           _environment;
-        std::list<Prefix>     _prefixes;
-        std::list<Format>     _formats;
+        Prefixes              _prefixes;
+        Formats               _formats;
         std::recursive_mutex  _mutex;
         bool                  _newLine;
     };
@@ -2198,14 +2198,14 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      std::list<std::string> State::errors(){
+      std::vector<std::string> State::errors(){
         std::lock_guard<std::mutex> lock(_mutex);
         return _errors;
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void State::errors(const std::list<std::string>& a_errors){
+      void State::errors(const std::vector<std::string>& a_errors){
         std::lock_guard<std::mutex> lock(_mutex);
         _errors = a_errors;
       }
@@ -2515,7 +2515,7 @@ namespace fcf {
             Errors errors(const Test& a_test) {
               Errors errors;
 
-              _fillErrors(a_test, _graph.fixtures, errors);
+              _fillErrors(_graph.fixtures, errors);
 
               std::map<std::string, FixturePartGraph>::iterator pitv[2] = {_graph.parts.find(a_test.part), _graph.parts.find("*")};
               for(size_t i = 0; i < 2; ++i) {
@@ -2523,7 +2523,7 @@ namespace fcf {
                   continue;
                 }
 
-                _fillErrors(a_test, pitv[i]->second.fixtures, errors);
+                _fillErrors(pitv[i]->second.fixtures, errors);
 
                 std::map<std::string, FixtureGroupGraph>::iterator gitv[2] = { pitv[i]->second.groups.find(a_test.group), pitv[i]->second.groups.find("*")};
 
@@ -2532,7 +2532,7 @@ namespace fcf {
                     continue;
                   }
 
-                  _fillErrors(a_test, gitv[j]->second.fixtures, errors);
+                  _fillErrors(gitv[j]->second.fixtures, errors);
 
                   std::map<std::string, FixtureTestGraph>::iterator titv[2] = { gitv[j]->second.tests.find(a_test.test), gitv[j]->second.tests.find("*")};
 
@@ -2540,7 +2540,7 @@ namespace fcf {
                     if (titv[k] == gitv[j]->second.tests.end()) {
                       continue;
                     }
-                    _fillErrors(a_test, titv[k]->second.fixtures, errors);
+                    _fillErrors(titv[k]->second.fixtures, errors);
                   }
                 }
               }
@@ -2549,7 +2549,7 @@ namespace fcf {
             }
 
           private:
-            void _fillErrors(const Test& a_test, std::vector<FixtureInfo>& a_fixtures, Errors& a_dst) {
+            void _fillErrors(std::vector<FixtureInfo>& a_fixtures, Errors& a_dst) {
               for(const FixtureInfo& info : a_fixtures) {
                 if (!info.errors->message.empty()) {
                   a_dst.push_back( Error{info.errors->message, info.fixture.file, info.fixture.line, info.errors->count, info.errors->index} );
@@ -2723,9 +2723,9 @@ namespace fcf {
             FixtureGraph _build() {
               FixtureGraph graph;
               int level = 3;
-              std::list< Fixture > fixtures(storage().fixtures());
+              std::vector<Fixture> fixtures(storage().fixtures());
               for(const Fixture& fixture : fixtures) {
-                std::shared_ptr< FixtureError > errors( new FixtureError{"", 0} );
+                std::shared_ptr< FixtureError > errors( new FixtureError{"", 0, 0} );
                 std::shared_ptr< int > count( new int{0} );
                 for(const std::string& part : fixture.parts) {
                   for(const std::string& group : fixture.groups) {
@@ -2855,10 +2855,10 @@ namespace fcf {
             Logger::_appendTarget({streamName, &ofstreams.back(), file.format, {}, {}}, newEnv);
           }
 
-          std::set<Test>          lastTests = state().tests();
-          Test                    lastTest = state().test();
-          Duration                lastDuration = state().duration();
-          std::list<std::string>  lastErrors = state().errors();
+          std::set<Test>           lastTests = state().tests();
+          Test                     lastTest = state().test();
+          Duration                 lastDuration = state().duration();
+          std::vector<std::string> lastErrors = state().errors();
 
           std::set< std::string > lastTestData;
           try {
@@ -2913,7 +2913,7 @@ namespace fcf {
                   state().error(e.what(), true);
                 }
 
-                std::list<std::string> errors = state().errors();
+                std::vector<std::string> errors = state().errors();
                 if (!errors.size()) {
                   ++passedCounter;
                   log(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET
@@ -3369,9 +3369,9 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      std::list<Fixture> Storage::fixtures(){
+      std::vector<Fixture> Storage::fixtures(){
         std::lock_guard<std::mutex> lock(_mutex);
-        std::list<Fixture> fixtures(_fixtures.begin(), _fixtures.end());
+        std::vector<Fixture> fixtures(_fixtures);
         return fixtures;
       }
     #endif
