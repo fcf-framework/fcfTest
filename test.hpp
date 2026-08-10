@@ -1784,6 +1784,17 @@ namespace fcf {
           std::string     name;
           DataFactory     dataFactory;
           FormatFunction  handler;
+
+          Format()
+            : dataFactory(nullptr)
+            , handler(nullptr)
+          {}
+
+          Format(std::string a_name, DataFactory a_dataFactory, FormatFunction  a_handler)
+            : name(a_name)
+            , dataFactory(a_dataFactory)
+            , handler(a_handler)
+          {}
         };
 
         /**
