@@ -250,12 +250,14 @@ FCF_TEST_AFTER_DEFINE("MyLib", "Database", "*", fcf::NTest::FL_GROUP) {
 Tests are organized hierarchically into Parts, Groups, and Tests. This allows for filtering execution based on these levels.
 
 ### `FCF_TEST_DEFINE(const char* am_part, const char* am_group, const char* am_test)`
+### `FCF_TEST_DEFINE(const char* am_part, const char* am_group, const char* am_test, TYPE am_testClassName)`
 
 Declares a new test case.
 - **Parameters**:
   - `am_part`: The name of the part (logical grouping level).
   - `am_group`: The name of the group (sub-grouping level).
   - `am_test`: The unique identifier of the test function.
+  - `am_testClassName`: The name of the tester class. Can be used to specify a 'friend' test.
 - **Usage**: This macro generates a static anonymous class that registers the test with the global storage upon instantiation.
 
 **Example:**
