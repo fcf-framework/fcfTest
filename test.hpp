@@ -158,8 +158,8 @@
  * This constant is used when no specific order is provided via
  * FCF_TEST_PART_ORDER, FCF_TEST_GROUP_ORDER, or FCF_TEST_TEST_ORDER.
  */
-#ifndef FCF_TEST_DEFAULT_ORDER
-  #define FCF_TEST_DEFAULT_ORDER 1000000
+#ifndef FCF_TEST_ORDER_DEFAULT
+  #define FCF_TEST_ORDER_DEFAULT 1000000
 #endif
 
 
@@ -186,7 +186,7 @@
     class  am_testerClassName { \
       public:\
       am_testerClassName() {\
-        ::fcf::NTest::storage().appendTest( ::fcf::NTest::Test{ am_part, FCF_TEST_DEFAULT_ORDER, am_group, FCF_TEST_DEFAULT_ORDER, am_test, FCF_TEST_DEFAULT_ORDER, am_testerClassName::test } );\
+        ::fcf::NTest::storage().appendTest( ::fcf::NTest::Test{ am_part, FCF_TEST_ORDER_DEFAULT, am_group, FCF_TEST_ORDER_DEFAULT, am_test, FCF_TEST_ORDER_DEFAULT, am_testerClassName::test } );\
       }\
       static void test();\
     };\
@@ -200,7 +200,7 @@
       class  am_autoTesterClassName { \
         public:\
         am_autoTesterClassName() {\
-          ::fcf::NTest::storage().appendTest( ::fcf::NTest::Test{ am_part, FCF_TEST_DEFAULT_ORDER, am_group, FCF_TEST_DEFAULT_ORDER, am_test, FCF_TEST_DEFAULT_ORDER, am_autoTesterClassName::test } );\
+          ::fcf::NTest::storage().appendTest( ::fcf::NTest::Test{ am_part, FCF_TEST_ORDER_DEFAULT, am_group, FCF_TEST_ORDER_DEFAULT, am_test, FCF_TEST_ORDER_DEFAULT, am_autoTesterClassName::test } );\
         }\
         static void test();\
       };\
@@ -832,7 +832,7 @@ namespace fcf {
         /**
          * @brief Gets the execution order of a specific part.
          * @param a_name The name of the part.
-         * @return The assigned order, or FCF_TEST_DEFAULT_ORDER if not set.
+         * @return The assigned order, or FCF_TEST_ORDER_DEFAULT if not set.
          */
         int partOrder(const char* a_name) const;
 
@@ -846,7 +846,7 @@ namespace fcf {
         /**
          * @brief Gets the execution order of a specific group.
          * @param a_name The name of the group.
-         * @return The assigned order, or FCF_TEST_DEFAULT_ORDER if not set.
+         * @return The assigned order, or FCF_TEST_ORDER_DEFAULT if not set.
          */
         int groupOrder(const char* a_name) const;
 
@@ -860,7 +860,7 @@ namespace fcf {
         /**
          * @brief Gets the execution order of a specific test.
          * @param a_name The name of the test.
-         * @return The assigned order, or FCF_TEST_DEFAULT_ORDER if not set.
+         * @return The assigned order, or FCF_TEST_ORDER_DEFAULT if not set.
          */
         int testOrder(const char* a_name)  const;
 
@@ -3201,7 +3201,7 @@ namespace fcf {
       int Storage::partOrder(const char* a_name) const {
         std::lock_guard<std::mutex> lock(_mutex);
         OrderMap::const_iterator it = _partOrders.find(a_name);
-        return it != _partOrders.end() ? it->second : FCF_TEST_DEFAULT_ORDER;
+        return it != _partOrders.end() ? it->second : FCF_TEST_ORDER_DEFAULT;
       }
     #endif
 
@@ -3216,7 +3216,7 @@ namespace fcf {
       int Storage::groupOrder(const char* a_name) const {
         std::lock_guard<std::mutex> lock(_mutex);
         OrderMap::const_iterator it = _groupOrders.find(a_name);
-        return it != _groupOrders.end() ? it->second : FCF_TEST_DEFAULT_ORDER;
+        return it != _groupOrders.end() ? it->second : FCF_TEST_ORDER_DEFAULT;
       }
     #endif
 
@@ -3231,7 +3231,7 @@ namespace fcf {
       int Storage::testOrder(const char* a_name) const {
         std::lock_guard<std::mutex> lock(_mutex);
         OrderMap::const_iterator it = _testOrders.find(a_name);
-        return it != _testOrders.end() ? it->second : FCF_TEST_DEFAULT_ORDER;
+        return it != _testOrders.end() ? it->second : FCF_TEST_ORDER_DEFAULT;
       }
     #endif
 
