@@ -32,7 +32,7 @@
 
 #define FCF_TEST_VERSION_MAJOR        1
 #define FCF_TEST_VERSION_MINOR        2
-#define FCF_TEST_VERSION_MAINTENANCE  2
+#define FCF_TEST_VERSION_MAINTENANCE  3
 
 /*
  * fcfTest is a lightweight C++ (>= C++11) unit testing framework.
@@ -781,7 +781,7 @@ namespace fcf {
           tests(a_tests),
           before(a_before),
           level(a_level),
-          void (*a_fixtureFunction)(),
+          fixtureFunction(a_fixtureFunction),
           file(a_file),
           line(a_line)
       {}
