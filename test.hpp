@@ -2796,7 +2796,7 @@ namespace fcf {
               if (processed.count(error.index)) {
                 continue;
               }
-              std::string message = "Fixture error [FILE:" + error.file + ":" + std::to_string(error.line)  + "]";
+              std::string message = "Fixture error [FILE: " + error.file + ":" + std::to_string(error.line)  + "]";
               if (error.count == 0){
                 message += ":\n";
                 std::stringstream ss(error.message);
