@@ -760,6 +760,31 @@ namespace fcf {
       void (*fixtureFunction)();         ///< Pointer to the function containing the fixture logic.
       std::string               file;    ///< Source file where the fixture was defined.
       unsigned int              line;    ///< Source line number where the fixture was defined.
+
+      Fixture()
+        : before(true)
+        , level(FL_GLOBAL)
+        , fixtureFunction(nullptr)
+        , line(0)
+      {}
+
+      Fixture(std::vector<std::string>  a_parts,
+              std::vector<std::string>  a_groups,
+              std::vector<std::string>  a_tests,
+              bool                      a_before,
+              EFixtureLevel             a_level,
+              void (*a_fixtureFunction)(),
+              std::string               a_file,
+              unsigned int              a_line)
+        : parts(a_parts),
+          groups(a_groups),
+          tests(a_tests),
+          before(a_before),
+          level(a_level),
+          void (*a_fixtureFunction)(),
+          file(a_file),
+          line(a_line)
+      {}
     };
 
     /**
