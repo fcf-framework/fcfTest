@@ -686,6 +686,24 @@ namespace fcf {
       int         testOrder;       ///< Execution order within the test.
       void (*testFunction)();      ///< Pointer to the test function to execute.
 
+      Test()
+        : partOrder(FCF_TEST_ORDER_DEFAULT)
+        , groupOrder(FCF_TEST_ORDER_DEFAULT)
+        , testOrder(FCF_TEST_ORDER_DEFAULT)
+        , testFunction(nullptr)
+      {}
+
+      Test(std::string a_part, int a_partOrder, std::string a_group, int a_groupOrder,
+           std::string a_test, int a_testOrder, void (*a_testFunction)())
+        : part(a_part)
+        , partOrder(a_partOrder)
+        , group(a_group)
+        , groupOrder(a_groupOrder)
+        , test(a_test)
+        , testOrder(a_testOrder)
+        , testFunction(a_testFunction)
+      {}
+
       /**
        * @brief Comparison operator for sorting tests by hierarchy and order.
        * Sorting priority: Part Order -> Part Name -> Group Order -> Group Name -> Test Order -> Test Name.
