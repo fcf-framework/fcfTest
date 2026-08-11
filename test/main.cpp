@@ -2,9 +2,9 @@
 #define FCF_TEST_IMPLEMENTATION
 #include <fcfTest/test.hpp>
 
-FCF_TEST_GROUP_ORDER("macro", 1);
-FCF_TEST_GROUP_ORDER("cmd",   1000001);
-FCF_TEST_GROUP_ORDER("cmdRun", 1000002);
+FCF_TEST_GROUP_ORDER("macro",   1);
+FCF_TEST_GROUP_ORDER("cmd",     FCF_TEST_ORDER_DEFAULT + 1);
+FCF_TEST_GROUP_ORDER("cmdRun",  FCF_TEST_ORDER_DEFAULT + 2);
 
 int main(int a_argc, char* a_argv[]) {
   bool error = false;

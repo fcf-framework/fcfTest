@@ -557,26 +557,27 @@ namespace fcf {
      * identify the message. Example: LMC_USER_GROUP | 0x0001
      */
     enum ELogMessageCategory {
-      LMC_ROOT_GROUP            = 0x00010000,
-      LMC_LAUNCH_GROUP          = 0x00020000,
-      LMC_TEST_GROUP            = 0x00040000,
-      LMC_USER_GROUP            = 0x00080000,                                     ///< User-defined messages.
-      LMC_SYSTEM_GROUP          = 0x80000000,                                     ///< Messages are not displayed and are system messages.
-      LMC_ROOT_START            = LMC_SYSTEM_GROUP | LMC_ROOT_GROUP | 0x0001,     ///< [no output] Start of the test execution process.
-      LMC_ROOT_END              = LMC_SYSTEM_GROUP | LMC_ROOT_GROUP | 0x0002,     ///< [no output] End of the test execution process.
-      LMC_ROOT_COMPLETE         = LMC_ROOT_GROUP | 0x0003,                        ///< Overall completion status.
-      LMC_ROOT_ERROR            = LMC_ROOT_GROUP | 0x0004,                        ///< General error messages.
-      LMC_ROOT_SUMMARY          = LMC_ROOT_GROUP | 0x0005,                        ///< Test results summary.
-      LMC_ROOT_DURATION         = LMC_ROOT_GROUP | 0x0006,                        ///< Execution time/duration information.
-      LMC_ROOT_RUN_ERROR        = LMC_ROOT_GROUP | 0x0007,                        ///< Error during the test runner execution.
-      LMC_ROOT_NEW_LINE         = LMC_ROOT_GROUP | 0x0008,                        ///< Error during the test runner execution.
-      LMC_LAUNCH_START          = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0001,  ///< Start of an individual test case.
-      LMC_LAUNCH_START_MESSAGE  = LMC_LAUNCH_GROUP | 0x0002,                      ///< Descriptive message for test start.
-      LMC_LAUNCH_END            = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0003,  ///< End of an individual test case.
-      LMC_TEST_COMPLETE         = LMC_TEST_GROUP | 0x0001,                        ///< Successful completion of a test case.
-      LMC_TEST_ERROR            = LMC_TEST_GROUP | 0x0002,                        ///< Failure of a test case.
-      LMC_TEST_ERROR_MESSAGE    = LMC_TEST_GROUP | 0x0003,                        ///< Detailed error description for a test.
-      LMC_ALL                   = 0xFFFF0000,                                     ///< All message categories.
+      LMC_ROOT_GROUP                = 0x00010000,
+      LMC_LAUNCH_GROUP              = 0x00020000,
+      LMC_TEST_GROUP                = 0x00040000,
+      LMC_USER_GROUP                = 0x00080000,                                     ///< User-defined messages.
+      LMC_SYSTEM_GROUP              = 0x80000000,                                     ///< Messages are not displayed and are system messages.
+      LMC_ROOT_START                = LMC_SYSTEM_GROUP | LMC_ROOT_GROUP | 0x0001,     ///< [no output] Start of the test execution process.
+      LMC_ROOT_END                  = LMC_SYSTEM_GROUP | LMC_ROOT_GROUP | 0x0002,     ///< [no output] End of the test execution process.
+      LMC_ROOT_COMPLETE             = LMC_ROOT_GROUP | 0x0003,                        ///< Overall completion status.
+      LMC_ROOT_ERROR                = LMC_ROOT_GROUP | 0x0004,                        ///< General error messages.
+      LMC_ROOT_SUMMARY              = LMC_ROOT_GROUP | 0x0005,                        ///< Test results summary.
+      LMC_ROOT_DURATION             = LMC_ROOT_GROUP | 0x0006,                        ///< Execution time/duration information.
+      LMC_ROOT_RUN_ERROR            = LMC_ROOT_GROUP | 0x0007,                        ///< Error during the test runner execution.
+      LMC_ROOT_NEW_LINE             = LMC_ROOT_GROUP | 0x0008,                        ///< Error during the test runner execution.
+      LMC_LAUNCH_START              = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0001,  ///< Start of an individual test case.
+      LMC_LAUNCH_START_MESSAGE      = LMC_LAUNCH_GROUP | 0x0002,                      ///< Descriptive message for test start.
+      LMC_LAUNCH_START_CASE_MESSAGE = LMC_LAUNCH_GROUP | 0x0003,
+      LMC_LAUNCH_END                = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0004,  ///< End of an individual test case.
+      LMC_TEST_COMPLETE             = LMC_TEST_GROUP | 0x0001,                        ///< Successful completion of a test case.
+      LMC_TEST_ERROR                = LMC_TEST_GROUP | 0x0002,                        ///< Failure of a test case.
+      LMC_TEST_ERROR_MESSAGE        = LMC_TEST_GROUP | 0x0003,                        ///< Detailed error description for a test.
+      LMC_ALL                       = 0xFFFF0000,                                     ///< All message categories.
     };
 
     enum EFixtureLevel{
@@ -724,7 +725,7 @@ namespace fcf {
                testOrder > a_test.testOrder ? false :
                test < a_test.test ? true :
                test > a_test.test ? false :
-                                   false;
+                                    false;
       }
 
       bool operator==(const Test& a_test) const {
@@ -743,6 +744,13 @@ namespace fcf {
       }
     };
 
+    struct TestPath {
+      std::string part;
+      std::string group;
+      std::string test;
+    };
+
+    class FCF_TEST_API SharedPtrAny;
 
     /**
      * @brief Represents a test fixture used for setup and teardown operations.
@@ -932,18 +940,49 @@ namespace fcf {
          */
         void appendFixture(const Fixture& a_fixture);
 
+        std::vector<SharedPtrAny> params(const std::string& a_part, const std::string& a_group, const std::string& a_test) const;
+
+        void params(const std::string& a_part, const std::string& a_group, const std::string& a_test, const std::vector<SharedPtrAny>& a_params);
+
+        void appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, SharedPtrAny a_parameter);
+        void appendParam(const Test& a_a_test, SharedPtrAny a_parameter);
+        void appendParam(const TestPath& a_testPath, SharedPtrAny a_parameter);
+        template <typename TValue>
+        void appendParamValue(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, const TValue& a_parameter);
+        template <typename TValue>
+        void appendParamValue(const Test& a_test, const TValue& a_parameter);
+        template <typename TValue>
+        void appendParamValue(const TestPath& a_testPath, const TValue& a_parameter);
 
       private:
         typedef std::map<std::string, int> OrderMap;
 
+        struct TestParams {
+          std::string                       part;
+          std::string                       group;
+          std::string                       test;
+          mutable std::vector<SharedPtrAny> params;
+
+          bool operator<(const TestParams& a_test) const {
+            return part < a_test.part   ? true :
+                   part > a_test.part   ? false :
+                   group < a_test.group ? true :
+                   group > a_test.group ? false :
+                   test < a_test.test   ? true :
+                   test > a_test.test   ? false :
+                                          false;
+          }
+        };
+
         bool _suitability(const std::vector<std::string>& a_items, const std::string& a_rule, bool& a_dstSuitability) const;
 
-        std::vector<Test>     _tests;
-        OrderMap              _partOrders;
-        OrderMap              _groupOrders;
-        OrderMap              _testOrders;
-        std::vector<Fixture>  _fixtures;
-        mutable std::mutex    _mutex;
+        std::vector<Test>         _tests;
+        OrderMap                  _partOrders;
+        OrderMap                  _groupOrders;
+        OrderMap                  _testOrders;
+        std::vector<Fixture>      _fixtures;
+        std::set<TestParams>      _params;
+        mutable std::mutex        _mutex;
     };
 
 
@@ -1347,8 +1386,11 @@ namespace fcf {
      */
     class FCF_TEST_API State {
         friend void NDetails::runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr);
+        friend class Storage;
 
       public:
+        State();
+
         /**
          * @brief Gets the currently active test.
          * @return The Test object representing the test currently being executed.
@@ -1436,7 +1478,17 @@ namespace fcf {
          */
         std::set<std::string>     dataKeys();
 
+        SharedPtrAny              param();
+
+        size_t                    paramIndex();
+
+        bool                      active();
+
       private:
+        void                                _setParam(SharedPtrAny a_parameter);
+        void                                _setParamIndex(size_t a_paramIndex);
+        void                                _setActive(bool a_active);
+
         void                                _resumeDuration();
         void                                _endDuration();
         Test                                _test;
@@ -1445,6 +1497,9 @@ namespace fcf {
         std::vector<std::string>            _errors;
         std::mutex                          _mutex;
         std::map<std::string, SharedPtrAny> _data;
+        SharedPtrAny                        _parameter;
+        size_t                              _paramIndex;
+        bool                                _active;
     };
 
     /**
@@ -2232,6 +2287,13 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
+      State::State()
+        : _paramIndex (0)
+        , _active(false) {
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
       void State::duration(const Duration& a_duration){
         std::lock_guard<std::mutex> lock(_mutex);
         _duration = a_duration;
@@ -2290,7 +2352,45 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void State::eraseData(const char* a_key){
+      SharedPtrAny State::param(){
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _parameter;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      size_t State::paramIndex(){
+        return _paramIndex;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      bool State::active(){
+        return _active;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::_setParam(SharedPtrAny a_parameter){
+        std::lock_guard<std::mutex> lock(_mutex);
+        _parameter = a_parameter;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::_setParamIndex(size_t a_paramIndex){
+        _paramIndex = a_paramIndex;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void State::_setActive(bool a_active){
+        _active = a_active;
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+     void State::eraseData(const char* a_key){
         std::lock_guard<std::mutex> lock(_mutex);
         _data.erase(a_key);
       }
@@ -2869,6 +2969,12 @@ namespace fcf {
     } // NDetails namespace
 
     namespace NDetails {
+      inline void printCaseMessage() {
+        log(LMC_LAUNCH_START_CASE_MESSAGE) << "Parameter set: " << (state().paramIndex() + 1) << std::endl;
+      }
+    }
+
+    namespace NDetails {
       #ifdef FCF_TEST_IMPLEMENTATION
         FCF_TEST_API void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr) {
           static std::recursive_mutex mutex;
@@ -2912,6 +3018,9 @@ namespace fcf {
           Test                     lastTest = state().test();
           Duration                 lastDuration = state().duration();
           std::vector<std::string> lastErrors = state().errors();
+          bool                     lastActive = state().active();
+          size_t                   lastParamIndex = state().paramIndex();
+          SharedPtrAny             lastParam = state().param();
 
           std::set< std::string > lastTestData;
           try {
@@ -2923,6 +3032,9 @@ namespace fcf {
             state().tests(tests);
             state().test({});
             state().errors({});
+            state()._setParamIndex(0);
+            state()._setParam(SharedPtrAny());
+            state()._setActive(false);
 
             lastTestData = state().dataKeys();
 
@@ -2949,21 +3061,37 @@ namespace fcf {
                 FixtureHandler::Errors fixtureErrors = fixtureHandler.errors(*testIt);
 
                 attachFixtureErrors(&fixtureErrors, (testIt == tests.begin() ? &startFixtureErrors : (FixtureHandler::Errors*) nullptr ));
-
+                state()._setActive(true);
                 log(LMC_LAUNCH_START);
                 log(LMC_LAUNCH_START_MESSAGE) << "Performing the test: \"" + test.part + "\" -> \"" + test.group + "\" -> \"" + test.test + "\" ..." << std::endl;
 
+                std::vector<SharedPtrAny> params = storage().params(testIt->part, testIt->group, testIt->test);
+
                 state()._resumeDuration();
 
-                try {
-                  if (fixtureErrors.empty()) {
-                    test.testFunction();
+                if (fixtureErrors.empty()) {
+                  std::vector<SharedPtrAny> params = storage().params(testIt->part, testIt->group, testIt->test);
+                  for(size_t paramIndex = 0; !paramIndex || paramIndex < params.size(); ++paramIndex) {
+                    try {
+                      state()._setParamIndex(paramIndex);
+                      state()._setParam( paramIndex < params.size() ? params[paramIndex] : SharedPtrAny() );
+                      if (params.size()) {
+                        printCaseMessage();
+                      }
+                      test.testFunction();
+                    } catch(const std::exception& e){
+                      state().error(e.what(), true);
+                    }
+                    params = storage().params(testIt->part, testIt->group, testIt->test);
+                    if (!a_options.noBreak && state().errors().size()) {
+                      break;
+                    }
                   }
-                  state()._endDuration();
-                } catch(std::exception& e) {
-                  state()._endDuration();
-                  state().error(e.what(), true);
                 }
+
+                state()._endDuration();
+
+                state()._setActive(false);
 
                 std::vector<std::string> errors = state().errors();
                 if (!errors.size()) {
@@ -3009,6 +3137,9 @@ namespace fcf {
 
             log(LMC_ROOT_END);
 
+            state()._setActive(lastActive);
+            state()._setParam(lastParam);
+            state()._setParamIndex(lastParamIndex);
             state().tests(lastTests);
             state().test(lastTest);
             state().duration(lastDuration);
@@ -3031,6 +3162,9 @@ namespace fcf {
           } catch(const std::exception& a_error) {
             log(LMC_ROOT_RUN_ERROR) << "Error: " << a_error.what() << std::endl;
 
+            state()._setActive(lastActive);
+            state()._setParam(lastParam);
+            state()._setParamIndex(lastParamIndex);
             state().tests(lastTests);
             state().test(lastTest);
             state().duration(lastDuration);
@@ -3327,6 +3461,99 @@ namespace fcf {
         _fixtures.push_back(fixture);
       }
     #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      std::vector<SharedPtrAny> Storage::params(const std::string& a_part, const std::string& a_group, const std::string& a_test) const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        TestParams tp{a_part, a_group, a_test, {}};
+        std::set<TestParams>::const_iterator it = _params.find(tp);
+        if (it == _params.end()){
+          return {};
+        }
+        return it->params;
+      }
+
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::params(const std::string& a_part, const std::string& a_group, const std::string& a_test, const std::vector<SharedPtrAny>& a_params){
+        std::lock_guard<std::mutex> lock(_mutex);
+        TestParams tp{a_part, a_group, a_test, {}};
+        std::set<TestParams>::iterator it = _params.insert(tp).first;
+
+        bool isCurrentTest = state().active() &&
+                      state().test().part == a_part &&
+                      state().test().group == a_group &&
+                      state().test().test == a_test;
+        bool upcase = isCurrentTest &&
+                      it->params.empty() &&
+                      !a_params.empty() &&
+                      state().paramIndex() == 0;
+
+        it->params = a_params;
+
+        if (isCurrentTest) {
+          SharedPtrAny spa = state().paramIndex() < it->params.size() 
+                                ? it->params[state().paramIndex()]
+                                : SharedPtrAny();
+          state()._setParam(spa);
+          if (upcase) {
+            NDetails::printCaseMessage();
+          }
+        }
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, SharedPtrAny a_parameter){
+        std::lock_guard<std::mutex> lock(_mutex);
+        TestParams tp{a_partName, a_groupName, a_testName, {}};
+        std::set<TestParams>::iterator it = _params.insert(tp).first;
+
+        bool isCurrentTest = state().active() &&
+                      state().test().part == a_partName &&
+                      state().test().group == a_groupName &&
+                      state().test().test == a_testName;
+
+        bool upcase = isCurrentTest &&
+                      it->params.empty() &&
+                      state().paramIndex() == 0;
+
+        it->params.push_back(a_parameter);
+
+        if (upcase) {
+          state()._setParam(a_parameter);
+          NDetails::printCaseMessage();
+        }
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::appendParam(const Test& a_test, SharedPtrAny a_parameter){
+        appendParam(a_test.part, a_test.group, a_test.test, a_parameter);
+      }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void Storage::appendParam(const TestPath& a_testPath, SharedPtrAny a_parameter){
+        appendParam(a_testPath.part, a_testPath.group, a_testPath.test, a_parameter);
+      }
+    #endif
+
+    template <typename TValue>
+    void Storage::appendParamValue(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, const TValue& a_parameter){
+      appendParam(a_partName, a_groupName, a_testName, SharedPtrAny::make<TValue>(a_parameter));
+    }
+
+    template <typename TValue>
+    void Storage::appendParamValue(const Test& a_test, const TValue& a_parameter){
+      appendParam(a_test, SharedPtrAny::make<TValue>(a_parameter));
+    }
+
+    template <typename TValue>
+    void Storage::appendParamValue(const TestPath& a_testPath, const TValue& a_parameter){
+      appendParam(a_testPath, SharedPtrAny::make<TValue>(a_parameter));
+    }
 
     #ifdef FCF_TEST_IMPLEMENTATION
       std::set<Test> Storage::selectTests(const Options& a_options) const{
@@ -3760,6 +3987,13 @@ namespace fcf {
           prefix.multiLine   = true;
           prefix.category    = LMC_USER_GROUP;
           appendPrefix(prefix);
+
+          prefix.name        = "case-offset";
+          prefix.prefix      = " == ";
+          prefix.multiLine   = true;
+          prefix.category    = LMC_LAUNCH_START_CASE_MESSAGE;
+          appendPrefix(prefix);
+
         }
       }
     #endif
