@@ -572,7 +572,7 @@ namespace fcf {
       LMC_ROOT_NEW_LINE             = LMC_ROOT_GROUP | 0x0008,                        ///< Error during the test runner execution.
       LMC_LAUNCH_START              = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0001,  ///< Start of an individual test case.
       LMC_LAUNCH_START_MESSAGE      = LMC_LAUNCH_GROUP | 0x0002,                      ///< Descriptive message for test start.
-      LMC_LAUNCH_START_CASE_MESSAGE = LMC_LAUNCH_GROUP | 0x0003,
+      LMC_LAUNCH_START_CASE_MESSAGE = LMC_LAUNCH_GROUP | 0x0003,                      ///< Descriptive running for a specific parameter case start.
       LMC_LAUNCH_END                = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0004,  ///< End of an individual test case.
       LMC_TEST_COMPLETE             = LMC_TEST_GROUP | 0x0001,                        ///< Successful completion of a test case.
       LMC_TEST_ERROR                = LMC_TEST_GROUP | 0x0002,                        ///< Failure of a test case.
