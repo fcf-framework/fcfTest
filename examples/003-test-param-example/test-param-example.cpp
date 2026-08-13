@@ -4,9 +4,9 @@
 // In the fixture we set parameters that will always be added
 FCF_TEST_BEFORE_DEFINE("*", "*", "*", fcf::NTest::FL_GLOBAL){
   fcf::NTest::TestPath path = {"Library", "Math", "sum"};
-  fcf::NTest::storage().appendParamValue(path, std::string("one"));
-  fcf::NTest::storage().appendParamValue(path, std::string("two"));
-  fcf::NTest::storage().appendParamValue(path, std::string("three"));
+  fcf::NTest::storage().appendParamValue(path, std::string("one")
+                                             , std::string("two")
+                                             , std::string("three"));
 }
 
 FCF_TEST_DEFINE("Library", "Math", "sum"){

@@ -46,6 +46,7 @@
 
 #include <stdexcept>
 #include <algorithm>
+//#include <type_traits>
 #include <utility>
 #include <memory>
 #include <atomic>
@@ -944,15 +945,19 @@ namespace fcf {
 
         void params(const std::string& a_part, const std::string& a_group, const std::string& a_test, const std::vector<SharedPtrAny>& a_params);
 
-        void appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, SharedPtrAny a_parameter);
-        void appendParam(const Test& a_a_test, SharedPtrAny a_parameter);
-        void appendParam(const TestPath& a_testPath, SharedPtrAny a_parameter);
-        template <typename TValue>
-        void appendParamValue(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, const TValue& a_parameter);
-        template <typename TValue>
-        void appendParamValue(const Test& a_test, const TValue& a_parameter);
-        template <typename TValue>
-        void appendParamValue(const TestPath& a_testPath, const TValue& a_parameter);
+        template <typename ...TParamPack>
+        void appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, TParamPack... a_parameterPack);
+        template <typename ...TParamPack>
+        void appendParam(const Test& a_a_test, TParamPack... a_parameterPack);
+        template <typename ...TParamPack>
+        void appendParam(const TestPath& a_testPath, TParamPack... a_parameterPack);
+
+        template <typename ...TValuePack>
+        void appendParamValue(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, const TValuePack& ...a_parameterPack);
+        template <typename ...TValuePack>
+        void appendParamValue(const Test& a_test, const TValuePack& ...a_parameterPack);
+        template <typename ...TValuePack>
+        void appendParamValue(const TestPath& a_testPath, const TValuePack& ...a_parameterPack);
 
       private:
         typedef std::map<std::string, int> OrderMap;
@@ -975,6 +980,15 @@ namespace fcf {
         };
 
         bool _suitability(const std::vector<std::string>& a_items, const std::string& a_rule, bool& a_dstSuitability) const;
+
+        template<typename ...TParamPack>
+        void _appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, SharedPtrAny a_parameter, const TParamPack& ...a_parameterPack);
+        inline void _appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName);
+
+        template <typename TValue, typename ...TValuePack>
+        void _appendParamValue(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, const TValue& a_parameter, const TValuePack& ...a_parameterPack);
+        inline void _appendParamValue(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName);
+
 
         std::vector<Test>         _tests;
         OrderMap                  _partOrders;
@@ -3513,56 +3527,78 @@ namespace fcf {
       }
     #endif
 
-    #ifdef FCF_TEST_IMPLEMENTATION
-      void Storage::appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, SharedPtrAny a_parameter){
-        std::lock_guard<std::mutex> lock(_mutex);
-        TestParams tp{a_partName, a_groupName, a_testName, {}};
-        std::set<TestParams>::iterator it = _params.insert(tp).first;
-
-        bool isCurrentTest = state().active() &&
-                      state().test().part == a_partName &&
-                      state().test().group == a_groupName &&
-                      state().test().test == a_testName;
-
-        bool upcase = isCurrentTest &&
-                      it->params.empty() &&
-                      state().paramIndex() == 0;
-
-        it->params.push_back(a_parameter);
-
-        if (upcase) {
-          state()._setParam(a_parameter);
-          NDetails::printCaseMessage();
-        }
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      void Storage::appendParam(const Test& a_test, SharedPtrAny a_parameter){
-        appendParam(a_test.part, a_test.group, a_test.test, a_parameter);
-      }
-    #endif
-
-    #ifdef FCF_TEST_IMPLEMENTATION
-      void Storage::appendParam(const TestPath& a_testPath, SharedPtrAny a_parameter){
-        appendParam(a_testPath.part, a_testPath.group, a_testPath.test, a_parameter);
-      }
-    #endif
-
-    template <typename TValue>
-    void Storage::appendParamValue(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, const TValue& a_parameter){
-      appendParam(a_partName, a_groupName, a_testName, SharedPtrAny::make<TValue>(a_parameter));
+    template <typename ...TParamPack>
+    void Storage::appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, TParamPack... a_parameterPack){
+      std::lock_guard<std::mutex> lock(_mutex);
+      _appendParam(a_partName, a_groupName, a_testName, a_parameterPack...);
     }
 
-    template <typename TValue>
-    void Storage::appendParamValue(const Test& a_test, const TValue& a_parameter){
-      appendParam(a_test, SharedPtrAny::make<TValue>(a_parameter));
+    template <typename ...TParamPack>
+    void Storage::appendParam(const Test& a_test, TParamPack... a_parameterPack){
+      std::lock_guard<std::mutex> lock(_mutex);
+      _appendParam(a_test.part, a_test.group, a_test.test, a_parameterPack...);
     }
 
-    template <typename TValue>
-    void Storage::appendParamValue(const TestPath& a_testPath, const TValue& a_parameter){
-      appendParam(a_testPath, SharedPtrAny::make<TValue>(a_parameter));
+    template <typename ...TParamPack>
+    void Storage::appendParam(const TestPath& a_testPath, TParamPack... a_parameterPack){
+      std::lock_guard<std::mutex> lock(_mutex);
+      _appendParam(a_testPath.part, a_testPath.group, a_testPath.test, a_parameterPack...);
     }
+
+    template<typename ...TParamPack>
+    void Storage::_appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, SharedPtrAny a_parameter, const TParamPack& ...a_parameterPack){
+      TestParams tp{a_partName, a_groupName, a_testName, {}};
+      std::set<TestParams>::iterator it = _params.insert(tp).first;
+
+      bool isCurrentTest = state().active() &&
+                    state().test().part == a_partName &&
+                    state().test().group == a_groupName &&
+                    state().test().test == a_testName;
+
+      bool upcase = isCurrentTest &&
+                    it->params.empty() &&
+                    state().paramIndex() == 0;
+
+      it->params.push_back(a_parameter);
+
+      if (upcase) {
+        state()._setParam(a_parameter);
+        NDetails::printCaseMessage();
+      }
+
+      _appendParam(a_partName, a_groupName, a_testName, a_parameterPack...);
+    }
+
+    inline void Storage::_appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName){
+    }
+
+    template <typename ...TValuePack>
+    void Storage::appendParamValue(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, const TValuePack& ...a_parameterPack){
+      std::lock_guard<std::mutex> lock(_mutex);
+      _appendParamValue(a_partName, a_groupName, a_testName, a_parameterPack...);
+    }
+
+    template <typename ...TValuePack>
+    void Storage::appendParamValue(const Test& a_test, const TValuePack& ...a_parameterPack){
+      std::lock_guard<std::mutex> lock(_mutex);
+      _appendParamValue(a_test.part, a_test.group, a_test.test, a_parameterPack...);
+    }
+
+    template <typename ...TValuePack>
+    void Storage::appendParamValue(const TestPath& a_testPath, const TValuePack& ...a_parameterPack){
+      std::lock_guard<std::mutex> lock(_mutex);
+      _appendParamValue(a_testPath.part, a_testPath.group, a_testPath.test, a_parameterPack...);
+    }
+
+    template <typename TValue, typename ...TValuePack>
+    void Storage::_appendParamValue(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, const TValue& a_parameter, const TValuePack& ...a_parameterPack){
+      _appendParam(a_partName, a_groupName, a_testName, SharedPtrAny::make<TValue>(a_parameter));
+      _appendParamValue(a_partName, a_groupName, a_testName, a_parameterPack...);
+    }
+
+    inline void Storage::_appendParamValue(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName){
+    }
+
 
     #ifdef FCF_TEST_IMPLEMENTATION
       std::set<Test> Storage::selectTests(const Options& a_options) const{
