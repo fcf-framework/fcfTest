@@ -932,7 +932,7 @@ namespace fcf {
          * @brief Returns a constant reference to the collection of registered fixtures.
          * @return A vector containing all registered Fixture objects.
          */
-        std::vector<Fixture> fixtures();
+        std::vector<Fixture> fixtures() const;
 
         /**
          * @brief Adds a new fixture to the storage, organizing it into parts and groups.
@@ -1417,7 +1417,7 @@ namespace fcf {
          * @brief Gets the currently active test.
          * @return The Test object representing the test currently being executed.
          */
-        Test                      test();
+        Test                      test() const;
 
         /**
          * @brief Sets the currently active test.
@@ -1429,7 +1429,7 @@ namespace fcf {
          * @brief Gets the set of all tests currently in the execution queue.
          * @return A set containing all registered Test objects.
          */
-        std::set<Test>            tests();
+        std::set<Test>            tests() const;
 
         /**
          * @brief Sets the set of all tests in the execution queue.
@@ -1441,13 +1441,13 @@ namespace fcf {
          * @brief Gets the total number of tests in the current execution.
          * @return The count of tests.
          */
-        size_t                    testCount();
+        size_t                    testCount() const;
 
         /**
          * @brief Gets the total accumulated duration of the test execution.
          * @return The Duration object containing timing information.
          */
-        Duration                  duration();
+        Duration                  duration() const;
 
         /**
          * @brief Sets the total accumulated duration.
@@ -1466,7 +1466,7 @@ namespace fcf {
          * @brief Gets the list of all recorded error messages.
          * @return A list of error message strings.
          */
-        std::vector<std::string>  errors();
+        std::vector<std::string>  errors() const;
 
         /**
          * @brief Sets the list of recorded error messages.
@@ -1498,13 +1498,13 @@ namespace fcf {
          * @brief Gets all keys currently present in the user data storage.
          * @return A set of strings containing all data keys.
          */
-        std::set<std::string>     dataKeys();
+        std::set<std::string>     dataKeys() const;
 
         SharedPtrAny              param();
 
-        size_t                    paramIndex();
+        size_t                    paramIndex() const;
 
-        bool                      active();
+        bool                      active() const;
 
       private:
         void                                _setParam(SharedPtrAny a_parameter);
@@ -1517,7 +1517,7 @@ namespace fcf {
         std::set<Test>                      _tests;
         Duration                            _duration;
         std::vector<std::string>            _errors;
-        std::mutex                          _mutex;
+        mutable std::mutex                  _mutex;
         std::map<std::string, SharedPtrAny> _data;
         SharedPtrAny                        _parameter;
         size_t                              _paramIndex;
@@ -1729,7 +1729,7 @@ namespace fcf {
          * @brief Gets the current list of prefixes.
          * @return A list of prefixes.
          */
-        Prefixes prefixes();
+        Prefixes prefixes() const;
 
         /**
          * @brief Replaces all current prefixes with the provided list.
@@ -1753,7 +1753,7 @@ namespace fcf {
          * @brief Gets the current list of formats.
          * @return A list of formats.
          */
-        Formats formats();
+        Formats formats() const;
 
         /**
          * @brief Replaces all current formats with the provided list.
@@ -1777,7 +1777,7 @@ namespace fcf {
          * @brief Gets the current list of output targets.
          * @return A list of output targets.
          */
-        OutputTargets targets();
+        OutputTargets targets() const;
 
         /**
          * @brief Replaces all current targets with the provided list.
@@ -2003,7 +2003,7 @@ namespace fcf {
         Environment           _environment;
         Prefixes              _prefixes;
         Formats               _formats;
-        std::recursive_mutex  _mutex;
+        mutable std::recursive_mutex  _mutex;
         bool                  _newLine;
     };
 
@@ -2267,7 +2267,7 @@ namespace fcf {
 
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Test State::test(){
+      Test State::test() const {
         std::lock_guard<std::mutex> lock(_mutex);
         return _test;
       }
@@ -2281,7 +2281,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      std::set<Test> State::tests(){
+      std::set<Test> State::tests() const {
         std::lock_guard<std::mutex> lock(_mutex);
         return _tests;
       }
@@ -2295,14 +2295,14 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      size_t State::testCount(){
+      size_t State::testCount() const {
         std::lock_guard<std::mutex> lock(_mutex);
         return _tests.size();
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Duration State::duration(){
+      Duration State::duration() const{
         std::lock_guard<std::mutex> lock(_mutex);
         return _duration;
       }
@@ -2335,7 +2335,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      std::vector<std::string> State::errors(){
+      std::vector<std::string> State::errors() const{
         std::lock_guard<std::mutex> lock(_mutex);
         return _errors;
       }
@@ -2363,7 +2363,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      std::set<std::string> State::dataKeys() {
+      std::set<std::string> State::dataKeys() const {
         std::lock_guard<std::mutex> lock(_mutex);
         std::set<std::string> result;
         for(std::map<std::string, SharedPtrAny>::const_iterator it = _data.begin(); it != _data.end(); ++it) {
@@ -2381,13 +2381,13 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      size_t State::paramIndex(){
+      size_t State::paramIndex() const {
         return _paramIndex;
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      bool State::active(){
+      bool State::active() const {
         return _active;
       }
     #endif
@@ -3695,7 +3695,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      std::vector<Fixture> Storage::fixtures(){
+      std::vector<Fixture> Storage::fixtures() const{
         std::lock_guard<std::mutex> lock(_mutex);
         std::vector<Fixture> fixtures(_fixtures);
         return fixtures;
@@ -4003,7 +4003,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Prefixes Logger::prefixes() {
+      Logger::Prefixes Logger::prefixes() const {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         Prefixes prefixes = _prefixes;
         return prefixes;
@@ -4061,7 +4061,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::Formats Logger::formats() {
+      Logger::Formats Logger::formats() const {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         Formats formats = _formats;
         return formats;
@@ -4104,7 +4104,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Logger::OutputTargets Logger::targets() {
+      Logger::OutputTargets Logger::targets() const {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         OutputTargets result(_environment.targets);
         return result;
