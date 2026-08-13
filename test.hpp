@@ -1327,11 +1327,20 @@ namespace fcf {
         /**
          * @brief Attempts to cast the managed object to a specific type.
          *
+         * @throw std::bad_cast If the conversion failed
          * @tparam Ty The target type to cast to.
          * @return A pointer to the managed object if the type matches, otherwise nullptr.
          */
         template <typename Ty>
-        Ty* cast() const noexcept;
+        Ty* cast();
+
+        /**
+         * @brief Check a stored type
+         *
+         * @return Returns true if a stored type equal to Ty type
+         */
+        template <typename Ty>
+        bool is() const noexcept;
 
         /**
          * @brief Gets the current reference count of the managed object.
@@ -3781,12 +3790,18 @@ namespace fcf {
     #endif
 
     template <typename Ty>
-    Ty* SharedPtrAny::cast() const noexcept {
+    Ty* SharedPtrAny::cast() {
       if (_block && _block->type() == typeid(Ty)) {
         return static_cast<Ty*>(_block->ptr());
       }
-      return nullptr;
+      throw std::bad_cast();
     }
+
+    template <typename Ty>
+    bool SharedPtrAny::is() const noexcept{
+      return _block && _block->type() == typeid(Ty);
+    }
+
 
     #ifdef FCF_TEST_IMPLEMENTATION
       int SharedPtrAny::count() const noexcept {

@@ -116,8 +116,7 @@ FCF_TEST_AFTER_DEFINE("subrun-fixture-part-002", "*", "*", fcf::NTest::FL_PART) 
 
 FCF_TEST_DEFINE("subrun-fixture-part-001", "fixture", "fixture") {
   fcf::NTest::log() << "subrun-fixture-part-001" << std::endl;
-  int* statePtr = fcf::NTest::state().data("fixture-part").cast<int>();
-  FCF_TEST(!statePtr);
+  FCF_TEST(!fcf::NTest::state().data("fixture-part").is<int>());
 }
 
 FCF_TEST_DEFINE("subrun-fixture-part-002", "fixture", "fixture") {
@@ -193,21 +192,18 @@ FCF_TEST_AFTER_DEFINE("subrun", "fixture-group-002", "*", fcf::NTest::FL_GROUP) 
 
 FCF_TEST_DEFINE("subrun", "fixture-group-001", "fixture") {
   fcf::NTest::log() << "fixture-group-001" << std::endl;
-  int* statePtr = fcf::NTest::state().data("fixture-group").cast<int>();
-  FCF_TEST(!statePtr);
+  FCF_TEST(!fcf::NTest::state().data("fixture-group").is<int>());
 }
 
 FCF_TEST_DEFINE("subrun", "fixture-group-002", "fixture") {
   fcf::NTest::log() << "fixture-group-002" << std::endl;
   int* statePtr = fcf::NTest::state().data("fixture-group").cast<int>();
-  FCF_TEST(statePtr);
   FCF_TEST(*statePtr == 1, *statePtr);
 }
 
 FCF_TEST_DEFINE("subrun", "fixture-group-003", "fixture") {
   fcf::NTest::log() << "fixture-group-003" << std::endl;
   int* statePtr = fcf::NTest::state().data("fixture-group").cast<int>();
-  FCF_TEST(statePtr);
   FCF_TEST(*statePtr == 1001, *statePtr);
 }
 
@@ -271,8 +267,7 @@ FCF_TEST_AFTER_DEFINE("subrun", "fixture-test", "test-002", fcf::NTest::FL_TEST)
 
 FCF_TEST_DEFINE("subrun", "fixture-test", "test-001") {
   fcf::NTest::log() << "test-001" << std::endl;
-  int* statePtr = fcf::NTest::state().data("fixture-test").cast<int>();
-  FCF_TEST(!statePtr);
+  FCF_TEST(!fcf::NTest::state().data("fixture-test").is<int>());
 }
 
 FCF_TEST_DEFINE("subrun", "fixture-test", "test-002") {
@@ -358,8 +353,7 @@ FCF_TEST_AFTER_DEFINE("subrun", "fixture-group-more-001", "fixture-test-003|fixt
 
 FCF_TEST_DEFINE("subrun", "fixture-group-more-001", "fixture-test-000") {
   fcf::NTest::log() << "fixture-test-000" << std::endl;
-  int* statePtr = fcf::NTest::state().data("fixture-group-more").cast<int>();
-  FCF_TEST(!statePtr);
+  FCF_TEST(!fcf::NTest::state().data("fixture-group-more").is<int>());
 }
 
 FCF_TEST_DEFINE("subrun", "fixture-group-more-001", "fixture-test-001") {
@@ -470,8 +464,7 @@ FCF_TEST_AFTER_DEFINE("subrun", "fixture-test-multi-002", "*", fcf::NTest::FL_TE
 
 FCF_TEST_DEFINE("subrun", "fixture-test-multi-001", "test-001") {
   fcf::NTest::log() << "fixture-test-multi-001 test-001" << std::endl;
-  int* statePtr = fcf::NTest::state().data("fixture-test-multi").cast<int>();
-  FCF_TEST(!statePtr);
+  FCF_TEST(!fcf::NTest::state().data("fixture-test-multi").is<int>());
 }
 
 FCF_TEST_DEFINE("subrun", "fixture-test-multi-002", "test-001") {
@@ -585,35 +578,30 @@ FCF_TEST_AFTER_DEFINE("subrun-fixture-group-multi-002", "*", "*", fcf::NTest::FL
 
 FCF_TEST_DEFINE("subrun-fixture-group-multi-001", "group-001", "test-001") {
   fcf::NTest::log() << "subrun-fixture-group-multi-001 group-001 test-001" << std::endl;
-  int* statePtr = fcf::NTest::state().data("fixture-group-multi").cast<int>();
-  FCF_TEST(!statePtr);
+  FCF_TEST(!fcf::NTest::state().data("fixture-group-multi").is<int>());
 }
 
 FCF_TEST_DEFINE("subrun-fixture-group-multi-002", "group-001", "test-001") {
   fcf::NTest::log() << "subrun-fixture-group-multi-002 group-001 test-001" << std::endl;
   int* statePtr = fcf::NTest::state().data("fixture-group-multi").cast<int>();
-  FCF_TEST(statePtr);
   FCF_TEST(*statePtr == 0);
 }
 
 FCF_TEST_DEFINE("subrun-fixture-group-multi-002", "group-002", "test-001") {
   fcf::NTest::log() << "subrun-fixture-group-multi-002 group-002 test-001" << std::endl;
   int* statePtr = fcf::NTest::state().data("fixture-group-multi").cast<int>();
-  FCF_TEST(statePtr);
   FCF_TEST(*statePtr == 1001, *statePtr);
 }
 
 FCF_TEST_DEFINE("subrun-fixture-group-multi-002", "group-003", "test-001") {
   fcf::NTest::log() << "subrun-fixture-group-multi-002 group-003 test-001" << std::endl;
   int* statePtr = fcf::NTest::state().data("fixture-group-multi").cast<int>();
-  FCF_TEST(statePtr);
   FCF_TEST(*statePtr == 2002, *statePtr);
 }
 
 FCF_TEST_DEFINE("subrun-fixture-group-multi-003", "group-001", "test-001") {
   fcf::NTest::log() << "subrun-fixture-group-multi-003 group-001 test-001" << std::endl;
   int* statePtr = fcf::NTest::state().data("fixture-group-multi").cast<int>();
-  FCF_TEST(statePtr);
   FCF_TEST(*statePtr == 3002, *statePtr);
 }
 
