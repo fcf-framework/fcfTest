@@ -46,7 +46,6 @@
 
 #include <stdexcept>
 #include <algorithm>
-//#include <type_traits>
 #include <utility>
 #include <memory>
 #include <atomic>
