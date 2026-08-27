@@ -10,12 +10,15 @@ endif()
 
 add_executable(fcf-test-test 
                   main.cpp
+                  tests/case-error.cpp
                   tests/cmd.cpp
                   tests/cmdRun.cpp
+                  tests/duration.cpp
                   tests/export.cpp
                   tests/fixture.cpp
                   tests/fixture-error.cpp
                   tests/fixture-run.cpp
+                  tests/histogram.cpp
                   tests/logger.cpp
                   tests/macro.cpp
                   tests/macro-FCF_TEST_THROW.cpp

@@ -28,6 +28,7 @@ FCF_TEST_DEFINE("fcfTest", "param", "Setting a value within a fixture") {
                             "Performing the test: \"subrun\" -> \"param\" -> \"value 1 in fixture\" ...\n" +
                             " == Parameter set: 1\n" +
                             "  > Test index: 0\n" +
+                            "    Parameter status: success (duration: XXX sec)\n" +
                             "    [SUCCESS] Test completed successfully (XXX sec)\n" +
                             "\n" +
                             "[SUCCESS] All tests were completed.\n" +
@@ -73,8 +74,10 @@ FCF_TEST_DEFINE("fcfTest", "param", "Setting 2 values within a fixture") {
                             "Performing the test: \"subrun\" -> \"param\" -> \"value 2 in fixture\" ...\n" +
                             " == Parameter set: 1\n" +
                             "  > Test index: 0\n" +
+                            "    Parameter status: success (duration: XXX sec)\n"+
                             " == Parameter set: 2\n" +
                             "  > Test index: 1\n" +
+                            "    Parameter status: success (duration: XXX sec)\n"+
                             "    [SUCCESS] Test completed successfully (XXX sec)\n" +
                             "\n" +
                             "[SUCCESS] All tests were completed.\n" +
@@ -123,10 +126,13 @@ FCF_TEST_DEFINE("fcfTest", "param", "Setting 3 values within a fixture") {
                             "Performing the test: \"subrun\" -> \"param\" -> \"value 3 in fixture\" ...\n" +
                             " == Parameter set: 1\n" +
                             "  > Test index: 0\n" +
+                            "    Parameter status: success (duration: XXX sec)\n"+
                             " == Parameter set: 2\n" +
                             "  > Test index: 1\n" +
+                            "    Parameter status: success (duration: XXX sec)\n"+
                             " == Parameter set: 3\n" +
                             "  > Test index: 2\n" +
+                            "    Parameter status: success (duration: XXX sec)\n"+
                             "    [SUCCESS] Test completed successfully (XXX sec)\n" +
                             "\n" +
                             "[SUCCESS] All tests were completed.\n" +
@@ -175,6 +181,7 @@ FCF_TEST_DEFINE("fcfTest", "param", "Setting a 1 shared value within a test") {
                             "Performing the test: \"subrun\" -> \"param\" -> \"shared value 1 in test\" ...\n" +
                             " == Parameter set: 1\n" +
                             "  > Test index: 0\n" +
+                            "    Parameter status: success (duration: XXX sec)\n" +
                             "    [SUCCESS] Test completed successfully (XXX sec)\n" +
                             "\n" +
                             "[SUCCESS] All tests were completed.\n" +
@@ -218,6 +225,7 @@ FCF_TEST_DEFINE("fcfTest", "param", "Setting a 1 value within a test") {
                             "Performing the test: \"subrun\" -> \"param\" -> \"value 1 in test\" ...\n" +
                             " == Parameter set: 1\n" +
                             "  > Test index: 0\n" +
+                            "    Parameter status: success (duration: XXX sec)\n"+
                             "    [SUCCESS] Test completed successfully (XXX sec)\n" +
                             "\n" +
                             "[SUCCESS] All tests were completed.\n" +
@@ -261,8 +269,10 @@ FCF_TEST_DEFINE("fcfTest", "param", "Setting 2 values within a test") {
                             "Performing the test: \"subrun\" -> \"param\" -> \"value 2 in test\" ...\n" +
                             " == Parameter set: 1\n" +
                             "  > Test index: 0\n" +
+                            "    Parameter status: success (duration: XXX sec)\n"+
                             " == Parameter set: 2\n" +
                             "  > Test index: 1\n" +
+                            "    Parameter status: success (duration: XXX sec)\n"+
                             "    [SUCCESS] Test completed successfully (XXX sec)\n" +
                             "\n" +
                             "[SUCCESS] All tests were completed.\n" +
@@ -307,10 +317,13 @@ FCF_TEST_DEFINE("fcfTest", "param", "Setting 3 values within a test") {
                             "Performing the test: \"subrun\" -> \"param\" -> \"value 3 in test\" ...\n" +
                             " == Parameter set: 1\n" +
                             "  > Test index: 0\n" +
+                            "    Parameter status: success (duration: XXX sec)\n"+
                             " == Parameter set: 2\n" +
                             "  > Test index: 1\n" +
+                            "    Parameter status: success (duration: XXX sec)\n"+
                             " == Parameter set: 3\n" +
                             "  > Test index: 2\n" +
+                            "    Parameter status: success (duration: XXX sec)\n"+
                             "    [SUCCESS] Test completed successfully (XXX sec)\n" +
                             "\n" +
                             "[SUCCESS] All tests were completed.\n" +

@@ -49,6 +49,7 @@
 #include <utility>
 #include <memory>
 #include <atomic>
+#include <cmath>
 #include <cstddef>
 #include <typeinfo>
 #include <string>
@@ -557,27 +558,30 @@ namespace fcf {
      * identify the message. Example: LMC_USER_GROUP | 0x0001
      */
     enum ELogMessageCategory {
-      LMC_ROOT_GROUP                = 0x00010000,
-      LMC_LAUNCH_GROUP              = 0x00020000,
-      LMC_TEST_GROUP                = 0x00040000,
-      LMC_USER_GROUP                = 0x00080000,                                     ///< User-defined messages.
-      LMC_SYSTEM_GROUP              = 0x80000000,                                     ///< Messages are not displayed and are system messages.
-      LMC_ROOT_START                = LMC_SYSTEM_GROUP | LMC_ROOT_GROUP | 0x0001,     ///< [no output] Start of the test execution process.
-      LMC_ROOT_END                  = LMC_SYSTEM_GROUP | LMC_ROOT_GROUP | 0x0002,     ///< [no output] End of the test execution process.
-      LMC_ROOT_COMPLETE             = LMC_ROOT_GROUP | 0x0003,                        ///< Overall completion status.
-      LMC_ROOT_ERROR                = LMC_ROOT_GROUP | 0x0004,                        ///< General error messages.
-      LMC_ROOT_SUMMARY              = LMC_ROOT_GROUP | 0x0005,                        ///< Test results summary.
-      LMC_ROOT_DURATION             = LMC_ROOT_GROUP | 0x0006,                        ///< Execution time/duration information.
-      LMC_ROOT_RUN_ERROR            = LMC_ROOT_GROUP | 0x0007,                        ///< Error during the test runner execution.
-      LMC_ROOT_NEW_LINE             = LMC_ROOT_GROUP | 0x0008,                        ///< Error during the test runner execution.
-      LMC_LAUNCH_START              = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0001,  ///< Start of an individual test case.
-      LMC_LAUNCH_START_MESSAGE      = LMC_LAUNCH_GROUP | 0x0002,                      ///< Descriptive message for test start.
-      LMC_LAUNCH_START_CASE_MESSAGE = LMC_LAUNCH_GROUP | 0x0003,                      ///< Descriptive running for a specific parameter case start.
-      LMC_LAUNCH_END                = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0004,  ///< End of an individual test case.
-      LMC_TEST_COMPLETE             = LMC_TEST_GROUP | 0x0001,                        ///< Successful completion of a test case.
-      LMC_TEST_ERROR                = LMC_TEST_GROUP | 0x0002,                        ///< Failure of a test case.
-      LMC_TEST_ERROR_MESSAGE        = LMC_TEST_GROUP | 0x0003,                        ///< Detailed error description for a test.
-      LMC_ALL                       = 0xFFFF0000,                                     ///< All message categories.
+      LMC_ROOT_GROUP                  = 0x00010000,
+      LMC_LAUNCH_GROUP                = 0x00020000,
+      LMC_TEST_GROUP                  = 0x00040000,
+      LMC_USER_GROUP                  = 0x00080000,                                     ///< User-defined messages.
+      LMC_SYSTEM_GROUP                = 0x80000000,                                     ///< Messages are not displayed and are system messages.
+      LMC_ROOT_START                  = LMC_SYSTEM_GROUP | LMC_ROOT_GROUP | 0x0001,     ///< [no output] Start of the test execution process.
+      LMC_ROOT_END                    = LMC_SYSTEM_GROUP | LMC_ROOT_GROUP | 0x0002,     ///< [no output] End of the test execution process.
+      LMC_ROOT_COMPLETE               = LMC_ROOT_GROUP | 0x0003,                        ///< Overall completion status.
+      LMC_ROOT_ERROR                  = LMC_ROOT_GROUP | 0x0004,                        ///< General error messages.
+      LMC_ROOT_SUMMARY                = LMC_ROOT_GROUP | 0x0005,                        ///< Test results summary.
+      LMC_ROOT_DURATION               = LMC_ROOT_GROUP | 0x0006,                        ///< Execution time/duration information.
+      LMC_ROOT_RUN_ERROR              = LMC_ROOT_GROUP | 0x0007,                        ///< Error during the test runner execution.
+      LMC_ROOT_NEW_LINE               = LMC_ROOT_GROUP | 0x0008,                        ///< Error during the test runner execution.
+      LMC_LAUNCH_START                = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0001,  ///< Start of an individual test.
+      LMC_LAUNCH_CASE_START           = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0002,  ///< Start of an individual test case (param).
+      LMC_LAUNCH_START_MESSAGE        = LMC_LAUNCH_GROUP | 0x0003,                      ///< Descriptive message for test start.
+      LMC_LAUNCH_CASE_START_MESSAGE   = LMC_LAUNCH_GROUP | 0x0004,                      ///< Descriptive running for a specific parameter case start.
+      LMC_LAUNCH_CASE_SUMMARY_MESSAGE = LMC_LAUNCH_GROUP | 0x0005,                      ///< 
+      LMC_LAUNCH_CASE_END             = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0005,  ///< End of an individual test case.
+      LMC_LAUNCH_END                  = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0006,  ///< End of an individual test case.
+      LMC_TEST_COMPLETE               = LMC_TEST_GROUP | 0x0001,                        ///< Successful completion of a test case.
+      LMC_TEST_ERROR                  = LMC_TEST_GROUP | 0x0002,                        ///< Failure of a test case.
+      LMC_TEST_ERROR_MESSAGE          = LMC_TEST_GROUP | 0x0003,                        ///< Detailed error description for a test.
+      LMC_ALL                         = 0xFFFF0000,                                     ///< All message categories.
     };
 
     enum EFixtureLevel{
@@ -730,17 +734,67 @@ namespace fcf {
 
       bool operator==(const Test& a_test) const {
         return partOrder == a_test.partOrder &&
-               partOrder == a_test.partOrder &&
-               part == a_test.part &&
                part == a_test.part &&
                groupOrder == a_test.groupOrder &&
-               groupOrder == a_test.groupOrder &&
-               group == a_test.group &&
                group == a_test.group &&
                testOrder == a_test.testOrder &&
-               testOrder == a_test.testOrder &&
-               test == a_test.test &&
                test == a_test.test;
+      }
+    };
+
+    struct TestCase : public Test{
+      size_t paramIndex;
+
+      TestCase()
+        : paramIndex(0)
+      {
+      }
+
+      TestCase(const Test& a_test) 
+        : Test(a_test)
+        , paramIndex(0) {
+      }
+
+      TestCase(const Test& a_test, size_t a_paramIndex)
+        : Test(a_test)
+        , paramIndex(a_paramIndex) {
+      }
+
+      TestCase(std::string a_part, int a_partOrder, std::string a_group, int a_groupOrder,
+           std::string a_test, int a_testOrder, void (*a_testFunction)(),
+           size_t a_paramIndex
+           )
+        : Test(a_part, a_partOrder, a_group, a_groupOrder, 
+               a_test, a_testOrder, a_testFunction)
+        , paramIndex(a_paramIndex)
+      {}
+
+      bool operator<(const TestCase& a_testCase) const {
+        return partOrder < a_testCase.partOrder ? true :
+               partOrder > a_testCase.partOrder ? false :
+               part < a_testCase.part ? true :
+               part > a_testCase.part ? false :
+               groupOrder < a_testCase.groupOrder ? true :
+               groupOrder > a_testCase.groupOrder ? false :
+               group < a_testCase.group ? true :
+               group > a_testCase.group ? false :
+               testOrder < a_testCase.testOrder ? true :
+               testOrder > a_testCase.testOrder ? false :
+               test < a_testCase.test ? true :
+               test > a_testCase.test ? false :
+               paramIndex < a_testCase.paramIndex ? true :
+               paramIndex > a_testCase.paramIndex ? false :
+                                                false;
+      }
+
+      bool operator==(const TestCase& a_testCase) const {
+        return partOrder == a_testCase.partOrder &&
+               part == a_testCase.part &&
+               groupOrder == a_testCase.groupOrder &&
+               group == a_testCase.group &&
+               testOrder == a_testCase.testOrder &&
+               test == a_testCase.test &&
+               paramIndex == a_testCase.paramIndex;
       }
     };
 
@@ -941,8 +995,12 @@ namespace fcf {
         void appendFixture(const Fixture& a_fixture);
 
         std::vector<SharedPtrAny> params(const std::string& a_part, const std::string& a_group, const std::string& a_test) const;
+        inline std::vector<SharedPtrAny> params(const Test& a_test) const;
+        inline std::vector<SharedPtrAny> params(const TestPath& a_testPath) const;
 
         void params(const std::string& a_part, const std::string& a_group, const std::string& a_test, const std::vector<SharedPtrAny>& a_params);
+        inline void params(const Test& a_test, const std::vector<SharedPtrAny>& a_params);
+        inline void params(const TestPath& a_testPath, const std::vector<SharedPtrAny>& a_params);
 
         template <typename ...TParamPack>
         void appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, TParamPack... a_parameterPack);
@@ -1101,8 +1159,10 @@ namespace fcf {
           _start = _lastStart - (_end - _start);
           _pause = false;
         }
+        
+        
 
-        /**
+         /**
          * @brief Executes a functor multiple times and measures the total execution duration.
          *
          * Automatically triggers begin() before entering the loop and end() immediately after.
@@ -2011,20 +2071,27 @@ namespace fcf {
 
 
 
-    class FCF_TEST_API LogJunitFormatter {
+    class FCF_TEST_API LogJUnitFormatter {
       public:
         static void format(Logger& a_logger, Logger::MessageContext& a_messageContext);
         static std::string suiteName(const Test& a_test);
         static std::string xmlAttribute(const std::string& a_string);
         static std::string xmlText(const std::string& a_string);
+        static std::string testCaseName(const std::set<TestCase>& a_testCases, const TestCase& a_testCase);
 
       private:
         struct ProcessedInfo {
           bool                error;
           std::string         message;
-          unsigned long long  duration;
+          unsigned long long  testDuration;
+          unsigned long long  caseDuration;
+          ProcessedInfo()
+            : error(false)
+            , testDuration(0)
+            , caseDuration(0) {
+          }
         };
-        std::map<Test, ProcessedInfo> _processed;
+        std::map<TestCase, ProcessedInfo> _processed;
     };
 
     /**
@@ -2302,16 +2369,16 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      Duration State::duration() const{
-        std::lock_guard<std::mutex> lock(_mutex);
-        return _duration;
+      State::State()
+        : _paramIndex (0)
+        , _active(false) {
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      State::State()
-        : _paramIndex (0)
-        , _active(false) {
+      Duration State::duration() const{
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _duration;
       }
     #endif
 
@@ -2992,7 +3059,7 @@ namespace fcf {
 
     namespace NDetails {
       inline void printCaseMessage() {
-        log(LMC_LAUNCH_START_CASE_MESSAGE) << "Parameter set: " << (state().paramIndex() + 1) << std::endl;
+        log(LMC_LAUNCH_CASE_START_MESSAGE) << "Parameter set: " << (state().paramIndex() + 1) << std::endl;
       }
     }
 
@@ -3089,29 +3156,71 @@ namespace fcf {
 
                 std::vector<SharedPtrAny> params = storage().params(testIt->part, testIt->group, testIt->test);
 
-                state()._resumeDuration();
-
+                unsigned long long testDuration = 0;
+                size_t errorSize = 0;
                 if (fixtureErrors.empty()) {
+                  state()._resumeDuration();
                   std::vector<SharedPtrAny> params = storage().params(testIt->part, testIt->group, testIt->test);
                   for(size_t paramIndex = 0; !paramIndex || paramIndex < params.size(); ++paramIndex) {
+                    bool isLast = (paramIndex+1) >= params.size();
+                    bool caseError = false;
                     try {
                       state()._setParamIndex(paramIndex);
                       state()._setParam( paramIndex < params.size() ? params[paramIndex] : SharedPtrAny() );
+                      log(LMC_LAUNCH_CASE_START);
                       if (params.size()) {
                         printCaseMessage();
                       }
+
                       test.testFunction();
+
+                      if (isLast){
+                        state()._endDuration();
+                      }
+
+                      std::vector<std::string> errors = state().errors();
+                      for(size_t i = errorSize; i < errors.size(); ++i) {
+                        std::string errorMesssage = errors[i];
+                        errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
+                        log(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
+                        caseError = true;
+                      }
+                      errorSize = errors.size();
+                      log(LMC_LAUNCH_CASE_END);
                     } catch(const std::exception& e){
+                      if (isLast){
+                        state()._endDuration();
+                      }
+                      std::vector<std::string> errors = state().errors();
+                      for(size_t i = errorSize; i < errors.size(); ++i) {
+                        std::string errorMesssage = errors[i];
+                        errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
+                        log(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
+                        caseError = true;
+                      }
+                      errorSize = errors.size();
+
+                      log(LMC_LAUNCH_CASE_END);
                       state().error(e.what(), true);
                     }
                     params = storage().params(testIt->part, testIt->group, testIt->test);
+
+                    unsigned long long currentTestDuration = state().duration().lastTotalDuration().count();
+                    unsigned long long caseDuration = currentTestDuration - testDuration;
+                    testDuration = currentTestDuration;
+                    if (params.size()) {
+                      fcf::NTest::log(fcf::NTest::LMC_LAUNCH_CASE_SUMMARY_MESSAGE)
+                        << "    Parameter status: " 
+                        << (caseError ? Z__FCF_TEST_ANSI_FAILED "failed"  Z__FCF_TEST_ANSI_RESET : Z__FCF_TEST_ANSI_SUCCESS "success"  Z__FCF_TEST_ANSI_RESET )
+                        << " (duration: " << Duration::nsToStr(caseDuration, true) << " sec)" << std::endl;
+                    }
+
                     if (!a_options.noBreak && state().errors().size()) {
                       break;
                     }
                   }
+                  state()._endDuration();
                 }
-
-                state()._endDuration();
 
                 state()._setActive(false);
 
@@ -3125,10 +3234,12 @@ namespace fcf {
                 } else {
                   totalErrorFlag = true;
                   ++errorCounter;
-                  for(std::string errorMesssage : errors) {
+                  for(size_t i = errorSize; i < errors.size(); ++i) {
+                    std::string errorMesssage = errors[i];
                     errorMesssage.erase(errorMesssage.find_last_not_of(" \t\n\r\f\v") + 1);
                     log(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
                   }
+
                   log(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
                   log(LMC_LAUNCH_END);
 
@@ -3229,6 +3340,61 @@ namespace fcf {
 
     namespace NDetails {
 
+      template <typename TStream, typename Ty>
+      inline void printValue(TStream& a_stream, const Ty& a_value);
+ 
+      template <typename Ty>
+      struct ContainerPrinter {
+        template <typename TStream>
+        void operator()(TStream& a_stream, const Ty& a_value) {
+          a_stream << "[";
+          bool fist = true;
+          for(auto& itm : a_value) {
+            if (!fist) {
+              a_stream << ", ";
+            }
+            fist = false;
+            printValue(a_stream, itm);
+          }
+          a_stream << "]";
+        }
+      };
+
+      template <typename TFirst, typename TSecond>
+      struct ContainerPrinter< std::pair<TFirst, TSecond> > {
+        template <typename TStream>
+        void operator()(TStream& a_stream, const std::pair<TFirst, TSecond>& a_value) {
+          a_stream << "{";
+          printValue(a_stream, a_value.first);
+          a_stream << ", ";
+          printValue(a_stream, a_value.second);
+          a_stream << "}";
+        }
+      };
+
+
+      template <typename Ty, typename = void>
+      struct ValuePrinter {
+        template <typename TStream>
+        void operator()(TStream& a_stream, const Ty& a_value) {
+          ContainerPrinter<Ty>()(a_stream, a_value);
+        }
+      };
+
+      template <typename Ty>
+      struct ValuePrinter<Ty, decltype((void)(std::stringstream() << *(Ty*)(0xffffffff) )) > {
+        template <typename TStream>
+        void operator()(TStream& a_stream, const Ty& a_value) {
+          a_stream << a_value;
+        }
+      };
+
+      template <typename TStream, typename Ty>
+      inline void printValue(TStream& a_stream, const Ty& a_value) {
+        ValuePrinter<Ty>()(a_stream, a_value);
+      }
+
+
       template <typename... TPack>
       struct PrintPack {
         template <typename TIterator, typename TArg, typename... TPack2>
@@ -3239,7 +3405,17 @@ namespace fcf {
           if (name.length() && name[0]=='\"') {
             ss << "    " << name << std::endl;
           } else {
-            ss << "    " << name << ": " << a_arg << std::endl;
+            std::string prefix = "    " + name + ": ";
+            size_t      prefixLength = prefix.length();
+
+            std::stringstream valueStream;
+            printValue(valueStream, a_arg);
+            //valueStream << a_arg;
+            std::string line;
+            while(std::getline(valueStream, line)){
+              ss << std::setfill(' ') << std::setw(prefixLength) << prefix << line << std::endl;
+              prefix.clear();
+            }
           }
           if (a_begName != a_endName) {
             ++a_begName;
@@ -3494,8 +3670,15 @@ namespace fcf {
         }
         return it->params;
       }
-
     #endif
+
+    inline std::vector<SharedPtrAny> Storage::params(const Test& a_test) const {
+      return params(a_test.part, a_test.group,  a_test.test);
+    }
+
+    inline std::vector<SharedPtrAny> Storage::params(const TestPath& a_testPath) const {
+      return params(a_testPath.part, a_testPath.group,  a_testPath.test);
+    }
 
     #ifdef FCF_TEST_IMPLEMENTATION
       void Storage::params(const std::string& a_part, const std::string& a_group, const std::string& a_test, const std::vector<SharedPtrAny>& a_params){
@@ -3525,6 +3708,14 @@ namespace fcf {
         }
       }
     #endif
+
+    inline void Storage::params(const Test& a_test, const std::vector<SharedPtrAny>& a_params){
+      params(a_test.part, a_test.group, a_test.test, a_params);
+    }
+
+    inline void Storage::params(const TestPath& a_testPath, const std::vector<SharedPtrAny>& a_params){
+      params(a_testPath.part, a_testPath.group, a_testPath.test, a_params);
+    }
 
     template <typename ...TParamPack>
     void Storage::appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName, TParamPack... a_parameterPack){
@@ -4041,7 +4232,7 @@ namespace fcf {
           prefix.name        = "case-offset";
           prefix.prefix      = " == ";
           prefix.multiLine   = true;
-          prefix.category    = LMC_LAUNCH_START_CASE_MESSAGE;
+          prefix.category    = LMC_LAUNCH_CASE_START_MESSAGE;
           appendPrefix(prefix);
 
         }
@@ -4085,7 +4276,7 @@ namespace fcf {
         if (a_defaultState){
           Format format;
           format.name = "junit";
-          format.handler = LogJunitFormatter::format;
+          format.handler = LogJUnitFormatter::format;
           appendFormat(format);
         }
       }
@@ -4356,20 +4547,20 @@ namespace fcf {
 
 /* ---------------------------------------- */
 /* --            Implementation         --- */
-/* ---   fcf::NTest::LogJunitFormatter  --- */
+/* ---   fcf::NTest::LogJUnitFormatter  --- */
 /* ---------------------------------------- */
 
 namespace fcf {
   namespace NTest {
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      std::string LogJunitFormatter::suiteName(const Test& a_test) {
+      std::string LogJUnitFormatter::suiteName(const Test& a_test) {
         return a_test.part + "/" + a_test.group;
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      std::string LogJunitFormatter::xmlAttribute(const std::string& a_string) {
+      std::string LogJUnitFormatter::xmlAttribute(const std::string& a_string) {
         std::string result;
         result.reserve(a_string.size());
         for (char ch : a_string) {
@@ -4383,7 +4574,7 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      std::string LogJunitFormatter::xmlText(const std::string& a_string) {
+      std::string LogJUnitFormatter::xmlText(const std::string& a_string) {
         std::string result;
         result.reserve(a_string.size());
         for (char ch : a_string) {
@@ -4402,90 +4593,116 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void LogJunitFormatter::format(Logger& /*a_logger*/, Logger::MessageContext& a_messageContext) {
+    std::string LogJUnitFormatter::testCaseName(const std::set<TestCase>& a_testCases, const TestCase& a_testCase) {
+      if (a_testCase.paramIndex != 0) {
+        return a_testCase.test + "[" + std::to_string(a_testCase.paramIndex+1) + "]";
+      }
+      TestCase testCaseNum1   = a_testCase; 
+      testCaseNum1.paramIndex = 1;
+      return a_testCases.count(testCaseNum1)
+              ? a_testCase.test + "[1]"
+              : a_testCase.test;
+    }
+    #endif
+
+    #ifdef FCF_TEST_IMPLEMENTATION
+      void LogJUnitFormatter::format(Logger& /*a_logger*/, Logger::MessageContext& a_messageContext) {
         std::ostringstream output;
 
         switch (a_messageContext.category) {
           case LMC_ROOT_START:
             {
-              *a_messageContext.data = SharedPtrAny::make<LogJunitFormatter>();
+              *a_messageContext.data = SharedPtrAny::make<LogJUnitFormatter>();
             }
             break;
-          case LMC_TEST_COMPLETE:
+          case LMC_LAUNCH_CASE_END:
+            {
+              LogJUnitFormatter* formatHandler = a_messageContext.data->cast<LogJUnitFormatter>();
+              std::map<TestCase, ProcessedInfo>::iterator it = formatHandler->_processed.insert({TestCase(state().test(), state().paramIndex()), {}}).first;
+              it->second.testDuration = state().duration().lastTotalDuration().count();
+              std::map<TestCase, ProcessedInfo>::iterator preventIt = formatHandler->_processed.find(TestCase(state().test(), state().paramIndex()-1));
+              if (preventIt == formatHandler->_processed.end()) {
+                it->second.caseDuration = it->second.testDuration;
+              } else {
+                it->second.caseDuration = it->second.testDuration - preventIt->second.testDuration;
+              }
+            }
+            break;
           case LMC_TEST_ERROR_MESSAGE:
             {
-              LogJunitFormatter* formatHandler = a_messageContext.data->cast<LogJunitFormatter>();
-              if (formatHandler) {
-                std::map<Test, ProcessedInfo>::iterator it = formatHandler->_processed.find(state().test());
-                if (it != formatHandler->_processed.end()) {
-                  it->second.message += "\n";
-                  it->second.message += a_messageContext.origin;
-                } else {
-                  ProcessedInfo pi;
-                  pi.error = a_messageContext.category == LMC_TEST_ERROR_MESSAGE;
-                  pi.message = a_messageContext.origin;
-                  pi.duration = state().duration().lastTotalDuration().count();
-                  formatHandler->_processed.insert({state().test(), pi});
-                }
+              LogJUnitFormatter* formatHandler = a_messageContext.data->cast<LogJUnitFormatter>();
+              std::map<TestCase, ProcessedInfo>::iterator it = formatHandler->_processed.insert({TestCase(state().test(), state().paramIndex()), {}}).first;
+              it->second.error = true;
+              if (!it->second.message.empty()) {
+                it->second.message += "\n";
               }
+              it->second.message += a_messageContext.origin;
             }
             break;
           case LMC_ROOT_END:
             {
-              LogJunitFormatter* formatHandler = a_messageContext.data->cast<LogJunitFormatter>();
+              LogJUnitFormatter* formatHandler = a_messageContext.data->cast<LogJUnitFormatter>();
               if (formatHandler) {
                 a_messageContext.system = false;
-
-                size_t totalTestCount   = state().testCount();
-                size_t totalTestFailure = std::count_if(formatHandler->_processed.begin(),
+                size_t totalCaseCount = 0;
+                std::set<Test> tests( state().tests() );
+                std::set<TestCase> testCases;
+                for(const Test& test : tests) {
+                  std::vector<SharedPtrAny> params = storage().params(test.part, test.group, test.test);
+                  totalCaseCount += std::max(params.size(), (size_t)1);
+                  if (params.size()) {
+                    for(size_t i = 0; i < params.size(); ++i){
+                      testCases.insert( TestCase(test, i));
+                    }
+                  } else {
+                    testCases.insert( TestCase(test, 0));
+                  }
+                }
+                size_t totalCaseFailure = std::count_if(formatHandler->_processed.begin(),
                                                         formatHandler->_processed.end(),
-                                                        [](const std::pair<Test, ProcessedInfo>& a_item) {
+                                                        [](const std::pair<TestCase, ProcessedInfo>& a_item) {
                                                           return a_item.second.error;
                                                         });
-                size_t totalTestSkipped  = totalTestCount - formatHandler->_processed.size();
+                size_t totalCaseSkipped  = totalCaseCount - formatHandler->_processed.size();
 
-                std::map<std::string, std::set<Test> > suites;
-                std::set<Test>                         tests( state().tests() );
-                for(const Test& test : tests) {
-                  std::string currentSuiteName = suiteName(test);
-                  std::map<std::string, std::set<Test> >::iterator it = suites.find(currentSuiteName);
-                  if (it == suites.end()) {
-                    it = suites.insert({currentSuiteName, {}}).first;
-                  }
-                  it->second.insert(test);
+                std::map<std::string, std::set<TestCase> > suites;
+                for(const TestCase& testCase : testCases) {
+                  std::string currentSuiteName = suiteName(testCase);
+                  std::map<std::string, std::set<TestCase> >::iterator it = suites.insert({currentSuiteName, {}}).first;
+                  it->second.insert(testCase);
                 }
 
                 output << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
                 output << "<testsuites "
-                       << "tests=\"" << totalTestCount << "\" "
-                       << "failure=\"" << totalTestFailure << "\" "
-                       << "skipped=\"" << totalTestSkipped << "\" "
+                       << "tests=\"" << totalCaseCount << "\" "
+                       << "failure=\"" << totalCaseFailure << "\" "
+                       << "skipped=\"" << totalCaseSkipped << "\" "
                        << "time=\"" << state().duration().totalDurationStr(false) << "\""
                        << ">\n";
-                for(const std::pair< const std::string, std::set<Test> >& currentSuite : suites ) {
+                for(const std::pair< const std::string, std::set<TestCase> >& currentSuite : suites ) {
                   const std::string& currentSuiteName = currentSuite.first;
-                  const std::set<Test>& currentTests = currentSuite.second;
-                  size_t currentTestCount = currentTests.size();
-                  size_t currentFailureCount = std::count_if(currentTests.begin(),
-                                                             currentTests.end(),
-                                                          [&formatHandler](const Test& a_test) {
-                                                            auto it = formatHandler->_processed.find(a_test);
+                  const std::set<TestCase>& currentTestCases = currentSuite.second;
+                  size_t currentTestCount = currentTestCases.size();
+                  size_t currentFailureCount = std::count_if(currentTestCases.begin(),
+                                                             currentTestCases.end(),
+                                                          [&formatHandler](const TestCase& a_testCase) {
+                                                            auto it = formatHandler->_processed.find(a_testCase);
                                                             if (it == formatHandler->_processed.end()) {
                                                               return false;
                                                             }
                                                             return it->second.error;
                                                           });
-                  size_t currentSkippedCount = std::count_if(currentTests.begin(),
-                                                          currentTests.end(),
-                                                          [&formatHandler](const Test& a_test) {
-                                                            auto it = formatHandler->_processed.find(a_test);
+                  size_t currentSkippedCount = std::count_if(currentTestCases.begin(),
+                                                          currentTestCases.end(),
+                                                          [&formatHandler](const TestCase& a_testCase) {
+                                                            auto it = formatHandler->_processed.find(a_testCase);
                                                             return it == formatHandler->_processed.end();
                                                           });
                   unsigned long long time = 0;
-                  for(const Test& test : currentTests) {
+                  for(const Test& test : currentTestCases) {
                     auto it = formatHandler->_processed.find(test);
                     if (it != formatHandler->_processed.end()) {
-                      time += it->second.duration;
+                      time += it->second.caseDuration;
                     }
                   }
                   output << "  <testsuite "
@@ -4495,12 +4712,13 @@ namespace fcf {
                          << "skipped=\"" << currentSkippedCount << "\" "
                          << "time=\"" << Duration::nsToStr(time, false) << "\""
                          << ">\n";
-                  for(const Test& currentTest : currentTests) {
-                    auto processedIt = formatHandler->_processed.find(currentTest);
+                  for(const TestCase& currentTestCase : currentTestCases) {
+                    auto processedIt = formatHandler->_processed.find(currentTestCase);
                     bool isSkipped = processedIt == formatHandler->_processed.end();
+                    std::string testCaseJUnitName = testCaseName(currentTestCases, currentTestCase);
                     if (isSkipped) {
                       output << "    <testcase classname=\"" << xmlAttribute(currentSuiteName) << "\" "
-                             << "name=\"" << xmlAttribute(currentTest.test) << "\" "
+                             << "name=\"" << xmlAttribute(testCaseJUnitName) << "\" "
                              << "time=\"" << Duration::nsToStr(0, false) << "\""
                              << ">\n";
                       output << "      <skipped message=\"The test was skipped because the fail-on-error mode was enabled.\"/>\n";
@@ -4513,8 +4731,8 @@ namespace fcf {
                       shortMessage.erase(shortMessage.find_last_not_of(" \t\n\r\f\v") + 1);
                       output << "    <testcase "
                              << "classname=\"" << xmlAttribute(currentSuiteName) << "\" "
-                             << "name=\"" << xmlAttribute(currentTest.test) << "\" "
-                             << "time=\"" << Duration::nsToStr(processedIt->second.duration, false) << "\""
+                             << "name=\"" << xmlAttribute(testCaseJUnitName) << "\" "
+                             << "time=\"" << Duration::nsToStr(processedIt->second.caseDuration, false) << "\""
                              << ">\n";
                       output << "      <failure message=\"" << xmlAttribute(shortMessage) << "\" type=\"AssertionError\">\n";
                       output << xmlText(message) << "\n";
@@ -4523,8 +4741,8 @@ namespace fcf {
                     } else {
                       output << "    <testcase "
                              << "classname=\"" << xmlAttribute(currentSuiteName) << "\" "
-                             << "name=\"" << xmlAttribute(currentTest.test) << "\" "
-                             << "time=\"" << Duration::nsToStr(processedIt->second.duration, false) << "\""
+                             << "name=\"" << xmlAttribute(testCaseJUnitName) << "\" "
+                             << "time=\"" << Duration::nsToStr(processedIt->second.caseDuration, false) << "\""
                              << "/>\n";
                     }
                   }
