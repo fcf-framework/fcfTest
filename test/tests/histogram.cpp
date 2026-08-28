@@ -122,7 +122,6 @@ namespace fcf {
           TItem leftValue  = a_min + (TItem)(((double)a_index / a_size) * range);
           TItem rightValue = a_min + (TItem)(((double)(a_index + 1) / a_size) * range) - 1;
 
-          // Корректируем границы
           if (leftValue < a_min) leftValue = a_min;
           if (rightValue > a_max) rightValue = a_max;
 
@@ -246,27 +245,6 @@ namespace fcf {
 
         std::vector<TCounter> countVector() const {
           return countVector(_vector, _min, _max, _min, _max, _vector.size());
-        }
-
-        std::vector< std::pair<TItem, TItem> > scaleVector(TItem a_min, TItem a_max, size_t a_size) const {
-          a_size = std::max(a_size, (size_t)3);
-          std::vector< std::pair<TItem, TItem> > vector(a_size);
-          for(size_t i = 0; i < vector.size(); ++i) {
-            vector[i] = rangeByIndex(i, a_min, a_max, a_size);
-          }
-          return vector;
-        }
-
-        std::vector< std::pair<TItem, TItem> > scaleVector(TItem a_min, TItem a_max) const {
-          return scaleVector(a_min, a_max, _vector.size());
-        }
-
-        std::vector< std::pair<TItem, TItem> > scaleVector(size_t a_size) const {
-          return scaleVector(_min, _max, a_size);
-        }
-
-        std::vector< std::pair<TItem, TItem> > scaleVector() const {
-          return scaleVector(_min, _max, _vector.size());
         }
 
         std::string toTable(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max) const {
@@ -966,11 +944,11 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram"){
       histogram.append(210);
     }
 
-    std::vector< std::pair<int, int> > scaleVector = histogram.scaleVector();
-    for(std::pair<int, int>& expected : scaleVector) {
+    for(size_t i = 0; i < histogram.size(); ++i) {
+      std::pair<int, int> expected = histogram.rangeByIndex(i);
       for(int value = expected.first; value <= expected.second; ++value){
         std::pair<int, int> range = histogram.rangeByValue(value);
-        FCF_TEST(range == expected, range, expected, value, histogram.min(), histogram.max(), scaleVector.size());
+        FCF_TEST(range == expected, range, expected, value, histogram.min(), histogram.max());
       }
     }
 
@@ -980,7 +958,11 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram"){
     FCF_TEST(counterSum == histogram.counter(), counterSum, histogram.counter());
     FCF_TEST(counters == expectedCounters, histogram.toTable(), expectedCounters);
     std::vector< std::pair<int, int> > expectedValues = {{1, 21}, {22, 42}, {43, 63}, {64, 84}, {85, 105}, {106, 126}, {127, 147}, {148, 168}, {169, 189}, {190, 210}};
-    FCF_TEST(histogram.scaleVector() == expectedValues, histogram.scaleVector(), expectedValues);
+    std::vector< std::pair<int, int> > scaleVector;
+    for(size_t i = 0; i < histogram.size(); ++i) {
+      scaleVector.push_back( histogram.rangeByIndex(i) );
+    }
+    FCF_TEST(scaleVector == expectedValues, scaleVector, expectedValues);
 
     fcf::NTest::log() << histogram.toTable() << std::endl;
     fcf::NTest::log() << histogram.toBarChart(100, 10) << std::endl;
@@ -1004,7 +986,11 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram"){
       histogram.append(210);
     }
 
-    std::vector< std::pair<int, int> > scaleVector = histogram.scaleVector();
+    std::vector< std::pair<int, int> > scaleVector;
+    for(size_t i = 0; i < histogram.size(); ++i) {
+      scaleVector.push_back( histogram.rangeByIndex(i) );
+    }
+
     for(std::pair<int, int>& expected : scaleVector) {
       for(int i = expected.first; i <= expected.second; ++i){
         std::pair<int, int> range = histogram.rangeByValue(i);
