@@ -269,7 +269,7 @@ namespace fcf {
           return scaleVector(_min, _max, _vector.size());
         }
 
-        std::string toStringAsList(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max) const {
+        std::string toTable(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max) const {
           std::stringstream result;
           size_t lineNumberLength = 0;
           size_t valueLength = 0;
@@ -294,47 +294,82 @@ namespace fcf {
             ss.clear();
           }
 
+          std::string lineNumberHeader = "#";
+          lineNumberLength= std::max(lineNumberLength, lineNumberHeader.length());
+
+          std::string valueHeader = "values";
+                                    //values
+                                    //[12:12]
+          valueLength = std::max(valueLength, (size_t)2);
+
+          std::string countHeader = "count";
+          counterLength = std::max(counterLength, countHeader.length());
+
+
+          result << "╔═"<< _drawLine(lineNumberLength) << "═╦═"
+                 << _drawLine(valueLength*2 + 3)  << "═╦═"
+                 << _drawLine(counterLength)  << "═╗"
+                 << std::endl;
+          result << "║ "
+                 << std::setfill(' ') << std::setw(lineNumberLength) << lineNumberHeader << " ║ "
+                 << std::setfill(' ') << std::setw(valueLength*2 + 3) << valueHeader << " ║ "
+                 << std::setfill(' ') << std::setw(counterLength) << countHeader << " ║"
+                 << std::endl;
+          result << "╠═"<< _drawLine(lineNumberLength) << "═╬═"
+                 << _drawLine(valueLength*2 + 3)  << "═╬═"
+                 << _drawLine(counterLength)  << "═╣"
+                 << std::endl
+                ;
+
+
+
           for(size_t i = 0; i < a_vector.size(); ++i) {
             std::pair<TItem, TItem> range = rangeByIndex(i, a_min, a_max, a_vector.size());
-            if (i) {
-              result << std::endl;
-            }
-            result << std::setfill(' ') << std::setw(lineNumberLength) << (i + 1 ) << "#"
-                   << "   values: [" << std::setfill(' ') << std::setw(valueLength) << range.first
-                                      << ":"
-                                      << std::setfill(' ') << std::setw(valueLength) << range.second
-                                      << "]"
-                   << "   counter: " << std::setfill(' ') << std::setw(counterLength) << a_vector[i];
+            result  << "║ "
+                    << std::setfill(' ') << std::setw(lineNumberLength) << (i + 1 ) << " ║ "
+                    << "["
+                      << std::setfill(' ') << std::setw(valueLength) << range.first 
+                      << ":"
+                      << std::setfill(' ') << std::setw(valueLength) << range.second
+                      << "]"
+                      << " ║ "
+                    << std::setfill(' ') << std::setw(counterLength) << a_vector[i] << " ║"
+                    << std::endl;
           }
+          result << "╚═"<< _drawLine(lineNumberLength) << "═╩═"
+                 << _drawLine(valueLength*2 + 3)  << "═╩═"
+                 << _drawLine(counterLength)  << "═╝"
+                 << std::endl;
+
           return result.str();
         }
 
-        std::string toStringAsList(const std::vector<TCounter>& a_vector) const {
-          return toStringAsList(a_vector, _min, _max);
+        std::string toTable(const std::vector<TCounter>& a_vector) const {
+          return toTable(a_vector, _min, _max);
         }
 
-        std::string toStringAsList(TItem a_min, TItem a_max, size_t a_size) const {
+        std::string toTable(TItem a_min, TItem a_max, size_t a_size) const {
           std::vector<TCounter> vector(a_size);
           _build(_min, _max, _vector, a_min, a_max, vector);
-          return toStringAsList(vector, a_min, a_max);
+          return toTable(vector, a_min, a_max);
         }
 
-        std::string toStringAsList(TItem a_min, TItem a_max) const {
+        std::string toTable(TItem a_min, TItem a_max) const {
           std::vector<TCounter> vector(_vector.size());
           _build(_min, _max, _vector, a_min, a_max, vector);
-          return toStringAsList(vector, a_min, a_max);
+          return toTable(vector, a_min, a_max);
         }
 
-        std::string toStringAsList(size_t a_size) const {
-          return toStringAsList(_min, _max, a_size);
+        std::string toTable(size_t a_size) const {
+          return toTable(_min, _max, a_size);
         }
 
 
-        std::string toStringAsList() const {
-          return toStringAsList(_vector, _min, _max);
+        std::string toTable() const {
+          return toTable(_vector, _min, _max);
         }
 
-        std::string toStringAsHistogram(int a_width, int a_height) const {
+        std::string toBarChart(int a_width, int a_height) const {
           std::stringstream result;
 
           a_width = std::max(a_width, 1);
@@ -361,7 +396,7 @@ namespace fcf {
             }
             result << std::endl;
           }
-          result << std::setfill('=') << std::setw(a_width) << "" << std::endl;
+          result << _drawLine(a_width) << std::endl;
 
           double stepx = (double)(_max - _min) / a_width;
           double stepy = (double)maxCount / a_height;
@@ -558,6 +593,14 @@ namespace fcf {
           if (a_scale == 0) return 0;
           size_t result = std::min((size_t)((long double)a_size * (long double)a_weight / (long double)a_scale), a_size-1);
           return result;
+        }
+
+        std::string _drawLine(int length) const{
+          std::string unicodeLine = "";
+          for(int i = 0; i < length; ++i) {
+            unicodeLine += "═";
+          }
+          return unicodeLine;
         }
 
         unsigned long long    _counter;
@@ -935,14 +978,14 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram"){
     std::vector<size_t> counters = histogram.countVector();
     size_t counterSum = std::accumulate(counters.begin(), counters.end(), 0);
     FCF_TEST(counterSum == histogram.counter(), counterSum, histogram.counter());
-    FCF_TEST(counters == expectedCounters, histogram.toStringAsList(), expectedCounters);
+    FCF_TEST(counters == expectedCounters, histogram.toTable(), expectedCounters);
     std::vector< std::pair<int, int> > expectedValues = {{1, 21}, {22, 42}, {43, 63}, {64, 84}, {85, 105}, {106, 126}, {127, 147}, {148, 168}, {169, 189}, {190, 210}};
     FCF_TEST(histogram.scaleVector() == expectedValues, histogram.scaleVector(), expectedValues);
 
-    fcf::NTest::log() << histogram.toStringAsList() << std::endl;
-    fcf::NTest::log() << histogram.toStringAsHistogram(100, 10) << std::endl;
-    //fcf::NTest::log() << histogram.toStringAsList(100) << std::endl;
-    //fcf::NTest::log() << histogram.toStringAsList(100) << std::endl;
+    fcf::NTest::log() << histogram.toTable() << std::endl;
+    fcf::NTest::log() << histogram.toBarChart(100, 10) << std::endl;
+    //fcf::NTest::log() << histogram.toTable(100) << std::endl;
+    //fcf::NTest::log() << histogram.toTable(100) << std::endl;
 
   }
   return;
