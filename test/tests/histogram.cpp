@@ -1,9 +1,10 @@
+#include <fcfTest/include/histogram.hpp>
 #include <fcfTest/test.hpp>
 #include "helpers.hpp"
 #include <numeric>
 #include <algorithm>
 #include <cmath>
-
+/*
 namespace fcf {
   namespace NTest {
 
@@ -591,7 +592,7 @@ namespace fcf {
 
   }
 }
-
+*/
 FCF_TEST_DEFINE("fcfTest", "histogram", "histogram median") {
   {
     fcf::NTest::HistogramBasic<int> histogram;
@@ -956,7 +957,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram"){
     std::vector<size_t> counters = histogram.countVector();
     size_t counterSum = std::accumulate(counters.begin(), counters.end(), 0);
     FCF_TEST(counterSum == histogram.counter(), counterSum, histogram.counter());
-    FCF_TEST(counters == expectedCounters, histogram.toTable(), expectedCounters);
+    FCF_TEST(counters == expectedCounters, histogram.toTable(histogram.size()), expectedCounters);
     std::vector< std::pair<int, int> > expectedValues = {{1, 21}, {22, 42}, {43, 63}, {64, 84}, {85, 105}, {106, 126}, {127, 147}, {148, 168}, {169, 189}, {190, 210}};
     std::vector< std::pair<int, int> > scaleVector;
     for(size_t i = 0; i < histogram.size(); ++i) {
@@ -964,7 +965,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram"){
     }
     FCF_TEST(scaleVector == expectedValues, scaleVector, expectedValues);
 
-    fcf::NTest::log() << histogram.toTable() << std::endl;
+    fcf::NTest::log() << histogram.toTable(histogram.size()) << std::endl;
     fcf::NTest::log() << histogram.toBarChart(100, 10) << std::endl;
     //fcf::NTest::log() << histogram.toTable(100) << std::endl;
     //fcf::NTest::log() << histogram.toTable(100) << std::endl;
