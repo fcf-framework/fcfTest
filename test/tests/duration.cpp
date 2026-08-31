@@ -1,10 +1,11 @@
+#include <fcfTest/include/duration.hpp>
 #include <fcfTest/test.hpp>
 #include "helpers.hpp"
 
 
 namespace fcf {
   namespace NTest {
-
+/*
     template <typename TClock>
     class DurationBasic {
       public:
@@ -273,7 +274,7 @@ namespace fcf {
           return std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
         }
     };
-
+*/
   }
 }
 
@@ -448,5 +449,211 @@ FCF_TEST_DEFINE("fcfTest", "duration", "duration single measurement (simple)"){
   }
 
 
+}
+
+
+namespace {
+  uint64_t simulate_work(uint64_t iterations) {
+      volatile uint64_t result = 0;
+      for (volatile uint64_t i = 0; i < iterations; ++i) {
+          result += (i * i) % 12345;
+      }
+      return result;
+  }
+}
+
+FCF_TEST_DEFINE("fcfTest", "duration", "duration operator()"){
+  {
+    fcf::NTest::DurationBasic<TestClock> duration;
+    int calls = 0;
+
+    duration([&](){ ++calls; });
+
+    FCF_TEST(calls == 1, calls);
+    FCF_TEST(duration.duration() == 14, duration.duration());
+    FCF_TEST(duration.average() == 14, duration.average());
+    FCF_TEST(duration.min() == 2, duration.min());
+    FCF_TEST(duration.max() == 2, duration.max());
+    FCF_TEST(duration.histogram(0).counter() == 1, duration.histogram(0).counter());
+    FCF_TEST(duration.histogram(0).min() == 2, duration.histogram(0).min());
+    FCF_TEST(duration.histogram(0).max() == 2, duration.histogram(0).max());
+  }
+
+  {
+    fcf::NTest::DurationBasic<TestClock> duration;
+    fcf::NTest::DurationBasic<TestClock>::Options options(1, 1, 0);
+    int calls = 0;
+
+    duration(options, 0, 3, [&](){ ++calls; });
+
+    FCF_TEST(calls == 1, calls);
+    FCF_TEST(duration.duration(0) == 14, duration.duration(0));
+    FCF_TEST(duration.duration(1) == 14, duration.duration(1));
+    FCF_TEST(duration.duration(2) == 14, duration.duration(2));
+    FCF_TEST(duration.duration(3) == 0, duration.duration(3));
+    FCF_TEST(duration.min(0) == 2, duration.min(0));
+    FCF_TEST(duration.max(0) == 2, duration.max(0));
+    FCF_TEST(duration.min(1) == 2, duration.min(1));
+    FCF_TEST(duration.max(1) == 2, duration.max(1));
+    FCF_TEST(duration.histogram(0).counter() == 1, duration.histogram(0).counter());
+    FCF_TEST(duration.histogram(1).counter() == 0, duration.histogram(1).counter());
+    FCF_TEST(duration.histogram(2).counter() == 0, duration.histogram(2).counter());
+  }
+
+  {
+    fcf::NTest::DurationBasic<TestClock> duration;
+    fcf::NTest::DurationBasic<TestClock>::Options options(1, 1, 2);
+    int calls = 0;
+
+    duration(options, [&](){ ++calls; });
+
+    FCF_TEST(calls == 3, calls);
+    FCF_TEST(duration.duration() == 14, duration.duration());
+    FCF_TEST(duration.min() == 2, duration.min());
+    FCF_TEST(duration.max() == 2, duration.max());
+    FCF_TEST(duration.histogram(0).counter() == 1, duration.histogram(0).counter());
+  }
+
+  {
+    fcf::NTest::DurationBasic<TestClock> duration;
+    fcf::NTest::DurationBasic<TestClock>::Options options(4, 2, 0);
+    int calls = 0;
+
+    duration(options, 0, 1, [&](){ ++calls; });
+
+    // 0: 1
+    // 1: 3(1+2) (histogram: 3,4)
+    // 2:
+    // 3: 15 (1+2+3+4+5) (histogram: 6,7) (max = (15-3)/2 = 6)
+    // end 36 (1+2+3+4+5+6+7+8)
+    FCF_TEST(calls == 4, calls);
+    FCF_TEST(duration.duration() == 35, duration.duration());
+    FCF_TEST(duration.average() == 8, duration.average());
+    FCF_TEST(duration.min() == 1, duration.min());
+    FCF_TEST(duration.max() == 6, duration.max());
+    FCF_TEST(duration.histogram(0).counter() == 2, duration.histogram(0).counter());
+    FCF_TEST(duration.histogram(0).min() == 1, duration.histogram(0).min());
+    FCF_TEST(duration.histogram(0).max() == 6, duration.histogram(0).max());
+  }
+/*
+  {
+    fcf::NTest::DurationBasic<TestClock> duration;
+    fcf::NTest::DurationBasic<TestClock>::Options options(5, 2, 0);
+    int calls = 0;
+
+    duration(options, 0, 1, [&](){ ++calls; });
+
+    // 0: 1
+    // 1: 3(1+2) (histogram: 3,4)
+    // 2:
+    // 3: 15 (1+2+3+4+5) (histogram: 6,7) (max = (15-3)/2 = 6)
+    // 4: 
+    // prend: clock 1+..+ 8 = (8+1)*(8/2) = 36
+    //        max = 36 - 15 = 21
+    // end 36
+    //
+    // duration:  36 - 1 = 35
+    // av: 35 / 5 = 7
+    FCF_TEST(calls == 5, calls);
+    FCF_TEST(duration.duration() == 35, duration.duration());
+    FCF_TEST(duration.average() == 7, duration.average());
+    FCF_TEST(duration.min() == 1, duration.min());
+    FCF_TEST(duration.max() == 21, duration.max());
+    FCF_TEST(duration.histogram(0).counter() == 2, duration.histogram(0).counter());
+    FCF_TEST(duration.histogram(0).min() == 1, duration.histogram(0).min());
+    FCF_TEST(duration.histogram(0).max() == 6, duration.histogram(0).max());
+  }
+*/
+  {
+    fcf::NTest::DurationBasic<TestClock> duration;
+    int calls = 0;
+
+    duration([&](){ ++calls; });
+    duration([&](){ ++calls; });
+
+    FCF_TEST(calls == 2, calls);
+    FCF_TEST(duration.duration() == 34, duration.duration());
+    FCF_TEST(duration.average() == 17, duration.average());
+    FCF_TEST(duration.min() == 2, duration.min());
+    FCF_TEST(duration.max() == 7, duration.max());
+    FCF_TEST(duration.histogram(0).counter() == 2, duration.histogram(0).counter());
+    FCF_TEST(duration.histogram(0).min() == 2, duration.histogram(0).min());
+    FCF_TEST(duration.histogram(0).max() == 7, duration.histogram(0).max());
+  }
+
+  {
+    fcf::NTest::DurationBasic<TestClock> duration;
+    int calls = 0;
+
+    duration(1, [&](){ ++calls; });
+
+    FCF_TEST(calls == 1, calls);
+    FCF_TEST(duration.duration(0) == 0, duration.duration(0));
+    FCF_TEST(duration.duration(1) == 14, duration.duration(1));
+    FCF_TEST(duration.duration(2) == 0, duration.duration(2));
+    FCF_TEST(duration.min(1) == 2, duration.min(1));
+    FCF_TEST(duration.max(1) == 2, duration.max(1));
+    FCF_TEST(duration.histogram(0).counter() == 0, duration.histogram(0).counter());
+    FCF_TEST(duration.histogram(1).counter() == 1, duration.histogram(1).counter());
+  }
+
+  {
+    fcf::NTest::DurationBasic<TestClock> duration;
+    fcf::NTest::DurationBasic<TestClock>::Options options(1, 1, 0);
+    int calls = 0;
+
+    duration(options, 1, [&](){ ++calls; });
+
+    FCF_TEST(calls == 1, calls);
+    FCF_TEST(duration.duration(0) == 0, duration.duration(0));
+    FCF_TEST(duration.duration(1) == 14, duration.duration(1));
+    FCF_TEST(duration.min(1) == 2, duration.min(1));
+    FCF_TEST(duration.max(1) == 2, duration.max(1));
+    FCF_TEST(duration.histogram(0).counter() == 0, duration.histogram(0).counter());
+    FCF_TEST(duration.histogram(1).counter() == 1, duration.histogram(1).counter());
+  }
+
+  {
+    fcf::NTest::DurationBasic<TestClock> duration;
+    int calls = 0;
+
+    duration(0, 2, [&](){ ++calls; });
+
+    FCF_TEST(calls == 1, calls);
+    FCF_TEST(duration.duration(0) == 14, duration.duration(0));
+    FCF_TEST(duration.duration(1) == 14, duration.duration(1));
+    FCF_TEST(duration.histogram(0).counter() == 1, duration.histogram(0).counter());
+    FCF_TEST(duration.histogram(1).counter() == 0, duration.histogram(1).counter());
+  }
+
+  {
+    fcf::NTest::DurationBasic<TestClock> duration;
+    fcf::NTest::DurationBasic<TestClock>::Options options(1, 2, 0);
+    int calls = 0;
+
+    duration(options, [&](){ ++calls; });
+
+    FCF_TEST(calls == 1, calls);
+    FCF_TEST(duration.duration() == 2, duration.duration());
+    FCF_TEST(duration.average() == 2, duration.average());
+    FCF_TEST(duration.min() == 0, duration.min());
+    FCF_TEST(duration.max() == 0, duration.max());
+    FCF_TEST(duration.histogram(0).counter() == 0, duration.histogram(0).counter());
+  }
+
+  {
+    fcf::NTest::DurationBasic<TestClock> duration;
+    int calls = 0;
+
+    duration([&](){ ++calls; });
+    duration.reset();
+
+    FCF_TEST(calls == 1, calls);
+    FCF_TEST(duration.duration() == 0, duration.duration());
+    FCF_TEST(duration.average() == 0, duration.average());
+    FCF_TEST(duration.min() == 0, duration.min());
+    FCF_TEST(duration.max() == 0, duration.max());
+    FCF_TEST(duration.histogram(0).counter() == 0, duration.histogram(0).counter());
+  }
 }
 

@@ -613,12 +613,12 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram median") {
     FCF_TEST(med >= 4 && med <= 6, med);
   }
   {
-    fcf::NTest::HistogramBasic<int> histogram(10);
+    fcf::NTest::HistogramBasic<int> histogram(10, 0, 9);
     for (int i = 0; i < 10; ++i) {
       histogram.append(i);
     }
     int med = histogram.median();
-    FCF_TEST(med == 4 || med == 5, med);
+    FCF_TEST(med == 4 || med == 5, med, histogram.countVector());
   }
   {
     fcf::NTest::HistogramBasic<int> histogram(10);
@@ -672,7 +672,68 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram median") {
     FCF_TEST(med == 2 || med == 3, med);
   }
 }
+FCF_TEST_DEFINE("fcfTest", "histogram", "histogram test"){
+  {
+    fcf::NTest::HistogramBasic<int> histogram(5, 10, 50);
+    histogram.append(10, 100);
+    histogram.append(20, 500);
+    histogram.append(30, 100);
+    histogram.append(40, 150);
+    histogram.append(50, 0);
 
+    std::vector<size_t> vec = histogram.countVector(15);
+    std::vector<size_t> expMin = {
+                                  29, 29, 29,
+                                  120, 240, 120,
+                                  30, 25, 30,
+                                  40, 60, 20,
+                                  0, 0, 1
+                                 };
+    std::vector<size_t> expMax = {
+                                  37, 33, 37,
+                                  130, 270, 130,
+                                  40, 35, 40,
+                                  60, 80, 30,
+                                  0, 0, 1
+                                 };
+
+    FCF_TEST((vec >= expMin && vec <= expMax), vec, expMin, expMax, histogram.countVector());
+  }
+
+  /*
+  {
+    fcf::NTest::HistogramBasic<int> histogram(5);
+    histogram.append(10, 350);
+    histogram.append(20, 150);
+    histogram.append(30, 350);
+    histogram.append(40, 600);
+    histogram.append(50, 750);
+
+    std::vector<size_t> vec = histogram.countVector();
+    std::vector<size_t> exp = {350, 150, 350, 600, 750};
+
+    FCF_TEST(vec == exp, vec, exp);
+  }
+  */
+/*
+  {
+    fcf::NTest::HistogramBasic<int> histogram;
+    histogram.append(1, 150);
+    histogram.append(2, 300);
+    histogram.append(3, 450);
+    histogram.append(4, 600);
+    histogram.append(5, 750);
+
+    std::vector<size_t> vec = histogram.countVector();
+    int minVal = histogram.min();
+    int maxVal = histogram.max();
+
+    int med = histogram.median(vec, minVal, maxVal);
+
+    FCF_TEST(med == 2 || med == 3, med);
+  }
+  */
+}
 FCF_TEST_DEFINE("fcfTest", "histogram", "histogram range"){
   {
     fcf::NTest::HistogramBasic<int> histogram;
@@ -965,8 +1026,8 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram"){
     }
     FCF_TEST(scaleVector == expectedValues, scaleVector, expectedValues);
 
-    fcf::NTest::log() << histogram.toTable(histogram.size()) << std::endl;
-    fcf::NTest::log() << histogram.toBarChart(100, 10) << std::endl;
+    //fcf::NTest::log() << histogram.toTable(histogram.size()) << std::endl;
+    //fcf::NTest::log() << histogram.toBarChart(100, 10) << std::endl;
     //fcf::NTest::log() << histogram.toTable(100) << std::endl;
     //fcf::NTest::log() << histogram.toTable(100) << std::endl;
 

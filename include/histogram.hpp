@@ -37,6 +37,8 @@ namespace fcf {
          */
         HistogramBasic(size_t a_capacity);
 
+        HistogramBasic(size_t a_capacity, TItem a_min, TItem a_max);
+
         /**
          * @brief Appends a new item to the histogram.
          * 
@@ -44,7 +46,7 @@ namespace fcf {
          * to accommodate the new min/max values.
          * @param a_item The value to be added.
          */
-        void append(TItem a_item);
+        void append(TItem a_item, size_t a_count = 1);
 
         /** @brief Returns the minimum value recorded in the histogram. */
         TItem min() const;
@@ -155,6 +157,10 @@ namespace fcf {
         /** @brief Generates a formatted ASCII table for a custom size. */
         std::string toTable(size_t a_size) const;
 
+        /** @brief Generates a formatted ASCII table. */
+        std::string toTable() const;
+
+
         /**
          * @brief Generates an ASCII bar chart.
          * @param a_vector The vector of counts.
@@ -190,6 +196,7 @@ namespace fcf {
 
         unsigned long long    _counter;
         bool                  _init;
+        bool                  _initMinMax;
         TItem                 _min;
         TItem                 _max;
         std::vector<TCounter> _vector;

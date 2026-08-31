@@ -5,6 +5,7 @@ namespace fcf {
     HistogramBasic<TItem, TCounter>::HistogramBasic()
       : _counter(0)
       , _init(true)
+      , _initMinMax(false)
       , _min(0)
       , _max(0)
       , _vector(10, 0)
@@ -15,6 +16,7 @@ namespace fcf {
     HistogramBasic<TItem, TCounter>::HistogramBasic(size_t a_capacity)
       : _counter(0)
       , _init(true)
+      , _initMinMax(false)
       , _min(0)
       , _max(0)
       , _vector(std::max(a_capacity, (size_t)3), 0)
@@ -22,28 +24,51 @@ namespace fcf {
     }
 
     template <typename TItem, typename TCounter>
-    void HistogramBasic<TItem, TCounter>::append(TItem a_item) {
-      ++_counter;
+    HistogramBasic<TItem, TCounter>::HistogramBasic(size_t a_capacity, TItem a_min, TItem a_max)
+      : _counter(0)
+      , _init(true)
+      , _initMinMax(true)
+      , _vector(std::max(a_capacity, (size_t)3), 0)
+      , _buffer(std::max(a_capacity, (size_t)3), 0) {
+      if (a_max == a_min){
+        ++a_max;
+      }
+      if (a_max < a_min) {
+        std::swap(a_max, a_min);
+      }
+      _min = a_min;
+      _max = a_max;
+    }
+
+
+    template <typename TItem, typename TCounter>
+    void HistogramBasic<TItem, TCounter>::append(TItem a_item, size_t a_count) {
+      a_count = std::max(a_count, (size_t)1);
       if (_init) {
-        if (_counter == 1) {
-          _min = a_item;
-          _max = a_item;
-          _vector[0] += 1;
+        if (_initMinMax) {
+          _init = false;
         } else {
-          TItem newMin = std::min(a_item, _min);
-          TItem newMax = std::max(a_item, _max);
-          if (newMin < _min) {
-            std::swap(_vector.front(), _vector.back());
+          if (!_counter) {
+            _min = a_item;
+            _max = a_item;
+            _vector[0] += a_count;
+          } else {
+            TItem newMin = std::min(a_item, _min);
+            TItem newMax = std::max(a_item, _max);
+            if (newMin < _min) {
+              std::swap(_vector.front(), _vector.back());
+            }
+            size_t index = _min == a_item ? 0 : _vector.size()-1;
+            _vector[index] += a_count;
+            _min = newMin;
+            _max = newMax;
+            if (_min != _max) {
+              _init = false;
+            }
           }
-          size_t index = _min == a_item ? 0 : _vector.size()-1;
-          _vector[index] += 1;
-          _min = newMin;
-          _max = newMax;
-          if (_min != _max) {
-            _init = false;
-          }
+          _counter += a_count;
+          return;
         }
-        return;
       }
 
       if (a_item < _min || a_item > _max) {
@@ -58,7 +83,9 @@ namespace fcf {
       TItem scale  = _max - _min;
       TItem weight = a_item - _min;
       size_t index = _calcIndex(weight, scale, _vector.size());
-      _vector[index] += 1;
+      _vector[index] += a_count;
+
+      _counter += a_count;
     }
 
     template <typename TItem, typename TCounter>
@@ -146,7 +173,7 @@ namespace fcf {
     }
 
     template <typename TItem, typename TCounter>
-    static TItem HistogramBasic<TItem, TCounter>::median(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max) {
+    TItem HistogramBasic<TItem, TCounter>::median(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max) {
       if (a_min > a_max){
         std::swap(a_min, a_max);
       }
@@ -166,7 +193,7 @@ namespace fcf {
           typename std::vector<TCounter>::const_iterator nonZeroIt = std::find_if(it, itEnd, [](TCounter a_item){ return !!a_item; });
           size_t offset = nonZeroIt - it;
           medianPosition = i + (offset/2) + 1;
-          return a_min + ( medianPosition * (a_max-a_min) / a_vector.size() );
+          return a_min + ( medianPosition * (a_max-a_min+1) / a_vector.size() );
         } if (sum + a_vector[i] > (TCounter)half || i + 1 == n) {
           Heights heights = _heights(a_vector, i, lastRight, !!i);
           lastRight = heights.right;
@@ -227,7 +254,7 @@ namespace fcf {
     }
 
     template <typename TItem, typename TCounter>
-    static std::vector<TCounter> HistogramBasic<TItem, TCounter>::countVector(const std::vector<TCounter>& a_source, TItem a_sourceMin, TItem a_sourceMax, TItem a_min, TItem a_max, size_t a_size) {
+    std::vector<TCounter> HistogramBasic<TItem, TCounter>::countVector(const std::vector<TCounter>& a_source, TItem a_sourceMin, TItem a_sourceMax, TItem a_min, TItem a_max, size_t a_size) {
       a_size = std::max(a_size, (size_t)3);
       if (a_min == a_sourceMin && a_max == a_sourceMax && a_size == a_source.size()) {
         return a_source;
@@ -258,7 +285,7 @@ namespace fcf {
     }
 
     template <typename TItem, typename TCounter>
-    static std::string HistogramBasic<TItem, TCounter>::toTable(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max) {
+    std::string HistogramBasic<TItem, TCounter>::toTable(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max) {
       std::stringstream result;
       size_t lineNumberLength = 0;
       size_t valueLength = 0;
@@ -345,9 +372,14 @@ namespace fcf {
       return toTable(_min, _max, a_size);
     }
 
+    template <typename TItem, typename TCounter>
+    std::string HistogramBasic<TItem, TCounter>::toTable() const {
+      return toTable(_min, _max, _vector.size());
+    }
+
 
     template <typename TItem, typename TCounter>
-    static std::string HistogramBasic<TItem, TCounter>::toBarChart(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max, size_t a_width, size_t a_height) {
+    std::string HistogramBasic<TItem, TCounter>::toBarChart(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max, size_t a_width, size_t a_height) {
       std::stringstream result;
 
       a_width = std::max(a_width, (size_t)1);
@@ -365,7 +397,7 @@ namespace fcf {
       TCounter currentCounterScale = currentCounterMax - currentCounterMin;
       if (currentCounterScale == 0) currentCounterScale = 1;
 
-      size_t maxCount = 0;
+      TCounter maxCount = 0;
       for(size_t r = a_height-1; r < std::numeric_limits<size_t>::max(); --r) {
         for(size_t c = 0; c < a_width; ++c) {
           TCounter currentValue = vector[c] - currentCounterMin;
@@ -402,6 +434,18 @@ namespace fcf {
     typename HistogramBasic<TItem, TCounter>::Heights HistogramBasic<TItem, TCounter>::_heights(const std::vector<TCounter>& a_source, size_t a_index, double a_lastHeight, bool a_enableLastHeight) {
       Heights result;
 
+      auto smooth = [](TCounter a_left, TCounter a_right)->double{
+        if (a_right > a_left) {
+          double k = (double)a_left / a_right;
+          k *= k;
+          return (double)a_left +  k * (a_right - a_left);
+        } else {
+          double k = (double)a_right / a_left;
+          k *= k;
+          return (double)a_right +  k * (a_left - a_right);
+        }
+      };
+
       if (a_source.size() == 1) {
         result.left = result.right = a_source[a_index];
       } else if (a_index+1 >= a_source.size()) {
@@ -409,9 +453,9 @@ namespace fcf {
                                                         : a_source[a_index];
       } else {
         result.left   = a_enableLastHeight            ? a_lastHeight :
-                        a_index + 1 < a_source.size() ? a_source[a_index + 1] :
-                                                        a_source[a_index];
-        result.right = a_index+1 < a_source.size() ? a_source[a_index + 1]
+                        a_index + 1 < a_source.size() ? smooth(a_source[a_index + 1], a_source[a_index]) :
+                                                        (double)a_source[a_index];
+        result.right = a_index+1 < a_source.size() ? smooth(a_source[a_index + 1], a_source[a_index])
                                                     : result.left;
       }
 
@@ -462,6 +506,7 @@ namespace fcf {
                                          : (double)a_sourceMin + indexRatio * sourceRange;
         double rightSourceValue = isLast ? (double)a_sourceMax
                                          : (double)a_sourceMin +  nextIndexRatio * sourceRange - 1;
+        rightSourceValue = std::max(rightSourceValue, leftSourceValue);
 
         if (leftSourceValue > a_newMax || rightSourceValue < a_newMin) {
           continue;
@@ -475,6 +520,8 @@ namespace fcf {
         double rightDestinationIndexF              = ((double)(rightDestinationValue - a_newMin+1) / destinationRange)* a_destination.size();
         std::ptrdiff_t leftDestinationIndex        = (std::ptrdiff_t)(leftDestinationRatio * a_destination.size());
         std::ptrdiff_t rightDestinationIndex       = (std::ptrdiff_t)(rightDestinationRatioNI * a_destination.size());
+        //std::ptrdiff_t leftDestinationIndex        = (std::ptrdiff_t)leftDestinationIndexF;
+        //std::ptrdiff_t rightDestinationIndex       = (std::ptrdiff_t)rightDestinationIndexF;
         std::ptrdiff_t leftDestinationAccessIndex  = std::max(std::min(leftDestinationIndex, (std::ptrdiff_t)a_destination.size()-1), (std::ptrdiff_t)0);
         std::ptrdiff_t rightDestinationAccessIndex = std::max(std::min(rightDestinationIndex, (std::ptrdiff_t)a_destination.size()-1), (std::ptrdiff_t)0);
         double scalek                              = ((double)destinationRange / a_destination.size()) / ((double)sourceRange / a_source.size());
@@ -487,9 +534,9 @@ namespace fcf {
 
         TCounter area = a_source[i];
         for(std::ptrdiff_t destinationIndex = leftDestinationAccessIndex; destinationIndex <= rightDestinationAccessIndex; ++destinationIndex) {
-          double bitDestinationValueBegin = (double)destinationRange * destinationIndex / a_destination.size();
+          double bitDestinationValueBegin = (double)a_newMin + (double)destinationRange * destinationIndex / a_destination.size();
           bitDestinationValueBegin        = std::max(std::min(bitDestinationValueBegin, rightDestinationValue+1), leftDestinationValue);
-          double bitDestinationValueEnd   = (double)destinationRange * (destinationIndex + 1) / a_destination.size();
+          double bitDestinationValueEnd   = (double)a_newMin + (double)destinationRange * (destinationIndex + 1) / a_destination.size();
           bitDestinationValueEnd          = std::max(std::min(bitDestinationValueEnd, rightDestinationValue+1), leftDestinationValue);
 
           double bitDestinationRatioBegin = (double)(bitDestinationValueBegin - leftDestinationValue) / (rightDestinationValue - leftDestinationValue + 1);
@@ -581,7 +628,7 @@ namespace fcf {
     }
 
     template <typename TItem, typename TCounter>
-    static std::string HistogramBasic<TItem, TCounter>::_drawLine(int length) {
+    std::string HistogramBasic<TItem, TCounter>::_drawLine(int length) {
       std::string unicodeLine = "";
       for(int i = 0; i < length; ++i) {
         unicodeLine += "═";
