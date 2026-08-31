@@ -109,6 +109,11 @@ namespace fcf {
     }
 
     template <typename TItem, typename TCounter>
+    bool HistogramBasic<TItem, TCounter>::overflow(TItem a_value) const {
+      return !_init && (a_value > _max || a_value < _min);
+    }
+
+    template <typename TItem, typename TCounter>
     std::pair<TItem, TItem> HistogramBasic<TItem, TCounter>::rangeByValue(TItem a_value, TItem a_min, TItem a_max, size_t a_size) {
       if (a_min > a_max){
         std::swap(a_min, a_max);

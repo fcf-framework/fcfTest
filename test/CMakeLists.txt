@@ -14,6 +14,7 @@ add_executable(fcf-test-test
                   tests/cmd.cpp
                   tests/cmdRun.cpp
                   tests/duration.cpp
+                  tests/durationNested.cpp
                   tests/export.cpp
                   tests/fixture.cpp
                   tests/fixture-error.cpp

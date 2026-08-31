@@ -60,6 +60,8 @@ namespace fcf {
         /** @brief Returns the total number of items appended to the histogram. */
         size_t counter() const;
 
+        bool  overflow(TItem a_value) const;
+
         /**
          * @brief Calculates the range (min, max) for a specific value within a given range and size.
          * @param a_value The value to find the range for.

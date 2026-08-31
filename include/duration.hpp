@@ -10,11 +10,6 @@
 namespace fcf {
   namespace NTest {
 
-    /**
-     * @brief Класс для замера времени выполнения операций с поддержкой гистограммы.
-     *
-     * @tparam TClock Тип объекта, вызываемого для получения текущего времени.
-     */
     template <typename TClock>
     class DurationBasic {
       public:
@@ -29,7 +24,7 @@ namespace fcf {
             : iterationCount(1)
           {}
           BeginOptions(unsigned long long a_iterationCount)
-            : iterationCount(std::max(a_iterationCount, (unsigned long long)1))
+            : iterationCount(a_iterationCount)
           {}
         };
 
@@ -73,22 +68,19 @@ namespace fcf {
       public:
 
         DurationBasic()
-          : _pause(true)
-          , _timepoint(0)
+          : _timepoint(0)
           , _measurements({Measurement{}})
           , _options()
         {}
 
         DurationBasic(unsigned long long a_iterationCount, unsigned long long a_measurementStep = 1, unsigned long long a_warmupCount = 0)
-          : _pause(true)
-          , _timepoint(0)
+          : _timepoint(0)
           , _measurements({Measurement{}})
           , _options(a_iterationCount, a_measurementStep, a_warmupCount)
         {}
 
         DurationBasic(const Options& a_options)
-          : _pause(true)
-          , _timepoint(0)
+          : _timepoint(0)
           , _measurements({Measurement{}})
           , _options(a_options)
         {}
@@ -101,10 +93,9 @@ namespace fcf {
           _options = a_options;
         }
 
-        void begin(const BeginOptions& a_options, int a_beginLevel = 0, int a_endLevel = -1) {
-          if (a_endLevel > 0) {
-            _prepare(a_endLevel-1);
-          }
+        void begin(const BeginOptions& a_options, int a_beginLevel, int a_endLevel) {
+          _prepare(std::max(a_beginLevel, a_endLevel-1));
+
           size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
           size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
           TimePoint timepoint = _clock();
@@ -119,15 +110,23 @@ namespace fcf {
           }
         }
 
-        void begin(int a_beginLevel = 0, int a_endLevel = -1) {
+        void begin(const BeginOptions& a_options, int a_beginLevel = 0) {
+          begin(a_options, a_beginLevel, a_beginLevel+1);
+        }
+
+        void begin(int a_beginLevel = 0) {
+          begin(_options, a_beginLevel, a_beginLevel+1);
+        }
+
+        void begin(int a_beginLevel, int a_endLevel) {
           begin(_options, a_beginLevel, a_endLevel);
         }
 
-        void end(int a_beginLevel = 0, int a_endLevel = -1) {
+        void end(int a_beginLevel, int a_endLevel) {
           TimePoint timepoint = _clock();
-          if (a_endLevel > 0) {
-            _prepare(a_endLevel-1);
-          }
+
+          _prepare(std::max(a_beginLevel, a_endLevel-1));
+
           size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
           size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
           for(size_t i = startLevel; i < endLevel; ++i) {
@@ -137,9 +136,9 @@ namespace fcf {
               TimeDuration diff = rawDiff > _measurements[i].excludedTime ? rawDiff - _measurements[i].excludedTime : 0;
 
               _measurements[i].duration += diff;
-              _measurements[i].iteration += _measurements[i].options.iterationCount;
+              _measurements[i].iteration += std::max(_measurements[i].options.iterationCount, 1ULL);
 
-              if (_measurements[i].options.iterationCount > 0) {
+              if (_measurements[i].options.iterationCount) {
                   TimeDuration avgDiff = diff / _measurements[i].options.iterationCount;
                   if (_measurements[i].iteration == _measurements[i].options.iterationCount) {
                     _measurements[i].min = avgDiff;
@@ -148,10 +147,16 @@ namespace fcf {
                     _measurements[i].min = std::min(avgDiff, _measurements[i].min);
                     _measurements[i].max = std::max(avgDiff, _measurements[i].max);
                   }
+                  _appendHistogram(i, diff, _measurements[i].options.iterationCount, startLevel, endLevel);
               }
             }
           }
         }
+
+        void end(int a_beginLevel=0) {
+          end(a_beginLevel, a_beginLevel+1);
+        }
+
 
         void reset(int a_beginLevel = 0, int a_endLevel = -1){
           if (a_endLevel > 0) {
@@ -161,33 +166,6 @@ namespace fcf {
           size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
           for(size_t i = startLevel; i < endLevel; ++i) {
             _measurements[i] = Measurement();
-          }
-        }
-
-        /**
-         * @brief Добавляет значение в гистограмму указанного уровня.
-         * @param a_level Уровень замера.
-         * @param a_value Значение для добавления.
-         *
-         * Время выполнения этого метода (включая возможное расширение гистограммы)
-         * исключается из замера всех активных таймеров.
-         */
-        void appendHistogram(size_t a_level, TimeDuration a_value) {
-          if (a_level >= _measurements.size()) {
-            return;
-          }
-
-          TimePoint t1 = _clock();
-          _measurements[a_level].histogram.append(a_value);
-          TimePoint t2 = _clock();
-
-          TimeDuration cost = t2 - t1;
-
-          // Исключаем время из всех активных таймеров
-          for(size_t i = 0; i < _measurements.size(); ++i) {
-            if (!_measurements[i].pause) {
-              _measurements[i].excludedTime += cost;
-            }
           }
         }
 
@@ -203,16 +181,14 @@ namespace fcf {
           if (a_level < _measurements.size()) {
             return _measurements[a_level].histogram;
           }
-          // Если уровень не существует, создаем его
           _prepare(a_level);
           return _measurements[a_level].histogram;
         }
 
         template <typename TFunction>
         void operator()(Options a_options, int a_beginLevel, int a_endLevel, TFunction a_function){
-          if (a_endLevel > 0) {
-            _prepare(a_endLevel-1);
-          }
+          _prepare(std::max(a_beginLevel, a_endLevel-1));
+
           size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
           size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
 
@@ -220,17 +196,23 @@ namespace fcf {
             a_function();
           }
 
+          if (!a_options.iterationCount){
+            return;
+          }
+
           bool isFirstMeasurement = true;
           TimeDuration min = 0;
           TimeDuration max = 0;
           TimePoint beginTimepoint = _clock();
-          TimePoint timestamp = beginTimepoint;
+          TimePoint timepoint = beginTimepoint;
+
+          unsigned long long measurementStep = std::max(a_options.measurementStep, 1ULL);
 
           for(unsigned long long i = 0; i < a_options.iterationCount; ++i) {
             a_function();
-            if ((i + 1) % a_options.measurementStep == 0) {
+            if ((i + 1) % measurementStep == 0) {
               TimePoint currentTimestamp = _clock();
-              TimeDuration diff = (currentTimestamp - timestamp) / a_options.measurementStep;
+              TimeDuration diff = (currentTimestamp - timepoint) / measurementStep;
               if (isFirstMeasurement) {
                 min = diff;
                 max = diff;
@@ -239,15 +221,34 @@ namespace fcf {
                 min = std::min(diff, min);
                 max = std::max(diff, max);
               }
-              appendHistogram(a_beginLevel, diff);
-              timestamp = currentTimestamp;
+              for(int level = a_beginLevel; level < a_endLevel; ++level) {
+                _appendHistogram(level, diff, measurementStep);
+              }
+              timepoint = currentTimestamp;
             }
           }
 
           TimePoint endTimepoint = _clock();
+
+          unsigned long long remainder = a_options.iterationCount % measurementStep;
+          if (remainder){
+            TimeDuration remainderDiff = (endTimepoint - timepoint) / remainder;
+            if (isFirstMeasurement) {
+              min = remainderDiff;
+              max = remainderDiff;
+            } else {
+              min = std::min(remainderDiff, min);
+              max = std::max(remainderDiff, max);
+            }
+            for(int level = a_beginLevel; level < a_endLevel; ++level) {
+              _appendHistogram(level, remainderDiff, remainder);
+            }
+          }
+
+
           TimeDuration diff = endTimepoint - beginTimepoint;
           for(size_t i = startLevel; i < endLevel; ++i) {
-            _measurements[i].duration   = diff;
+            _measurements[i].duration   += diff;
             if (!_measurements[i].iteration) {
               _measurements[i].min        = min;
               _measurements[i].max        = max;
@@ -306,7 +307,7 @@ namespace fcf {
             if (m.iteration > 0) {
               return d / m.iteration;
             }
-            return 0;
+            return d;
           } else {
             return 0;
           }
@@ -334,7 +335,33 @@ namespace fcf {
             _measurements.push_back(Measurement());
           }
         }
-        bool                      _pause;
+
+        void _appendHistogram(size_t a_level, TimeDuration a_value, size_t a_count, size_t a_ignoreStart = 0, size_t a_ignoreEnd = 0) {
+          if (a_level >= _measurements.size()) {
+            return;
+          }
+
+          if (!_measurements[a_level].histogram.overflow(a_value)) {
+            _measurements[a_level].histogram.append(a_value, a_count);
+          } else {
+            TimePoint t1 = _clock();
+            _measurements[a_level].histogram.append(a_value, a_count);
+            TimePoint t2 = _clock();
+
+            TimeDuration diff = t2 - t1;
+
+            for(size_t i = 0; i < _measurements.size(); ++i) {
+              if (i >= a_ignoreStart && i < a_ignoreEnd) {
+                continue;
+              }
+              if (!_measurements[i].pause) {
+                _measurements[i].excludedTime += diff;
+              }
+            }
+          }
+        }
+
+
         TimePoint                 _timepoint;
         std::vector<Measurement>  _measurements;
         mutable TClock            _clock;
