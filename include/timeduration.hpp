@@ -1,10 +1,10 @@
 #ifndef TIMEDURATION_HPP
 #define TIMEDURATION_HPP
 
-#
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <type_traits>
 
 namespace fcf {
   namespace NTest {
@@ -37,144 +37,239 @@ namespace fcf {
           return (long double)_duration;
         }
 
-
         explicit operator unsigned long long() const {
           return _duration;
+        }
+
+        inline TimeDuration operator+(const TimeDuration& a_rhs) const {
+          return TimeDuration(_duration + a_rhs._duration);
+        }
+
+        inline TimeDuration operator-(const TimeDuration& a_rhs) const {
+          return TimeDuration(_duration - a_rhs._duration);
+        }
+
+        inline TimeDuration operator*(const TimeDuration& a_rhs) const {
+          return TimeDuration(_duration * a_rhs._duration);
+        }
+
+        inline TimeDuration operator/(const TimeDuration& a_rhs) const {
+          return TimeDuration(_duration / a_rhs._duration);
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration>::type
+        operator+(const Ty& a_value) const {
+          return TimeDuration(_duration + static_cast<unsigned long long>(a_value));
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration>::type
+        operator-(const Ty& a_value) const {
+          return TimeDuration(_duration - static_cast<unsigned long long>(a_value));
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration>::type
+        operator*(const Ty& a_value) const {
+          return TimeDuration(_duration * static_cast<unsigned long long>(a_value));
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration>::type
+        operator/(const Ty& a_value) const {
+          return TimeDuration(_duration / static_cast<unsigned long long>(a_value));
+        }
+
+        inline bool operator==(const TimeDuration& a_rhs) const {
+          return _duration == a_rhs._duration;
+        }
+
+        inline bool operator!=(const TimeDuration& a_rhs) const {
+          return _duration != a_rhs._duration;
+        }
+
+        inline bool operator<(const TimeDuration& a_rhs) const {
+          return _duration < a_rhs._duration;
+        }
+
+        inline bool operator>(const TimeDuration& a_rhs) const {
+          return _duration > a_rhs._duration;
+        }
+
+        inline bool operator<=(const TimeDuration& a_rhs) const {
+          return _duration <= a_rhs._duration;
+        }
+
+        inline bool operator>=(const TimeDuration& a_rhs) const {
+          return _duration >= a_rhs._duration;
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator==(const Ty& a_value) const {
+          return _duration == static_cast<unsigned long long>(a_value);
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator!=(const Ty& a_value) const {
+          return _duration != static_cast<unsigned long long>(a_value);
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator<(const Ty& a_value) const {
+          return _duration < static_cast<unsigned long long>(a_value);
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator>(const Ty& a_value) const {
+          return _duration > static_cast<unsigned long long>(a_value);
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator<=(const Ty& a_value) const {
+          return _duration <= static_cast<unsigned long long>(a_value);
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator>=(const Ty& a_value) const {
+          return _duration >= static_cast<unsigned long long>(a_value);
+        }
+
+        inline bool operator!() const {
+          return _duration == 0;
+        }
+
+        inline TimeDuration& operator=(unsigned long long a_seconds) {
+          _duration = a_seconds;
+          return *this;
+        }
+
+        inline TimeDuration& operator=(const TimeDuration& a_rhs) {
+          _duration = a_rhs._duration;
+          return *this;
+        }
+
+        inline TimeDuration& operator+=(const TimeDuration& a_rhs) {
+          _duration += a_rhs._duration;
+          return *this;
+        }
+
+        inline TimeDuration& operator-=(const TimeDuration& a_rhs) {
+          _duration -= a_rhs._duration;
+          return *this;
+        }
+
+        inline TimeDuration& operator*=(const TimeDuration& a_rhs) {
+          _duration *= a_rhs._duration;
+          return *this;
+        }
+
+        inline TimeDuration& operator/=(const TimeDuration& a_rhs) {
+          _duration /= a_rhs._duration;
+          return *this;
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration&>::type
+        operator+=(const Ty& a_value) {
+          _duration += static_cast<unsigned long long>(a_value);
+          return *this;
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration&>::type
+        operator-=(const Ty& a_value) {
+          _duration -= static_cast<unsigned long long>(a_value);
+          return *this;
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration&>::type
+        operator*=(const Ty& a_value) {
+          _duration *= static_cast<unsigned long long>(a_value);
+          return *this;
+        }
+
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration&>::type
+        operator/=(const Ty& a_value) {
+          _duration /= static_cast<unsigned long long>(a_value);
+          return *this;
         }
 
         friend std::ostream& operator<< (std::ostream& a_stream, const TimeDuration& a_td) {
           a_stream << a_td.str();
           return a_stream;
         }
-
-        TimeDuration operator+(const TimeDuration& a_rhs) const {
-          return TimeDuration(_duration + a_rhs._duration);
-        }
-
-        template <typename Ty>
-         TimeDuration operator+(const Ty& a_value) const {
-          return TimeDuration(_duration + a_value);
-        }
-
-        TimeDuration operator-(const TimeDuration& a_rhs) const {
-          return TimeDuration(_duration - a_rhs._duration);
-        }
-
-        TimeDuration operator*(const TimeDuration& a_rhs) const {
-          return TimeDuration(_duration * a_rhs._duration);
-        }
-
-        template <typename Ty>
-        TimeDuration operator*(const Ty& a_value) const {
-          return TimeDuration(_duration * a_value);
-        }
-
-
-        TimeDuration operator/(const TimeDuration& a_rhs) const {
-          return TimeDuration(_duration / a_rhs._duration);
-        }
-
-        template <typename Ty>
-        TimeDuration operator/(const Ty& a_value) const {
-          return TimeDuration(_duration / a_value);
-        }
-
-        bool operator==(const TimeDuration& a_rhs) const {
-          return _duration == a_rhs._duration;
-        }
-
-        template <typename Ty>
-        bool operator==(const Ty& a_value) const {
-          return _duration == a_value;
-        }
-
-        bool operator!=(const TimeDuration& a_rhs) const {
-          return _duration != a_rhs._duration;
-        }
-
-        bool operator<(const TimeDuration& a_rhs) const {
-          return _duration < a_rhs._duration;
-        }
-
-        template <typename Ty>
-        bool operator<(const Ty& a_value) const {
-          return _duration < a_value;
-        }
-
-        bool operator>(const TimeDuration& a_rhs) const {
-          return _duration > a_rhs._duration;
-        }
-
-        bool operator<= (const TimeDuration& a_rhs) const {
-          return _duration <= a_rhs._duration;
-        }
-
-        bool operator>= (const TimeDuration& a_rhs) const {
-          return _duration >= a_rhs._duration;
-        }
-
-        bool operator!() const {
-          return _duration == 0;
-        }
-
-        TimeDuration& operator=(unsigned long long a_seconds) {
-          _duration = a_seconds;
-          return *this;
-        }
-
-        TimeDuration& operator=(const TimeDuration& a_rhs) {
-          _duration = a_rhs._duration;
-          return *this;
-        }
-
-        TimeDuration& operator+=(const TimeDuration& a_rhs) {
-          _duration += a_rhs._duration;
-          return *this;
-        }
-
-        TimeDuration& operator-= (const TimeDuration& a_rhs) {
-          _duration -= a_rhs._duration;
-          return *this;
-        }
-
-        TimeDuration& operator*= (const TimeDuration& a_rhs) {
-          _duration *= a_rhs._duration;
-          return *this;
-        }
-
-        TimeDuration& operator/= (const TimeDuration& a_rhs) {
-          _duration /= a_rhs._duration;
-          return *this;
-        }
     };
+
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, Ty>::type
+    operator+(const Ty& a_left, const TimeDuration& a_right) {
+      return a_left + (Ty)a_right;
+    }
+
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, Ty>::type
+    operator-(const Ty& a_left, const TimeDuration& a_right) {
+      return a_left - (Ty)a_right;
+    }
+
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, Ty>::type
+    operator*(const Ty& a_left, const TimeDuration& a_right) {
+      return a_left * (Ty)a_right;
+    }
+
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, Ty>::type
+    operator/(const Ty& a_left, const TimeDuration& a_right) {
+      return a_left / (Ty)a_right;
+    }
+
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator==(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) == a_right.count();
+    }
+
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator!=(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) != a_right.count();
+    }
+
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator<(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) < a_right.count();
+    }
+
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator>(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) > a_right.count();
+    }
+
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator<=(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) <= a_right.count();
+    }
+
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator>=(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) >= a_right.count();
+    }
 
   }
 }
-
-inline double operator+(double a_left, fcf::NTest::TimeDuration a_right){
-  return a_left + (double)a_right;
-}
-
-inline double operator-(double a_left, fcf::NTest::TimeDuration a_right){
-  return a_left - (double)a_right;
-}
-
-inline double operator*(double a_left, fcf::NTest::TimeDuration a_right){
-  return a_left * (double)a_right;
-}
-
-inline double operator/(double a_left, fcf::NTest::TimeDuration a_right){
-  return a_left / (double)a_right;
-}
-
-inline bool operator>(double a_left, fcf::NTest::TimeDuration a_right){
-  return a_left > (double)a_right;
-}
-
-inline bool operator<(double a_left, fcf::NTest::TimeDuration a_right){
-  return a_left < (double)a_right;
-}
-
-
 
 #endif

@@ -508,9 +508,9 @@ namespace fcf {
         double nextIndexRatio = (double)(i+1) / a_source.size();
 
         double leftSourceValue  = i == 0 ? (double)a_sourceMin
-                                         : (double)a_sourceMin + sourceRange * indexRatio;
+                                         : (double)a_sourceMin + indexRatio * sourceRange;
         double rightSourceValue = isLast ? (double)a_sourceMax
-                                         : (double)a_sourceMin +  nextIndexRatio * sourceRange - 1;
+                                         : (double)a_sourceMin + nextIndexRatio * sourceRange - 1;
         rightSourceValue = std::max(rightSourceValue, leftSourceValue);
 
         if (leftSourceValue > a_newMax || rightSourceValue < a_newMin) {
