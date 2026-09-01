@@ -25,17 +25,35 @@ namespace fcf {
           unsigned long long nanoperc = _duration % 1000000000ULL;
 
           std::ostringstream oss;
-          oss << seconds << "." << std::setw(9) << std::setz << nanoperc;
+          oss << seconds << "." << std::setfill('0') << std::setw(9) << nanoperc;
           return oss.str();
         }
 
-        std::ostream& operator<< (std::ostream& a_stream) const {
-          a_stream << str();
+        explicit operator double() const {
+          return (double)_duration;
+        }
+
+        explicit operator long double() const {
+          return (long double)_duration;
+        }
+
+
+        explicit operator unsigned long long() const {
+          return _duration;
+        }
+
+        friend std::ostream& operator<< (std::ostream& a_stream, const TimeDuration& a_td) {
+          a_stream << a_td.str();
           return a_stream;
         }
 
         TimeDuration operator+(const TimeDuration& a_rhs) const {
           return TimeDuration(_duration + a_rhs._duration);
+        }
+
+        template <typename Ty>
+         TimeDuration operator+(const Ty& a_value) const {
+          return TimeDuration(_duration + a_value);
         }
 
         TimeDuration operator-(const TimeDuration& a_rhs) const {
@@ -46,12 +64,28 @@ namespace fcf {
           return TimeDuration(_duration * a_rhs._duration);
         }
 
+        template <typename Ty>
+        TimeDuration operator*(const Ty& a_value) const {
+          return TimeDuration(_duration * a_value);
+        }
+
+
         TimeDuration operator/(const TimeDuration& a_rhs) const {
           return TimeDuration(_duration / a_rhs._duration);
         }
 
+        template <typename Ty>
+        TimeDuration operator/(const Ty& a_value) const {
+          return TimeDuration(_duration / a_value);
+        }
+
         bool operator==(const TimeDuration& a_rhs) const {
           return _duration == a_rhs._duration;
+        }
+
+        template <typename Ty>
+        bool operator==(const Ty& a_value) const {
+          return _duration == a_value;
         }
 
         bool operator!=(const TimeDuration& a_rhs) const {
@@ -60,6 +94,11 @@ namespace fcf {
 
         bool operator<(const TimeDuration& a_rhs) const {
           return _duration < a_rhs._duration;
+        }
+
+        template <typename Ty>
+        bool operator<(const Ty& a_value) const {
+          return _duration < a_value;
         }
 
         bool operator>(const TimeDuration& a_rhs) const {
@@ -84,7 +123,7 @@ namespace fcf {
         }
 
         TimeDuration& operator=(const TimeDuration& a_rhs) {
-          *this = a_rhs;
+          _duration = a_rhs._duration;
           return *this;
         }
 
@@ -111,4 +150,31 @@ namespace fcf {
 
   }
 }
+
+inline double operator+(double a_left, fcf::NTest::TimeDuration a_right){
+  return a_left + (double)a_right;
+}
+
+inline double operator-(double a_left, fcf::NTest::TimeDuration a_right){
+  return a_left - (double)a_right;
+}
+
+inline double operator*(double a_left, fcf::NTest::TimeDuration a_right){
+  return a_left * (double)a_right;
+}
+
+inline double operator/(double a_left, fcf::NTest::TimeDuration a_right){
+  return a_left / (double)a_right;
+}
+
+inline bool operator>(double a_left, fcf::NTest::TimeDuration a_right){
+  return a_left > (double)a_right;
+}
+
+inline bool operator<(double a_left, fcf::NTest::TimeDuration a_right){
+  return a_left < (double)a_right;
+}
+
+
+
 #endif

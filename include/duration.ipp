@@ -77,7 +77,7 @@ namespace fcf {
         if (!_measurements[i].pause) {
           _measurements[i].pause = true;
           TimeDuration rawDiff = timepoint - _measurements[i].timepoint;
-          TimeDuration diff = rawDiff > _measurements[i].excludedTime ? rawDiff - _measurements[i].excludedTime : 0;
+          TimeDuration diff = rawDiff > _measurements[i].excludedTime ? rawDiff - _measurements[i].excludedTime : TimeDuration();
 
           _measurements[i].duration += diff;
           _measurements[i].iteration += std::max(_measurements[i].options.iterationCount, 1ULL);
@@ -243,11 +243,11 @@ namespace fcf {
       if ((size_t)a_level < _measurements.size()) {
         const Measurement& m = _measurements[(size_t)a_level];
         if (m.pause) {
-          return m.duration > m.excludedTime ? m.duration - m.excludedTime : 0;
+          return m.duration > m.excludedTime ? m.duration - m.excludedTime : TimeDuration();
         } else {
           TimeDuration current = _clock() - m.timepoint;
           TimeDuration total = m.duration + current;
-          return total > m.excludedTime ? total - m.excludedTime : 0;
+          return total > m.excludedTime ? total - m.excludedTime : TimeDuration();
         }
       } else {
         return 0;

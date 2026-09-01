@@ -189,6 +189,14 @@ namespace {
 
 FCF_TEST_DEFINE("fcfTest", "duration", "duration operator()"){
   {
+    fcf::NTest::DurationBasic<fcf::NTest::SteadyClock> duration(10000, 10, 100);
+    duration([](){
+        simulate_work(10000);
+        });
+    fcf::NTest::log() << duration.histogram(0).toBarChart(30, 10)<<std::endl;
+    fcf::NTest::log() << duration.histogram(0).toTable()<<std::endl;
+  }
+  {
     fcf::NTest::DurationBasic<TestClock> duration;
     int calls = 0;
 

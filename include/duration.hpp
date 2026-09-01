@@ -5,6 +5,7 @@
 #include <chrono>
 #include <algorithm>
 #include <functional>
+#include "timeduration.hpp"
 #include "histogram.hpp"
 
 namespace fcf {
@@ -14,8 +15,8 @@ namespace fcf {
     class DurationBasic {
       public:
         typedef unsigned long long TimePoint;
-        typedef unsigned long long TimeDuration;
-        typedef HistogramBasic<TimeDuration, TimeDuration> HistogramType;
+        typedef ::fcf::NTest::TimeDuration TimeDuration;
+        typedef HistogramBasic<TimeDuration, unsigned long long> HistogramType;
 
         struct BeginOptions {
           unsigned long long iterationCount;
