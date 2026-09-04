@@ -31,6 +31,17 @@ namespace {
   unsigned long long TestSingleStepClock::clock = 0;
 }
 
+FCF_TEST_DEFINE("fcfTest", "duration", "duration"){
+  {
+    fcf::NTest::TimeDuration td1(1);
+    fcf::NTest::TimeDuration td2(2);
+    FCF_TEST(td1 < td2, td1, td2);
+    FCF_TEST(!(td1 > td2), td1, td2);
+    FCF_TEST(td1 < 3, td1);
+    FCF_TEST(3 > td1, td1);
+
+  }
+}
 FCF_TEST_DEFINE("fcfTest", "duration", "duration single measurement (graph as tests)"){
   {
     fcf::NTest::DurationBasic<TestSingleStepClock> duration;
