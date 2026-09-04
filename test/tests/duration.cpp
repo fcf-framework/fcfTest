@@ -189,12 +189,13 @@ namespace {
 
 FCF_TEST_DEFINE("fcfTest", "duration", "duration operator()"){
   {
-    fcf::NTest::DurationBasic<fcf::NTest::SteadyClock> duration(10000, 10, 100);
-    duration([](){
-        simulate_work(10000);
+    fcf::NTest::DurationBasic<fcf::NTest::SteadyClock> duration(1000, 10, 1000);
+    duration({10000, 30}, [](){
+        simulate_work(1000);
         });
-    fcf::NTest::log() << duration.histogram(0).toBarChart(30, 10)<<std::endl;
-    fcf::NTest::log() << duration.histogram(0).toTable()<<std::endl;
+    FCF_TEST(duration.histogram().size() == 30, duration.histogram().size());
+    //fcf::NTest::log() << duration.histogram(0).toBarChart()<<std::endl;
+    //fcf::NTest::log() << duration.histogram(0).toTable()<<std::endl;
   }
   {
     fcf::NTest::DurationBasic<TestClock> duration;
@@ -242,7 +243,7 @@ FCF_TEST_DEFINE("fcfTest", "duration", "duration operator()"){
 
   {
     fcf::NTest::DurationBasic<TestClock> duration;
-    fcf::NTest::DurationBasic<TestClock>::Options options(1, 1, 2);
+    fcf::NTest::DurationBasic<TestClock>::Options options(1, 10, 1, 2);
     int calls = 0;
 
     duration(options, [&](){ ++calls; });
@@ -256,7 +257,7 @@ FCF_TEST_DEFINE("fcfTest", "duration", "duration operator()"){
 
   {
     fcf::NTest::DurationBasic<TestClock> duration;
-    fcf::NTest::DurationBasic<TestClock>::Options options(4, 2, 0);
+    fcf::NTest::DurationBasic<TestClock>::Options options(4, -1, 2, 0);
     int calls = 0;
 
     duration(options, 0, 1, [&](){ ++calls; });
@@ -343,7 +344,7 @@ FCF_TEST_DEFINE("fcfTest", "duration", "duration operator()"){
 
   {
     fcf::NTest::DurationBasic<TestClock> duration;
-    fcf::NTest::DurationBasic<TestClock>::Options options(1, 2, 0);
+    fcf::NTest::DurationBasic<TestClock>::Options options(1, -1, 2, 0);
     int calls = 0;
 
     duration(options, [&](){ ++calls; });

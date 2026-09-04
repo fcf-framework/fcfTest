@@ -575,7 +575,7 @@ namespace fcf {
       LMC_LAUNCH_CASE_START           = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0002,  ///< Start of an individual test case (param).
       LMC_LAUNCH_START_MESSAGE        = LMC_LAUNCH_GROUP | 0x0003,                      ///< Descriptive message for test start.
       LMC_LAUNCH_CASE_START_MESSAGE   = LMC_LAUNCH_GROUP | 0x0004,                      ///< Descriptive running for a specific parameter case start.
-      LMC_LAUNCH_CASE_SUMMARY_MESSAGE = LMC_LAUNCH_GROUP | 0x0005,                      ///< 
+      LMC_LAUNCH_CASE_SUMMARY_MESSAGE = LMC_LAUNCH_GROUP | 0x0005,                      ///<
       LMC_LAUNCH_CASE_END             = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0005,  ///< End of an individual test case.
       LMC_LAUNCH_END                  = LMC_SYSTEM_GROUP | LMC_LAUNCH_GROUP  | 0x0006,  ///< End of an individual test case.
       LMC_TEST_COMPLETE               = LMC_TEST_GROUP | 0x0001,                        ///< Successful completion of a test case.
@@ -750,7 +750,7 @@ namespace fcf {
       {
       }
 
-      TestCase(const Test& a_test) 
+      TestCase(const Test& a_test)
         : Test(a_test)
         , paramIndex(0) {
       }
@@ -764,7 +764,7 @@ namespace fcf {
            std::string a_test, int a_testOrder, void (*a_testFunction)(),
            size_t a_paramIndex
            )
-        : Test(a_part, a_partOrder, a_group, a_groupOrder, 
+        : Test(a_part, a_partOrder, a_group, a_groupOrder,
                a_test, a_testOrder, a_testFunction)
         , paramIndex(a_paramIndex)
       {}
@@ -1159,8 +1159,8 @@ namespace fcf {
           _start = _lastStart - (_end - _start);
           _pause = false;
         }
-        
-        
+
+
 
          /**
          * @brief Executes a functor multiple times and measures the total execution duration.
@@ -3210,7 +3210,7 @@ namespace fcf {
                     testDuration = currentTestDuration;
                     if (params.size()) {
                       fcf::NTest::log(fcf::NTest::LMC_LAUNCH_CASE_SUMMARY_MESSAGE)
-                        << "    Parameter status: " 
+                        << "    Parameter status: "
                         << (caseError ? Z__FCF_TEST_ANSI_FAILED "failed"  Z__FCF_TEST_ANSI_RESET : Z__FCF_TEST_ANSI_SUCCESS "success"  Z__FCF_TEST_ANSI_RESET )
                         << " (duration: " << Duration::nsToStr(caseDuration, true) << " sec)" << std::endl;
                     }
@@ -3342,7 +3342,7 @@ namespace fcf {
 
       template <typename TStream, typename Ty>
       inline void printValue(TStream& a_stream, const Ty& a_value);
- 
+
       template <typename Ty>
       struct ContainerPrinter {
         template <typename TStream>
@@ -3698,7 +3698,7 @@ namespace fcf {
         it->params = a_params;
 
         if (isCurrentTest) {
-          SharedPtrAny spa = state().paramIndex() < it->params.size() 
+          SharedPtrAny spa = state().paramIndex() < it->params.size()
                                 ? it->params[state().paramIndex()]
                                 : SharedPtrAny();
           state()._setParam(spa);
@@ -4597,7 +4597,7 @@ namespace fcf {
       if (a_testCase.paramIndex != 0) {
         return a_testCase.test + "[" + std::to_string(a_testCase.paramIndex+1) + "]";
       }
-      TestCase testCaseNum1   = a_testCase; 
+      TestCase testCaseNum1   = a_testCase;
       testCaseNum1.paramIndex = 1;
       return a_testCases.count(testCaseNum1)
               ? a_testCase.test + "[1]"

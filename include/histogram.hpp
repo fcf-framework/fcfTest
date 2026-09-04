@@ -16,10 +16,10 @@ namespace fcf {
 
     /**
      * @brief A basic histogram class for frequency distribution analysis.
-     * 
-     * This class provides tools to collect data points, calculate statistical measures 
+     *
+     * This class provides tools to collect data points, calculate statistical measures
      * like median, and visualize the distribution through tables or bar charts.
-     * 
+     *
      * @tparam TItem The type of the data items (e.g., int, double).
      * @tparam TCounter The type used for counting occurrences (default: size_t).
      */
@@ -41,8 +41,8 @@ namespace fcf {
 
         /**
          * @brief Appends a new item to the histogram.
-         * 
-         * If the item falls outside the current range, the histogram will be rebuilt 
+         *
+         * If the item falls outside the current range, the histogram will be rebuilt
          * to accommodate the new min/max values.
          * @param a_item The value to be added.
          */
@@ -56,6 +56,16 @@ namespace fcf {
 
         /** @brief Returns the number of bins (size of the internal vector). */
         size_t size() const;
+
+        /**
+         * @brief Resizes the histogram to a new number of bins.
+         *
+         * Rebuilds the internal data vector to accommodate the new size.
+         * The new size must be greater than 1. If the new size is equal to the current size,
+         * no action is taken.
+         * @param a_newSize The desired number of bins.
+         */
+        void size(size_t a_newSize);
 
         /** @brief Returns the total number of items appended to the histogram. */
         size_t counter() const;
@@ -110,12 +120,6 @@ namespace fcf {
          * @return The estimated median value.
          */
         static TItem median(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max);
-
-        /** @brief Calculates the median using current histogram data. */
-        TItem median(const std::vector<TCounter>& a_vector) const;
-
-        /** @brief Calculates the median for a custom range by rebuilding a temporary vector. */
-        TItem median(TItem a_min, TItem a_max) const;
 
         /** @brief Calculates the median using current histogram data. */
         TItem median() const;
@@ -178,7 +182,10 @@ namespace fcf {
         std::string toBarChart(TItem a_min, TItem a_max, size_t a_width, size_t a_height) const;
 
         /** @brief Generates an ASCII bar chart for a custom size. */
-        std::string toBarChart(size_t a_width, size_t a_height) const;
+        std::string toBarChart(size_t a_width, size_t a_height=10) const;
+
+        /** @brief Generates an ASCII bar chart. */
+        std::string toBarChart() const;
 
       private:
 

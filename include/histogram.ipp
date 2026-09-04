@@ -104,6 +104,19 @@ namespace fcf {
     }
 
     template <typename TItem, typename TCounter>
+    void HistogramBasic<TItem, TCounter>::size(size_t a_newSize) {
+      a_newSize = std::max(a_newSize, (size_t)2);
+
+      if (a_newSize == _vector.size()) {
+        return;
+      }
+
+      std::vector<TCounter> newVector(a_newSize);
+      _build(_min, _max, _vector, _min, _max, newVector);
+      _vector = std::move(newVector);
+    }
+
+    template <typename TItem, typename TCounter>
     size_t HistogramBasic<TItem, TCounter>::counter() const {
       return _counter;
     }
@@ -242,18 +255,6 @@ namespace fcf {
     }
 
     template <typename TItem, typename TCounter>
-    TItem HistogramBasic<TItem, TCounter>::median(const std::vector<TCounter>& a_vector) const {
-      return median(a_vector, _min, _max);
-    }
-
-    template <typename TItem, typename TCounter>
-    TItem HistogramBasic<TItem, TCounter>::median(TItem a_min, TItem a_max) const {
-      std::vector<TCounter> vector(_vector.size());
-      _build(_min, _max, _vector, a_min, a_max, vector);
-      return median(vector, a_min, a_max);
-    }
-
-    template <typename TItem, typename TCounter>
     TItem HistogramBasic<TItem, TCounter>::median() const {
       return median(_vector, _min, _max);
     }
@@ -320,7 +321,7 @@ namespace fcf {
 
       std::string valueHeader = "values";
                                     //values
-                                    //[12:12]
+                                    //[12 : 12]
       valueLength = std::max(valueLength, (size_t)2);
 
       std::string countHeader = "count";
@@ -328,16 +329,16 @@ namespace fcf {
 
 
       result << "╔═"<< _drawLine(lineNumberLength) << "═╦═"
-             << _drawLine(valueLength*2 + 3)  << "═╦═"
+             << _drawLine(valueLength*2 + 5)  << "═╦═"
              << _drawLine(counterLength)  << "═╗"
              << std::endl;
       result << "║ "
              << std::setfill(' ') << std::setw(lineNumberLength) << lineNumberHeader << " ║ "
-             << std::setfill(' ') << std::setw(valueLength*2 + 3) << valueHeader << " ║ "
+             << std::setfill(' ') << std::setw(valueLength*2 + 5) << valueHeader << " ║ "
              << std::setfill(' ') << std::setw(counterLength) << countHeader << " ║"
              << std::endl;
       result << "╠═"<< _drawLine(lineNumberLength) << "═╬═"
-             << _drawLine(valueLength*2 + 3)  << "═╬═"
+             << _drawLine(valueLength*2 + 5)  << "═╬═"
              << _drawLine(counterLength)  << "═╣"
              << std::endl
             ;
@@ -350,7 +351,7 @@ namespace fcf {
                 << std::setfill(' ') << std::setw(lineNumberLength) << (i + 1 ) << " ║ "
                 << "["
                   << std::setfill(' ') << std::setw(valueLength) << range.first 
-                  << ":"
+                  << " : "
                   << std::setfill(' ') << std::setw(valueLength) << range.second
                   << "]"
                   << " ║ "
@@ -358,7 +359,7 @@ namespace fcf {
                 << std::endl;
       }
       result << "╚═"<< _drawLine(lineNumberLength) << "═╩═"
-             << _drawLine(valueLength*2 + 3)  << "═╩═"
+             << _drawLine(valueLength*2 + 5)  << "═╩═"
              << _drawLine(counterLength)  << "═╝"
              << std::endl;
 
@@ -418,8 +419,8 @@ namespace fcf {
       double stepy = (double)maxCount / a_height;
 
       result <<  std::fixed << std::setprecision(2);
-      result << "OX (value): [" << a_min << ":" << a_max << "]" << ";  Step: " << stepx << std::endl;
-      result << "OY (count): [" << 0 << ":" << maxCount << "]" << ";  Step: " << stepy << std::endl;
+      result << "OX (value): [" << a_min << " : " << a_max << "]" << ";  Step: " << stepx << std::endl;
+      result << "OY (count): [" << 0 << " : " << maxCount << "]" << ";  Step: " << stepy << std::endl;
       return result.str();
     }
 
@@ -433,6 +434,11 @@ namespace fcf {
     template <typename TItem, typename TCounter>
     std::string HistogramBasic<TItem, TCounter>::toBarChart(size_t a_width, size_t a_height) const {
       return toBarChart(_min, _max, a_width, a_height);
+    }
+
+    template <typename TItem, typename TCounter>
+    std::string HistogramBasic<TItem, TCounter>::toBarChart() const {
+      return toBarChart(_vector, _min, _max, _vector.size(), 10);
     }
 
     template <typename TItem, typename TCounter>

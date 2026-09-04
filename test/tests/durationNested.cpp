@@ -35,7 +35,7 @@ FCF_TEST_DEFINE("fcfTest", "duration", "duration nested"){
 
     // loop 12 - 1
     //   nested: 6*10
-    //  
+    //
     FCF_TEST(duration.duration(0) == 71, duration.duration(0));
     FCF_TEST(duration.duration(1) == 20, duration.duration(1));
     FCF_TEST(duration.duration(2) == 10, duration.duration(2));
