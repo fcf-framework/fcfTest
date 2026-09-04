@@ -247,7 +247,7 @@ namespace fcf {
             medianPosition = heights.center != heights.left ? (double)i + 1 - std::abs(2*(expected-heights.center) / (heights.center - heights.right))
                                                                 : 0.5;
           }
-          return a_min + ( medianPosition * (a_max-a_min) / a_vector.size() );
+          return a_min + ( medianPosition * (a_max-a_min+1) / a_vector.size() );
         }
         sum += a_vector[i];
       }
