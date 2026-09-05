@@ -22,7 +22,7 @@ FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Additio
 
   // Set the starting time point for measuring execution time.
   bench.begin();
-  for(size_t i = 0; i < bench.iterationCount(); ++i) {
+  for(long long i = 0; i < bench.options().iterationCount; ++i) {
     int a = 2;
     int b = 3;
     // Performing a check of the unit test execution.
@@ -32,9 +32,9 @@ FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Additio
   bench.end();
 
   // Outputting the execution time measurement result at the 'info' logging level.
-  fcf::NTest::inf() << "Itertion count: " << bench.iterationCount() << std::endl;
-  fcf::NTest::inf() << "Total: " << bench.totalDuration().count() << " ns" << std::endl;
-  fcf::NTest::inf() << "Avg: " << bench.duration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "Itertion count: " << bench.options().iterationCount << std::endl;
+  fcf::NTest::inf() << "Total: " << bench.duration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "Avg: " << bench.average().count() << " ns" << std::endl;
 }
 
 FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtraction" /*TEST NAME*/) {
@@ -51,9 +51,9 @@ FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtrac
   });
 
   // Outputting the execution time measurement result at the 'info' logging level.
-  fcf::NTest::inf() << "Itertion count: " << bench.iterationCount() << std::endl;
-  fcf::NTest::inf() << "Total: " << bench.totalDuration().count() << " ns" << std::endl;
-  fcf::NTest::inf() << "Avg: " << bench.duration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "Itertion count: " << bench.options().iterationCount << std::endl;
+  fcf::NTest::inf() << "Total: " << bench.duration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "Avg: " << bench.average().count() << " ns" << std::endl;
 }
 
 FCF_TEST_DEFINE("Vector" /*PART NAME*/, "SizeCheck" /*GROUP NAME*/, "EmptyVector" /*TEST NAME*/) {

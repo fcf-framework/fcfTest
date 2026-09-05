@@ -50,9 +50,9 @@ FCF_TEST_DEFINE("Benchmark", "Sorting", "VectorSortBenchmark") {
 
     // Output benchmark results
     fcf::NTest::inf() << "Benchmark completed." << std::endl;
-    fcf::NTest::inf() << "  Iterations: " << bench.iterationCount() << std::endl;
-    fcf::NTest::inf() << "  Total time: " << bench.totalDuration().count() << " ns" << std::endl;
-    fcf::NTest::inf() << "  Avg time:   " << bench.duration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "  Iterations: " << bench.options().iterationCount << std::endl;
+    fcf::NTest::inf() << "  Total time: " << bench.duration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "  Avg time:   " << bench.average().count() << " ns" << std::endl;
 
     // We perform a check of the sorting
     FCF_TEST(std::is_sorted(sdata.begin(), sdata.end()));
@@ -65,19 +65,19 @@ FCF_TEST_DEFINE("Benchmark", "Manual", "ManualLoopBenchmark") {
 
     // Manual control using begin() and end()
     bench.begin();
-    for (unsigned long long i = 0; i < bench.iterationCount(); ++i) {
+    for (long long i = 0; i < bench.options().iterationCount; ++i) {
         // Perform some dummy work
-        unsigned long long a = i;
-        unsigned long long b = i * 2;
-        unsigned long long c = a + b;
+        long long a = i;
+        long long b = i * 2;
+        long long c = a + b;
         FCF_TEST(c == (i * 3));
     }
     bench.end();
 
     fcf::NTest::inf() << "Manual loop benchmark completed." << std::endl;
-    fcf::NTest::inf() << "  Iterations: " << bench.iterationCount() << std::endl;
-    fcf::NTest::inf() << "  Total time: " << bench.totalDuration().count() << " ns" << std::endl;
-    fcf::NTest::inf() << "  Avg time:   " << bench.duration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "  Iterations: " << bench.options().iterationCount << std::endl;
+    fcf::NTest::inf() << "  Total time: " << bench.duration().count() << " ns" << std::endl;
+    fcf::NTest::inf() << "  Avg time:   " << bench.average().count() << " ns" << std::endl;
 }
 
 

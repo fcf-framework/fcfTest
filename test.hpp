@@ -46,6 +46,7 @@
 
 #include <stdexcept>
 #include <algorithm>
+#include <numeric>
 #include <utility>
 #include <memory>
 #include <atomic>
@@ -1069,227 +1070,927 @@ namespace fcf {
 
 namespace fcf {
   namespace NTest {
+    namespace NDetails {
+      FCF_TEST_API int getFriendlyIndex();
+    } // NDetails namespace
+  } // NTest namespace
+} // fcf namespace
+
+
+
+namespace fcf {
+  namespace NTest {
 
     /**
-     * @class Duration
-     * @brief High-precision timing class for code benchmarking and performance testing.
-     *
-     * Provides capabilities to measure total accumulated execution time with pause/resume support,
-     * calculate average time per iteration, and isolatedly evaluate the duration of the
-     * last active time segment (between the last resume/begin and end).
-     * Supports dynamic "on-the-fly" metric calculation while the timer is actively running.
+     * @brief A class representing a duration of time, stored in nanoseconds.
+     * 
+     * This class provides a wrapper around an unsigned long long to represent time 
+     * durations and supports various arithmetic and comparison operations.
      */
-    class Duration {
+    class TimeDuration {
+      private:
+        unsigned long long _duration;
+
       public:
         /**
-         * @brief Constructs a Duration object with a specified number of iterations.
-         *
-         * Protects division logic from zero errors: if 0 is passed,
-         * the iteration count is automatically clamped to 1.
-         *
-         * @param a_iterations The number of planned executions for the tested code block.
+         * @brief Constructs a TimeDuration object.
+         * @param a_duration The duration in nanoseconds.
          */
-        Duration(unsigned long long a_iterations)
-          : _iterations(a_iterations ? a_iterations : 1), _pause(true) {
+        TimeDuration(unsigned long long a_duration = 0) : _duration(a_duration) {}
+
+        /**
+         * @brief Gets the raw duration value.
+         * @return The duration in nanoseconds.
+         */
+        unsigned long long count() const {
+          return _duration;
         }
 
         /**
-         * @brief Default constructor.
-         *
-         * Initializes the object with a default value of 1 iteration.
+         * @brief Converts the duration to a string representation.
+         * @param a_friendly If true, returns a human-readable format with separators.
+         * @return A string representation of the duration.
          */
-        Duration()
-          : _iterations(1), _pause(true) {
-        }
-
-        /**
-         * @brief Returns the configured number of iterations.
-         * @return The number of iterations.
-         */
-        unsigned long long iterationCount() const {
-          return _iterations;
-        }
-
-        /**
-         * @brief Starts the global time measurement.
-         *
-         * Resets all previously accumulated intervals and captures the current
-         * time point for both the global tracker and the local segment.
-         */
-        void begin() {
-          _start     = std::chrono::steady_clock::now();
-          _end       = _start;
-          _lastStart = _start;
-          _lastEnd   = _start;
-          _pause     = false;
-        }
-
-        /**
-         * @brief Stops the current time measurement (pauses the timer).
-         *
-         * Records the ending timestamp for both the total accumulation and the current segment.
-         * If the timer is already paused, subsequent calls are ignored.
-         */
-        void end() {
-          if (_pause) {
-            return;
-          }
-          _end = std::chrono::steady_clock::now();
-          _lastEnd = _end;
-          _pause = true;
-        }
-
-        /**
-         * @brief Resumes time measurement after a pause.
-         *
-         * If called for the very first time (before begin()), it automatically falls back
-         * to act as begin() for seamless code integration.
-         * On subsequent calls, it mathematically shifts the global before timestamp forward
-         * to exclude the paused duration from the total score, and opens a new local segment.
-         */
-        void resume() {
-          if (!_pause) {
-            return;
-          }
-          if (_start == std::chrono::steady_clock::time_point{}) {
-            begin();
-            return;
-          }
-          _lastStart = std::chrono::steady_clock::now();
-          _start = _lastStart - (_end - _start);
-          _pause = false;
-        }
-
-
-
-         /**
-         * @brief Executes a functor multiple times and measures the total execution duration.
-         *
-         * Automatically triggers begin() before entering the loop and end() immediately after.
-         *
-         * @tparam TFunctor Type of the callable object (lambda, function pointer, functor).
-         * @param a_functor The callable target to be benchmarked.
-         */
-        template <typename TFunctor>
-        void operator()(TFunctor&& a_functor) {
-          begin();
-          for(unsigned long long i = 0; i < _iterations; ++i) {
-            a_functor();
-          }
-          end();
-        }
-
-        /**
-         * @brief Returns the total accumulated duration across all iterations (excluding pauses).
-         *
-         * If the timer is active when invoked, the result is dynamically calculated
-         * "on-the-fly" relative to the current time point.
-         *
-         * @return Total duration in nanoseconds.
-         */
-        std::chrono::nanoseconds totalDuration() const {
-          if (!_pause) {
-            auto cur = std::chrono::steady_clock::now();
-            return std::chrono::duration_cast<std::chrono::nanoseconds>(cur - _start);
-          }
-          return std::chrono::duration_cast<std::chrono::nanoseconds>(_end - _start);
-        }
-
-        /**
-         * @brief Returns the duration of the last active execution segment only.
-         *
-         * A segment is defined as the time interval between the last resume() (or begin()) and end().
-         * If the timer is active when invoked, returns the time elapsed since the current segment started.
-         *
-         * @return Duration of the last segment in nanoseconds.
-         */
-        std::chrono::nanoseconds lastTotalDuration() const {
-          if (!_pause) {
-            auto cur = std::chrono::steady_clock::now();
-            return std::chrono::duration_cast<std::chrono::nanoseconds>(cur - _lastStart);
-          }
-          return std::chrono::duration_cast<std::chrono::nanoseconds>(_lastEnd - _lastStart);
-        }
-
-        /**
-         * @brief Returns a string representation of the total accumulated duration.
-         * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
-         */
-        std::string totalDurationStr(bool a_friendly = false) const {
-          return nsToStr( totalDuration().count(), a_friendly);
-        }
-
-        /**
-         * @brief Returns a string representation of the last active segment duration.
-         * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
-         */
-        std::string lastTotalDurationStr(bool a_friendly = false) const {
-          return nsToStr( lastTotalDuration().count(), a_friendly);
-        }
-
-        /**
-         * @brief Calculates the average duration of a single iteration based on total time.
-         * @return Average duration of one iteration in nanoseconds.
-         */
-        std::chrono::nanoseconds duration() const {
-          return totalDuration() / _iterations;
-        }
-
-        /**
-         * @brief Calculates the average duration of a single iteration based on the last segment.
-         * @return Average duration of one iteration within the last segment in nanoseconds.
-         */
-        std::chrono::nanoseconds lastDuration() const {
-          return lastTotalDuration() / _iterations;
-        }
-
-        /**
-         * @brief Returns a string representation of the average iteration duration based on total time.
-         * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
-         */
-        std::string durationStr(bool a_friendly = false) const {
-          return nsToStr(duration().count(), a_friendly);
-        }
-
-        /**
-         * @brief Returns a string representation of the average iteration duration based on the last segment.
-         * @return Formatted string: "SECONDS.MILLIS`MICROS`NANOS".
-         */
-        std::string lastDurationStr(bool a_friendly = false) const {
-          return nsToStr( lastDuration().count(), a_friendly);
-        }
-
-        /**
-         * @brief Formats raw nanoseconds into a custom string representation.
-         *
-         * Converts raw nanosecond counts into a human-readable format separated by backticks.
-         * Const-correctness guarantees safe execution within the class's const getters.
-         *
-         * @param a_ns The total number of nanoseconds to format.
-         * @return Formatted string matching "SEC.MIL`MICRO`NS".
-         */
-        static std::string nsToStr(unsigned long long a_ns, bool a_friendly) {
+        std::string str(bool a_friendly = false) const {
           std::stringstream ss;
           if (a_friendly) {
-            ss << (a_ns / 1000000000) << '.'
-               << std::setfill('0') << std::setw(3) << ((a_ns / 1000000) % 1000) << '`'
-               << std::setw(3)                      << ((a_ns / 1000) % 1000) << '`'
-               << std::setw(3)                      << (a_ns % 1000);
+            ss << (_duration / 1000000000) << '.'
+               << std::setfill('0') << std::setw(3) << ((_duration / 1000000) % 1000) << '`'
+               << std::setw(3)                      << ((_duration / 1000) % 1000) << '`'
+               << std::setw(3)                      << (_duration % 1000);
           } else {
-            ss << (a_ns / 1000000000) << '.'
-               << std::setfill('0') << std::setw(9) << (a_ns % 1000000000);
+            ss << (_duration / 1000000000) << '.'
+               << std::setfill('0') << std::setw(9) << (_duration % 1000000000);
           }
           return ss.str();
         }
 
-      private:
-        unsigned long long                    _iterations;  ///< Total number of iterations for test execution and average metrics calculation.
-        bool                                  _pause;       ///< State flag: true if the timer is paused/stopped, false if actively running.
-        std::chrono::steady_clock::time_point _start;       ///< Modifiable starting time point of the global (accumulated) tracker.
-        std::chrono::steady_clock::time_point _end;         ///< Ending time point of the global (accumulated) tracker.
-        std::chrono::steady_clock::time_point _lastStart;   ///< Immutable starting time point of the last opened interval segment.
-        std::chrono::steady_clock::time_point _lastEnd;     ///< Ending time point of the last completed interval segment.
+        /** @brief Explicit conversion to double. @return The duration as a double. */
+        explicit operator double() const {
+          return (double)_duration;
+        }
+
+        /** @brief Explicit conversion to long double. @return The duration as a long double. */
+        explicit operator long double() const {
+          return (long double)_duration;
+        }
+
+        /** @brief Explicit conversion to unsigned long long. @return The duration in nanoseconds. */
+        explicit operator unsigned long long() const {
+          return _duration;
+        }
+
+        /** @brief Addition operator for two TimeDuration objects. @param a_rhs The duration to add. @return Result of addition. */
+        inline TimeDuration operator+(const TimeDuration& a_rhs) const {
+          return TimeDuration(_duration + a_rhs._duration);
+        }
+
+        /** @brief Subtraction operator for two TimeDuration objects. @param a_rhs The duration to subtract. @return Result of subtraction. */
+        inline TimeDuration operator-(const TimeDuration& a_rhs) const {
+          return TimeDuration(_duration - a_rhs._duration);
+        }
+
+        /** @brief Multiplication operator for two TimeDuration objects. @param a_rhs The duration to multiply. @return Result of multiplication. */
+        inline TimeDuration operator*(const TimeDuration& a_rhs) const {
+          return TimeDuration(_duration * a_rhs._duration);
+        }
+
+        /** @brief Division operator for two TimeDuration objects. @param a_rhs The duration to divide by. @return Result of division. */
+        inline TimeDuration operator/(const TimeDuration& a_rhs) const {
+          return TimeDuration(_duration / a_rhs._duration);
+        }
+
+        /**
+         * @brief Addition operator with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to add.
+         * @return Result of addition.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration>::type
+        operator+(const Ty& a_value) const {
+          return TimeDuration(_duration + static_cast<unsigned long long>(a_value));
+        }
+
+        /**
+         * @brief Subtraction operator with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to subtract.
+         * @return Result of subtraction.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration>::type
+        operator-(const Ty& a_value) const {
+          return TimeDuration(_duration - static_cast<unsigned long long>(a_value));
+        }
+
+        /**
+         * @brief Multiplication operator with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to multiply.
+         * @return Result of multiplication.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration>::type
+        operator*(const Ty& a_value) const {
+          return TimeDuration(_duration * static_cast<unsigned long long>(a_value));
+        }
+
+        /**
+         * @brief Division operator with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to divide by.
+         * @return Result of division.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration>::type
+        operator/(const Ty& a_value) const {
+          return TimeDuration(_duration / static_cast<unsigned long long>(a_value));
+        }
+
+        /** @brief Equality comparison. @param a_rhs The duration to compare. @return True if equal. */
+        inline bool operator==(const TimeDuration& a_rhs) const {
+          return _duration == a_rhs._duration;
+        }
+
+        /** @brief Inequality comparison. @param a_rhs The duration to compare. @return True if not equal. */
+        inline bool operator!=(const TimeDuration& a_rhs) const {
+          return _duration != a_rhs._duration;
+        }
+
+        /** @brief Less than comparison. @param a_rhs The duration to compare. @return True if less. */
+        inline bool operator<(const TimeDuration& a_rhs) const {
+          return _duration < a_rhs._duration;
+        }
+
+        /** @brief Greater than comparison. @param a_rhs The duration to compare. @return True if greater. */
+        inline bool operator>(const TimeDuration& a_rhs) const {
+          return _duration > a_rhs._duration;
+        }
+
+        /** @brief Less than or equal comparison. @param a_rhs The duration to compare. @return True if less or equal. */
+        inline bool operator<=(const TimeDuration& a_rhs) const {
+          return _duration <= a_rhs._duration;
+        }
+
+        /** @brief Greater than or equal comparison. @param a_rhs The duration to compare. @return True if greater or equal. */
+        inline bool operator>=(const TimeDuration& a_rhs) const {
+          return _duration >= a_rhs._duration;
+        }
+
+        /**
+         * @brief Equality comparison with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to compare.
+         * @return True if equal.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator==(const Ty& a_value) const {
+          return _duration == static_cast<unsigned long long>(a_value);
+        }
+
+        /**
+         * @brief Inequality comparison with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to compare.
+         * @return True if not equal.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator!=(const Ty& a_value) const {
+          return _duration != static_cast<unsigned long long>(a_value);
+        }
+
+        /**
+         * @brief Less than comparison with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to compare.
+         * @return True if less.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator<(const Ty& a_value) const {
+          return _duration < static_cast<unsigned long long>(a_value);
+        }
+
+        /**
+         * @brief Greater than comparison with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to compare.
+         * @return True if greater.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator>(const Ty& a_value) const {
+          return _duration > static_cast<unsigned long long>(a_value);
+        }
+
+        /**
+         * @brief Less than or equal comparison with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to compare.
+         * @return True if less or equal.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator<=(const Ty& a_value) const {
+          return _duration <= static_cast<unsigned long long>(a_value);
+        }
+
+        /**
+         * @brief Greater than or equal comparison with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to compare.
+         * @return True if greater or equal.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+        operator>=(const Ty& a_value) const {
+          return _duration >= static_cast<unsigned long long>(a_value);
+        }
+
+        /** @brief Logical NOT operator. @return True if duration is zero. */
+        inline bool operator!() const {
+          return _duration == 0;
+        }
+
+        /** @brief Assignment operator with unsigned long long. @param a_seconds The new duration. @return Reference to this object. */
+        inline TimeDuration& operator=(unsigned long long a_seconds) {
+          _duration = a_seconds;
+          return *this;
+        }
+
+        /** @brief Assignment operator with TimeDuration. @param a_rhs The duration to assign. @return Reference to this object. */
+        inline TimeDuration& operator=(const TimeDuration& a_rhs) {
+          _duration = a_rhs._duration;
+          return *this;
+        }
+
+        /** @brief Addition assignment operator. @param a_rhs The duration to add. @return Reference to this object. */
+        inline TimeDuration& operator+=(const TimeDuration& a_rhs) {
+          _duration += a_rhs._duration;
+          return *this;
+        }
+
+        /** @brief Subtraction assignment operator. @param a_rhs The duration to subtract. @return Reference to this object. */
+        inline TimeDuration& operator-=(const TimeDuration& a_rhs) {
+          _duration -= a_rhs._duration;
+          return *this;
+        }
+
+        /** @brief Multiplication assignment operator. @param a_rhs The duration to multiply. @return Reference to this object. */
+        inline TimeDuration& operator*=(const TimeDuration& a_rhs) {
+          _duration *= a_rhs._duration;
+          return *this;
+        }
+
+        /** @brief Division assignment operator. @param a_rhs The duration to divide by. @return Reference to this object. */
+        inline TimeDuration& operator/=(const TimeDuration& a_rhs) {
+          _duration /= a_rhs._duration;
+          return *this;
+        }
+
+        /**
+         * @brief Addition assignment operator with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to add.
+         * @return Reference to this object.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration&>::type
+        operator+=(const Ty& a_value) {
+          _duration += static_cast<unsigned long long>(a_value);
+          return *this;
+        }
+
+        /**
+         * @brief Subtraction assignment operator with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to subtract.
+         * @return Reference to this object.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration&>::type
+        operator-=(const Ty& a_value) {
+          _duration -= static_cast<unsigned long long>(a_value);
+          return *this;
+        }
+
+        /**
+         * @brief Multiplication assignment operator with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to multiply.
+         * @return Reference to this object.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration&>::type
+        operator*=(const Ty& a_value) {
+          _duration *= static_cast<unsigned long long>(a_value);
+          return *this;
+        }
+
+        /**
+         * @brief Division assignment operator with an arithmetic type.
+         * @tparam Ty Arithmetic type.
+         * @param a_value The value to divide by.
+         * @return Reference to this object.
+         */
+        template <typename Ty>
+        inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration&>::type
+        operator/=(const Ty& a_value) {
+          _duration /= static_cast<unsigned long long>(a_value);
+          return *this;
+        }
+
+        /** @brief Stream insertion operator. @param a_stream Output stream. @param a_td Duration object. @return The stream. */
+        friend std::ostream& operator<< (std::ostream& a_stream, const TimeDuration& a_td) {
+          long friendly =  a_stream.iword(NDetails::getFriendlyIndex());
+          a_stream << a_td.str(friendly);
+          return a_stream;
+        }
     };
+
+    /**
+     * @brief Addition operator for arithmetic type and TimeDuration.
+     * @tparam Ty Arithmetic type.
+     * @param a_left The arithmetic value.
+     * @param a_right The duration.
+     * @return Result of addition.
+     */
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, Ty>::type
+    operator+(const Ty& a_left, const TimeDuration& a_right) {
+      return a_left + (Ty)a_right;
+    }
+
+    /**
+     * @brief Subtraction operator for arithmetic type and TimeDuration.
+     * @tparam Ty Arithmetic type.
+     * @param a_left The arithmetic value.
+     * @param a_right The duration.
+     * @return Result of subtraction.
+     */
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, Ty>::type
+    operator-(const Ty& a_left, const TimeDuration& a_right) {
+      return a_left - (Ty)a_right;
+    }
+
+    /**
+     * @brief Multiplication operator for arithmetic type and TimeDuration.
+     * @tparam Ty Arithmetic type.
+     * @param a_left The arithmetic value.
+     * @param a_right The duration.
+     * @return Result of multiplication.
+     */
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, Ty>::type
+    operator*(const Ty& a_left, const TimeDuration& a_right) {
+      return a_left * (Ty)a_right;
+    }
+
+    /**
+     * @brief Division operator for arithmetic type and TimeDuration.
+     * @tparam Ty Arithmetic type.
+     * @param a_left The arithmetic value.
+     * @param a_right The duration.
+     * @return Result of division.
+     */
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, Ty>::type
+    operator/(const Ty& a_left, const TimeDuration& a_right) {
+      return a_left / (Ty)a_right;
+    }
+
+    /**
+     * @brief Equality comparison for arithmetic type and TimeDuration.
+     * @tparam Ty Arithmetic type.
+     * @param a_left The arithmetic value.
+     * @param a_right The duration.
+     * @return True if equal.
+     */
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator==(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) == a_right.count();
+    }
+
+    /**
+     * @brief Inequality comparison for arithmetic type and TimeDuration.
+     * @tparam Ty Arithmetic type.
+     * @param a_left The arithmetic value.
+     * @param a_right The duration.
+     * @return True if not equal.
+     */
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator!=(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) != a_right.count();
+    }
+
+    /**
+     * @brief Less than comparison for arithmetic type and TimeDuration.
+     * @tparam Ty Arithmetic type.
+     * @param a_left The arithmetic value.
+     * @param a_right The duration.
+     * @return True if less.
+     */
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator<(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) < a_right.count();
+    }
+
+    /**
+     * @brief Greater than comparison for arithmetic type and TimeDuration.
+     * @tparam Ty Arithmetic type.
+     * @param a_left The arithmetic value.
+     * @param a_right The duration.
+     * @return True if greater.
+     */
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator>(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) > a_right.count();
+    }
+
+    /**
+     * @brief Less than or equal comparison for arithmetic type and TimeDuration.
+     * @tparam Ty Arithmetic type.
+     * @param a_left The arithmetic value.
+     * @param a_right The duration.
+     * @return True if less or equal.
+     */
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator<=(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) <= a_right.count();
+    }
+
+    /**
+     * @brief Greater than or equal comparison for arithmetic type and TimeDuration.
+     * @tparam Ty Arithmetic type.
+     * @param a_left The arithmetic value.
+     * @param a_right The duration.
+     * @return True if greater or equal.
+     */
+    template <typename Ty>
+    inline typename std::enable_if<std::is_arithmetic<Ty>::value, bool>::type
+    operator>=(const Ty& a_left, const TimeDuration& a_right) {
+      return static_cast<unsigned long long>(a_left) >= a_right.count();
+    }
+
+  } // NTest namespace
+} // fcf namespace
+
+namespace fcf {
+  namespace NTest {
+
+    /**
+     * @brief A basic histogram class for frequency distribution analysis.
+     *
+     * This class provides tools to collect data points, calculate statistical measures
+     * like median, and visualize the distribution through tables or bar charts.
+     *
+     * @tparam TItem The type of the data items (e.g., int, double).
+     * @tparam TCounter The type used for counting occurrences (default: size_t).
+     */
+    template <typename TItem, typename TCounter = size_t>
+    class HistogramBasic {
+      public:
+        /**
+         * @brief Default constructor. Initializes an empty histogram with default capacity.
+         */
+        HistogramBasic();
+
+        /**
+         * @brief Constructor with specified capacity.
+         * @param a_capacity The initial number of bins in the histogram.
+         */
+        HistogramBasic(size_t a_capacity);
+
+        HistogramBasic(size_t a_capacity, TItem a_min, TItem a_max);
+
+        /**
+         * @brief Appends a new item to the histogram.
+         *
+         * If the item falls outside the current range, the histogram will be rebuilt
+         * to accommodate the new min/max values.
+         * @param a_item The value to be added.
+         */
+        void append(TItem a_item, size_t a_count = 1);
+
+        /** @brief Returns the minimum value recorded in the histogram. */
+        TItem min() const;
+
+        /** @brief Returns the maximum value recorded in the histogram. */
+        TItem max() const;
+
+        /** @brief Returns the number of bins (size of the internal vector). */
+        size_t size() const;
+
+        /**
+         * @brief Resizes the histogram to a new number of bins.
+         *
+         * Rebuilds the internal data vector to accommodate the new size.
+         * The new size must be greater than 1. If the new size is equal to the current size,
+         * no action is taken.
+         * @param a_newSize The desired number of bins.
+         */
+        void size(size_t a_newSize);
+
+        /** @brief Returns the total number of items appended to the histogram. */
+        size_t counter() const;
+
+        bool  overflow(TItem a_value) const;
+
+        /**
+         * @brief Calculates the range (min, max) for a specific value within a given range and size.
+         * @param a_value The value to find the range for.
+         * @param a_min The minimum boundary.
+         * @param a_max The maximum boundary.
+         * @param a_size The number of bins.
+         * @return A pair containing the lower and upper bounds of the bin.
+         * @throws std::out_of_range if a_value is outside [a_min, a_max].
+         */
+        static std::pair<TItem, TItem> rangeByValue(TItem a_value, TItem a_min, TItem a_max, size_t a_size);
+
+        /** @brief Calculates the range for a value using current histogram boundaries. */
+        std::pair<TItem, TItem> rangeByValue(TItem a_value, TItem a_min, TItem a_max) const;
+
+        /** @brief Calculates the range for a value using current min/max and specified size. */
+        std::pair<TItem, TItem> rangeByValue(TItem a_value, size_t a_size) const;
+
+        /** @brief Calculates the range for a value using current histogram boundaries and size. */
+        std::pair<TItem, TItem> rangeByValue(TItem a_value) const;
+
+        /**
+         * @brief Calculates the range for a specific bin index.
+         * @param a_index The index of the bin.
+         * @param a_min The minimum boundary.
+         * @param a_max The maximum boundary.
+         * @param a_size The number of bins.
+         * @return A pair containing the lower and upper bounds of the bin.
+         * @throws std::out_of_range if a_index is invalid.
+         */
+        static std::pair<TItem, TItem> rangeByIndex(size_t a_index, TItem a_min, TItem a_max, size_t a_size);
+
+        /** @brief Calculates the range for a bin index using current histogram boundaries. */
+        std::pair<TItem, TItem> rangeByIndex(size_t a_index, TItem a_min, TItem a_max) const;
+
+        /** @brief Calculates the range for a bin index using current min/max and specified size. */
+        std::pair<TItem, TItem> rangeByIndex(size_t a_index, size_t a_size) const;
+
+        /** @brief Calculates the range for a bin index using current histogram boundaries and size. */
+        std::pair<TItem, TItem> rangeByIndex(size_t a_index) const;
+
+        /**
+         * @brief Calculates the median value of the distribution.
+         * @param a_vector The vector of counts.
+         * @param a_min The minimum value of the range.
+         * @param a_max The maximum value of the range.
+         * @return The estimated median value.
+         */
+        static TItem median(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max);
+
+        /** @brief Calculates the median using current histogram data. */
+        TItem median() const;
+
+        /**
+         * @brief Creates a new count vector by redistributing values from a source vector into a new range.
+         * @param a_source The source vector of counts.
+         * @param a_sourceMin Min value of the source range.
+         * @param a_sourceMax Max value of the source range.
+         * @param a_min Min value of the target range.
+         * @param a_max Max value of the target range.
+         * @param a_size Number of bins in the target vector.
+         * @return A new vector of counts.
+         */
+        static std::vector<TCounter> countVector(const std::vector<TCounter>& a_source, TItem a_sourceMin, TItem a_sourceMax, TItem a_min, TItem a_max, size_t a_size);
+
+        /** @brief Creates a new count vector using current histogram data and a custom range. */
+        std::vector<TCounter> countVector(TItem a_min, TItem a_max, size_t a_size) const;
+
+        /** @brief Creates a new count vector using current histogram data and a custom range. */
+        std::vector<TCounter> countVector(TItem a_min, TItem a_max) const;
+
+        /** @brief Creates a new count vector using current histogram data and a specified size. */
+        std::vector<TCounter> countVector(size_t a_size) const;
+
+        /** @brief Creates a new count vector using current histogram data and default size. */
+        std::vector<TCounter> countVector() const;
+
+        /**
+         * @brief Generates a formatted ASCII table representing the histogram.
+         * @param a_vector The vector of counts.
+         * @param a_min The minimum value.
+         * @param a_max The maximum value.
+         * @return A string containing the ASCII table.
+         */
+        static std::string toTable(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max);
+
+        /** @brief Generates a formatted ASCII table for a custom range. */
+        std::string toTable(TItem a_min, TItem a_max, size_t a_size) const;
+
+        /** @brief Generates a formatted ASCII table for a custom size. */
+        std::string toTable(size_t a_size) const;
+
+        /** @brief Generates a formatted ASCII table. */
+        std::string toTable() const;
+
+
+        /**
+         * @brief Generates an ASCII bar chart.
+         * @param a_vector The vector of counts.
+         * @param a_min The minimum value.
+         * @param a_max The maximum value.
+         * @param a_width The width of the chart in characters.
+         * @param a_height The height of the chart in characters.
+         * @return A string containing the bar chart.
+         */
+        static std::string toBarChart(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max, size_t a_width, size_t a_height);
+
+        /** @brief Generates an ASCII bar chart for a custom range. */
+        std::string toBarChart(TItem a_min, TItem a_max, size_t a_width, size_t a_height) const;
+
+        /** @brief Generates an ASCII bar chart for a custom size. */
+        std::string toBarChart(size_t a_width, size_t a_height=10) const;
+
+        /** @brief Generates an ASCII bar chart. */
+        std::string toBarChart() const;
+
+      private:
+
+        struct Heights {
+          double left;
+          double center;
+          double right;
+        };
+
+        static Heights _heights(const std::vector<TCounter>& a_source, size_t a_index, double a_lastHeight, bool a_enableLastHeight);
+
+        static void _build(TItem a_sourceMin, TItem a_sourceMax, const std::vector<TCounter>& a_source, TItem a_newMin, TItem a_newMax, std::vector<TCounter>& a_destination);
+
+        size_t _calcIndex(TItem a_weight, TItem a_scale, size_t a_size) const;
+
+        static std::string _drawLine(int length);
+
+        unsigned long long    _counter;
+        bool                  _init;
+        bool                  _initMinMax;
+        TItem                 _min;
+        TItem                 _max;
+        std::vector<TCounter> _vector;
+        std::vector<TCounter> _buffer;
+    };
+
+  } // NTest namespace
+} // fcf namespace
+
+
+
+namespace fcf {
+  namespace NTest {
+
+    /**
+     * @brief A template class for measuring and analyzing time durations.
+     *
+     * This class provides a framework for performing micro-benchmarking, allowing
+     * for multiple measurement levels, warmup iterations, and statistical analysis
+     * through histograms.
+     *
+     * @tparam TClock A clock type that provides a time point in nanoseconds.
+     */
+    template <typename TClock>
+    class DurationBasic {
+      public:
+        /** @brief Type for time points, represented as nanoseconds. */
+        typedef unsigned long long TimePoint;
+        /** @brief Type for time durations. */
+        typedef ::fcf::NTest::TimeDuration TimeDuration;
+        /** @brief Type for the histogram used in measurements. */
+        typedef HistogramBasic<TimeDuration, unsigned long long> HistogramType;
+
+        /**
+         * @brief Options for starting a measurement session.
+         */
+        struct BeginOptions {
+          /** @brief Total number of iterations to perform. */
+          long long iterationCount;
+          /** @brief The number of bins for the histogram. If negative, the histogram size is determined automatically. */
+          int       histogramSize;
+
+          /** @brief Default constructor. Initializes iterationCount to 1. */
+          BeginOptions()
+            : iterationCount(-1)
+            , histogramSize(-1)
+          {}
+          /** @brief Constructor with specified iteration count. @param a_iterationCount Number of iterations. */
+          BeginOptions(long long a_iterationCount, int a_histogramSize = -1)
+            : iterationCount(a_iterationCount)
+            , histogramSize(a_histogramSize)
+          {}
+        };
+
+        /**
+         * @brief Extended options for measurement sessions.
+         */
+        struct Options : public BeginOptions {
+          /** @brief Number of iterations per measurement step. */
+          long long measurementStep;
+          /** @brief Number of warmup iterations before actual measurement. */
+          long long warmupCount;
+
+          /** @brief Default constructor. */
+          Options()
+            : measurementStep(-1)
+            , warmupCount(-1)
+          {}
+          /**
+           * @brief Constructor with specified parameters.
+           * @param a_iterationCount Total iterations.
+           * @param a_histogramSize The number of bins for the histogram
+           * @param a_measurementStep Step size for measurements.
+           * @param a_warmupCount Number of warmup iterations.
+           */
+          Options(unsigned long long a_iterationCount, int a_histogramSize = -1, unsigned long long a_measurementStep = -1, unsigned long long a_warmupCount = -1)
+            : BeginOptions(a_iterationCount, a_histogramSize)
+            , measurementStep(a_measurementStep)
+            , warmupCount(a_warmupCount)
+          {}
+        };
+
+      private:
+        struct Measurement {
+          TimeDuration        duration;
+          TimePoint           timepoint;
+          unsigned long long  iteration;
+          TimeDuration        min;
+          TimeDuration        max;
+          bool                pause;
+          BeginOptions        options;
+          TimeDuration        excludedTime;
+          HistogramType       histogram;
+
+          Measurement()
+            : duration(0)
+            , timepoint(0)
+            , iteration(0)
+            , min(0)
+            , max(0)
+            , pause(true)
+            , excludedTime(0)
+          {}
+        };
+
+      public:
+        /** @brief Default constructor. */
+        DurationBasic();
+        /**
+         * @brief Constructor with specified iteration parameters.
+         * @param a_iterationCount Total iterations.
+         * @param a_measurementStep Step size.
+         * @param a_warmupCount Warmup iterations.
+         */
+        DurationBasic(unsigned long long a_iterationCount, unsigned long long a_measurementStep = 1, unsigned long long a_warmupCount = 0);
+        /** @brief Constructor with specified Options. @param a_options Measurement options. */
+        DurationBasic(const Options& a_options);
+
+        /** @brief Gets the current measurement options. @return The current options. */
+        Options options() const;
+        /** @brief Sets the current measurement options. @param a_options The new options. */
+        void options(const Options& a_options);
+
+        /**
+         * @brief Starts a measurement at a specific level.
+         * @param a_options Options for this measurement.
+         * @param a_beginLevel Starting level.
+         * @param a_endLevel Ending level.
+         */
+        void begin(const BeginOptions& a_options, int a_beginLevel, int a_endLevel);
+        /** @brief Starts a measurement at a specific level. @param a_options Options. @param a_beginLevel Level. */
+        void begin(const BeginOptions& a_options, int a_beginLevel = 0);
+        /** @brief Starts a measurement with default options. @param a_beginLevel Level. */
+        void begin(int a_beginLevel = 0);
+        /** @brief Starts a measurement with default options. @param a_beginLevel Starting level. @param a_endLevel Ending level. */
+        void begin(int a_beginLevel, int a_endLevel);
+
+        /**
+         * @brief Ends a measurement at a specific level.
+         * @param a_beginLevel Starting level.
+         * @param a_endLevel Ending level.
+         */
+        void end(int a_beginLevel, int a_endLevel);
+        /** @brief Ends a measurement at a specific level. @param a_beginLevel Level. */
+        void end(int a_beginLevel=0);
+
+        /**
+         * @brief Resets measurements for a specific range of levels.
+         * @param a_beginLevel Starting level.
+         * @param a_endLevel Ending level (-1 for all).
+         */
+        void reset(int a_beginLevel = 0, int a_endLevel = -1);
+
+        /** @brief Gets the histogram for a specific level. @param a_level Level index. @return Reference to the histogram. */
+        const HistogramType& histogram(size_t a_level = 0) const;
+        /** @brief Gets the histogram for a specific level. @param a_level Level index. @return Reference to the histogram. */
+        HistogramType& histogram(size_t a_level = 0);
+
+        /**
+         * @brief Executes a function and measures its duration.
+         * @tparam TFunction The type of the function.
+         * @param a_options Options for measurement.
+         * @param a_beginLevel Starting level.
+         * @param a_endLevel Ending level.
+         * @param a_function The function to execute.
+         */
+        template <typename TFunction>
+        void operator()(Options a_options, int a_beginLevel, int a_endLevel, TFunction a_function);
+
+        /**
+         * @brief Executes a function and measures its duration.
+         * @tparam TFunction The type of the function.
+         * @param a_beginLevel Starting level.
+         * @param a_endLevel Ending level.
+         * @param a_function The function to execute.
+         */
+        template <typename TFunction>
+        void operator()(int a_beginLevel, int a_endLevel, TFunction a_function);
+
+        /**
+         * @brief Executes a function and measures its duration.
+         * @tparam TFunction The type of the function.
+         * @param a_options Options for measurement.
+         * @param a_beginLevel Starting level.
+         * @param a_function The function to execute.
+         */
+        template <typename TFunction>
+        void operator()(const Options& a_options, int a_beginLevel, TFunction a_function);
+
+        /**
+         * @brief Executes a function and measures its duration.
+         * @tparam TFunction The type of the function.
+         * @param a_beginLevel Starting level.
+         * @param a_function The function to execute.
+         */
+        template <typename TFunction>
+        void operator()(int a_beginLevel, TFunction a_function);
+
+        /**
+         * @brief Executes a function and measures its duration.
+         * @tparam TFunction The type of the function.
+         * @param a_options Options for measurement.
+         * @param a_function The function to execute.
+         */
+        template <typename TFunction>
+        void operator()(const Options& a_options, TFunction a_function);
+
+        /**
+         * @brief Executes a function and measures its duration.
+         * @tparam TFunction The type of the function.
+         * @param a_function The function to execute.
+         */
+        template <typename TFunction>
+        void operator()(TFunction a_function);
+
+        /** @brief Gets the total duration for a specific level. @param a_level Level index. @return Total duration. */
+        TimeDuration duration(int a_level = 0) const;
+        /** @brief Gets the average duration for a specific level. @param a_level Level index. @return Average duration. */
+        TimeDuration average(int a_level = 0) const;
+        /** @brief Gets the median duration for a specific level. @param a_level Level index. @return Median duration. */
+        TimeDuration median(int a_median = 0) const;
+        /** @brief Gets the minimum duration for a specific level. @param a_level Level index. @return Minimum duration. */
+        TimeDuration min(int a_level = 0) const;
+        /** @brief Gets the maximum duration for a specific level. @param a_level Level index. @return Maximum duration. */
+        TimeDuration max(int a_level = 0) const;
+
+      private:
+        inline void _prepare(size_t a_step);
+        void _appendHistogram(size_t a_level, TimeDuration a_value, size_t a_count, int a_histogramSize, size_t a_ignoreStart = 0, size_t a_ignoreEnd = 0);
+
+        TimePoint                 _timepoint;
+        std::vector<Measurement>  _measurements;
+        mutable TClock            _clock;
+        Options                   _options;
+    };
+
+    /**
+     * @brief A clock implementation using std::chrono::steady_clock.
+     */
+    class SteadyClock {
+      public:
+        /**
+         * @brief Returns the current time in nanoseconds.
+         * @return Current time point as unsigned long long.
+         */
+        unsigned long long operator()() {
+          std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+          return std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+        }
+    };
+
+    typedef DurationBasic<SteadyClock> Duration;
 
   } // NTest namespace
 } // fcf namespace
@@ -2194,7 +2895,1090 @@ namespace fcf {
   } // NTest namespace
 } // fcf namespace
 
+/* ========================================================== */
+/* ===                                                    === */
+/* ===                   Implementation                   === */
+/* ===                                                    === */
+/* ===                Benchmarking classes                === */
+/* ===                                                    === */
+/* ===                      NDetails                      === */
+/* ===                                                    === */
+/* ========================================================== */
 
+
+namespace fcf {
+  namespace NTest {
+    namespace NDetails {
+      #ifdef FCF_TEST_IMPLEMENTATION
+        FCF_TEST_API int getFriendlyIndex(){
+          static int index = std::ios_base::xalloc();
+          return index;
+        }
+      #endif
+    } // NDetails namespace
+  } // NTest namespace
+} // fcf namespace
+
+
+
+namespace fcf {
+  namespace NTest {
+
+    struct Friendly {
+      bool enable;
+      explicit Friendly(bool a_enable = true) : enable(a_enable) {}
+    };
+
+    inline std::ostream& operator<<(std::ostream& a_stream, const Friendly& a_format) {
+      a_stream.iword(NDetails::getFriendlyIndex()) = a_format.enable ? 1L : 0L;
+      return a_stream;
+    }
+
+  } // NTest namespace
+} // fcf namespace
+
+
+
+
+
+/* ========================================================== */
+/* ===                                                    === */
+/* ===                   Implementation                   === */
+/* ===                                                    === */
+/* ===                Benchmarking classes                === */
+/* ===                                                    === */
+/* ===                   HistogramBasic                   === */
+/* ===                                                    === */
+/* ========================================================== */
+
+namespace fcf {
+  namespace NTest {
+
+    template <typename TItem, typename TCounter>
+    HistogramBasic<TItem, TCounter>::HistogramBasic()
+      : _counter(0)
+      , _init(true)
+      , _initMinMax(false)
+      , _min(0)
+      , _max(0)
+      , _vector(10, 0)
+      , _buffer(10, 0){
+    }
+
+    template <typename TItem, typename TCounter>
+    HistogramBasic<TItem, TCounter>::HistogramBasic(size_t a_capacity)
+      : _counter(0)
+      , _init(true)
+      , _initMinMax(false)
+      , _min(0)
+      , _max(0)
+      , _vector(std::max(a_capacity, (size_t)3), 0)
+      , _buffer(std::max(a_capacity, (size_t)3), 0){
+    }
+
+    template <typename TItem, typename TCounter>
+    HistogramBasic<TItem, TCounter>::HistogramBasic(size_t a_capacity, TItem a_min, TItem a_max)
+      : _counter(0)
+      , _init(true)
+      , _initMinMax(true)
+      , _vector(std::max(a_capacity, (size_t)3), 0)
+      , _buffer(std::max(a_capacity, (size_t)3), 0) {
+      if (a_max == a_min){
+        ++a_max;
+      }
+      if (a_max < a_min) {
+        std::swap(a_max, a_min);
+      }
+      _min = a_min;
+      _max = a_max;
+    }
+
+
+    template <typename TItem, typename TCounter>
+    void HistogramBasic<TItem, TCounter>::append(TItem a_item, size_t a_count) {
+      a_count = std::max(a_count, (size_t)1);
+      if (_init) {
+        if (_initMinMax) {
+          _init = false;
+        } else {
+          if (!_counter) {
+            _min = a_item;
+            _max = a_item;
+            _vector[0] += a_count;
+          } else {
+            TItem newMin = std::min(a_item, _min);
+            TItem newMax = std::max(a_item, _max);
+            if (newMin < _min) {
+              std::swap(_vector.front(), _vector.back());
+            }
+            size_t index = _min == a_item ? 0 : _vector.size()-1;
+            _vector[index] += a_count;
+            _min = newMin;
+            _max = newMax;
+            if (_min != _max) {
+              _init = false;
+            }
+          }
+          _counter += a_count;
+          return;
+        }
+      }
+
+      if (a_item < _min || a_item > _max) {
+        TItem newMin     = std::min(a_item, _min);
+        TItem newMax     = std::max(a_item, _max);
+        _build(_min, _max, _vector, newMin, newMax, _buffer);
+        std::swap(_buffer, _vector);
+        _min = newMin;
+        _max = newMax;
+      }
+
+      TItem scale  = _max - _min;
+      TItem weight = a_item - _min;
+      size_t index = _calcIndex(weight, scale, _vector.size());
+      _vector[index] += a_count;
+
+      _counter += a_count;
+    }
+
+    template <typename TItem, typename TCounter>
+    TItem HistogramBasic<TItem, TCounter>::min() const {
+      return _min;
+    }
+
+    template <typename TItem, typename TCounter>
+    TItem HistogramBasic<TItem, TCounter>::max() const {
+      return _max;
+    }
+
+    template <typename TItem, typename TCounter>
+    size_t HistogramBasic<TItem, TCounter>::size() const {
+      return _vector.size();
+    }
+
+    template <typename TItem, typename TCounter>
+    void HistogramBasic<TItem, TCounter>::size(size_t a_newSize) {
+      a_newSize = std::max(a_newSize, (size_t)2);
+
+      if (a_newSize == _vector.size()) {
+        return;
+      }
+
+      std::vector<TCounter> newVector(a_newSize);
+      _build(_min, _max, _vector, _min, _max, newVector);
+      _vector = std::move(newVector);
+    }
+
+    template <typename TItem, typename TCounter>
+    size_t HistogramBasic<TItem, TCounter>::counter() const {
+      return _counter;
+    }
+
+    template <typename TItem, typename TCounter>
+    bool HistogramBasic<TItem, TCounter>::overflow(TItem a_value) const {
+      return !_init && (a_value > _max || a_value < _min);
+    }
+
+    template <typename TItem, typename TCounter>
+    std::pair<TItem, TItem> HistogramBasic<TItem, TCounter>::rangeByValue(TItem a_value, TItem a_min, TItem a_max, size_t a_size) {
+      if (a_min > a_max){
+        std::swap(a_min, a_max);
+      }
+      if (a_value < a_min || a_value > a_max) {
+        throw std::out_of_range("Value goes beyond the histogram range");
+      }
+      a_size              = std::max(a_size, (size_t)1);
+      TItem    range      = a_max - a_min + 1;
+      size_t   index      = ((double)a_size / range) * (a_value - a_min);
+      TCounter leftValue  = a_min + ((double)index / a_size) * range;
+      TCounter rightValue = a_min + std::max((TItem)((double)(index+1) / a_size * range), (TItem)1) - 1;
+      return { leftValue, rightValue };
+    }
+
+    template <typename TItem, typename TCounter>
+    std::pair<TItem, TItem> HistogramBasic<TItem, TCounter>::rangeByValue(TItem a_value, TItem a_min, TItem a_max) const {
+      return rangeByValue(a_value, a_min, a_max, _vector.size());
+    }
+
+    template <typename TItem, typename TCounter>
+    std::pair<TItem, TItem> HistogramBasic<TItem, TCounter>::rangeByValue(TItem a_value, size_t a_size) const {
+      return rangeByValue(a_value, _min, _max, a_size);
+    }
+
+    template <typename TItem, typename TCounter>
+    std::pair<TItem, TItem> HistogramBasic<TItem, TCounter>::rangeByValue(TItem a_value) const {
+      return rangeByValue(a_value, _min, _max, _vector.size());
+    }
+
+    template <typename TItem, typename TCounter>
+    std::pair<TItem, TItem> HistogramBasic<TItem, TCounter>::rangeByIndex(size_t a_index, TItem a_min, TItem a_max, size_t a_size) {
+      if (a_min > a_max) {
+        std::swap(a_min, a_max);
+      }
+      if (a_index >= a_size) {
+        throw std::out_of_range("Index goes beyond the histogram size");
+      }
+      TItem range = a_max - a_min + 1;
+      TItem leftValue  = a_min + (TItem)(((double)a_index / a_size) * range);
+      TItem rightValue = a_min + (TItem)(((double)(a_index + 1) / a_size) * range) - 1;
+
+      if (leftValue < a_min) leftValue = a_min;
+      if (rightValue > a_max) rightValue = a_max;
+
+      return { leftValue, rightValue };
+    }
+
+    template <typename TItem, typename TCounter>
+    std::pair<TItem, TItem> HistogramBasic<TItem, TCounter>::rangeByIndex(size_t a_index, TItem a_min, TItem a_max) const {
+      return rangeByIndex(a_index, a_min, a_max, _vector.size());
+    }
+
+    template <typename TItem, typename TCounter>
+    std::pair<TItem, TItem> HistogramBasic<TItem, TCounter>::rangeByIndex(size_t a_index, size_t a_size) const {
+      return rangeByIndex(a_index, _min, _max, a_size);
+    }
+
+    template <typename TItem, typename TCounter>
+    std::pair<TItem, TItem> HistogramBasic<TItem, TCounter>::rangeByIndex(size_t a_index) const {
+      return rangeByIndex(a_index, _min, _max, _vector.size());
+    }
+
+    template <typename TItem, typename TCounter>
+    TItem HistogramBasic<TItem, TCounter>::median(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max) {
+      if (a_min > a_max){
+        std::swap(a_min, a_max);
+      }
+      TCounter totalSum = std::accumulate(a_vector.begin(), a_vector.end(), 0);
+      if (totalSum == 0) {
+        return a_min;
+      }
+      double half      = (double)totalSum / 2.0;
+      TCounter sum     = 0;
+      size_t n         = a_vector.size();
+      double lastRight = 0;
+      double medianPosition = 0;
+      for (size_t i = 0; i < n; ++i) {
+        if (sum + a_vector[i] == (TCounter)half) {
+          typename std::vector<TCounter>::const_iterator it        = a_vector.begin()+i+1;
+          typename std::vector<TCounter>::const_iterator itEnd     = a_vector.end();
+          typename std::vector<TCounter>::const_iterator nonZeroIt = std::find_if(it, itEnd, [](TCounter a_item){ return !!a_item; });
+          size_t offset = nonZeroIt - it;
+          medianPosition = i + (offset/2) + 1;
+          return a_min + ( medianPosition * (a_max-a_min+1) / a_vector.size() );
+        } if (sum + a_vector[i] > (TCounter)half || i + 1 == n) {
+          Heights heights = _heights(a_vector, i, lastRight, !!i);
+          lastRight = heights.right;
+
+          double area1 = heights.left + heights.center / 2;
+          double expected = half - sum;
+          if (half <= area1 + sum) {
+            //   /|
+            //  / |
+            // |  |
+            // ---
+            // expected = (lh + xh) / 2;
+            // expected = (lh + lh + (h-lh)*k) / 2;
+            //
+            // 2*expected - 2*lh
+            // ----------------- = k
+            //   h - lh
+            //
+            medianPosition = heights.center != heights.left ? (double)i + std::abs(2*(expected-heights.left) / (heights.center - heights.left))
+                                                                : 0.5;
+          } else {
+            // |\
+            // | \
+            // |  |
+            // ---
+            // expected = (h + xh) / 2;
+            // expected = (h + h - (h-rh)*(1-k)) / 2;
+            //
+            //      2*expected - 2*h
+            // 1 - ------------------ = k
+            //        h - rh
+            //
+            medianPosition = heights.center != heights.left ? (double)i + 1 - std::abs(2*(expected-heights.center) / (heights.center - heights.right))
+                                                                : 0.5;
+          }
+          return a_min + ( medianPosition * (a_max-a_min+1) / a_vector.size() );
+        }
+        sum += a_vector[i];
+      }
+      return a_min;
+    }
+
+    template <typename TItem, typename TCounter>
+    TItem HistogramBasic<TItem, TCounter>::median() const {
+      return median(_vector, _min, _max);
+    }
+
+    template <typename TItem, typename TCounter>
+    std::vector<TCounter> HistogramBasic<TItem, TCounter>::countVector(const std::vector<TCounter>& a_source, TItem a_sourceMin, TItem a_sourceMax, TItem a_min, TItem a_max, size_t a_size) {
+      a_size = std::max(a_size, (size_t)3);
+      if (a_min == a_sourceMin && a_max == a_sourceMax && a_size == a_source.size()) {
+        return a_source;
+      }
+      std::vector<TCounter> vector(a_size);
+      _build(a_sourceMin, a_sourceMax, a_source, a_min, a_max, vector);
+      return vector;
+    }
+
+    template <typename TItem, typename TCounter>
+    std::vector<TCounter> HistogramBasic<TItem, TCounter>::countVector(TItem a_min, TItem a_max, size_t a_size) const {
+      return countVector(_vector, _min, _max, a_min, a_max, a_size);
+    }
+
+    template <typename TItem, typename TCounter>
+    std::vector<TCounter> HistogramBasic<TItem, TCounter>::countVector(TItem a_min, TItem a_max) const {
+      return countVector(_vector, _min, _max, a_min, a_max, _vector.size());
+    }
+
+    template <typename TItem, typename TCounter>
+    std::vector<TCounter> HistogramBasic<TItem, TCounter>::countVector(size_t a_size) const {
+      return countVector(_vector, _min, _max, _min, _max, a_size);
+    }
+
+    template <typename TItem, typename TCounter>
+    std::vector<TCounter> HistogramBasic<TItem, TCounter>::countVector() const {
+      return countVector(_vector, _min, _max, _min, _max, _vector.size());
+    }
+
+    template <typename TItem, typename TCounter>
+    std::string HistogramBasic<TItem, TCounter>::toTable(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max) {
+      std::stringstream result;
+      result << Friendly(true);
+      size_t lineNumberLength = 0;
+      size_t valueLength = 0;
+      size_t counterLength = 0;
+      std::stringstream ss;
+      ss << Friendly(true);
+      for(size_t i = 0; i < a_vector.size(); ++i) {
+        std::pair<TItem, TItem> range = rangeByIndex(i, a_min, a_max, a_vector.size());
+
+        ss << range.first;
+        valueLength = std::max(ss.str().length(), valueLength);
+        ss.str("");
+        ss.clear();
+
+        ss << a_vector[i];
+        counterLength = std::max(ss.str().length(), counterLength);
+        ss.str("");
+        ss.clear();
+
+        ss << i+1;
+        lineNumberLength = std::max(ss.str().length(), lineNumberLength);
+        ss.str("");
+        ss.clear();
+      }
+
+      std::string lineNumberHeader = "#";
+      lineNumberLength= std::max(lineNumberLength, lineNumberHeader.length());
+
+      std::string valueHeader = "values";
+                                    //values
+                                    //[12 : 12]
+      valueLength = std::max(valueLength, (size_t)2);
+
+      std::string countHeader = "count";
+      counterLength = std::max(counterLength, countHeader.length());
+
+
+      result << "╔═"<< _drawLine(lineNumberLength) << "═╦═"
+             << _drawLine(valueLength*2 + 5)  << "═╦═"
+             << _drawLine(counterLength)  << "═╗"
+             << std::endl;
+      result << "║ "
+             << std::setfill(' ') << std::setw(lineNumberLength) << lineNumberHeader << " ║ "
+             << std::setfill(' ') << std::setw(valueLength*2 + 5) << valueHeader << " ║ "
+             << std::setfill(' ') << std::setw(counterLength) << countHeader << " ║"
+             << std::endl;
+      result << "╠═"<< _drawLine(lineNumberLength) << "═╬═"
+             << _drawLine(valueLength*2 + 5)  << "═╬═"
+             << _drawLine(counterLength)  << "═╣"
+             << std::endl
+            ;
+
+
+
+      for(size_t i = 0; i < a_vector.size(); ++i) {
+        std::pair<TItem, TItem> range = rangeByIndex(i, a_min, a_max, a_vector.size());
+        result  << "║ "
+                << std::setfill(' ') << std::setw(lineNumberLength) << (i + 1 ) << " ║ "
+                << "["
+                  << std::setfill(' ') << std::setw(valueLength) << range.first 
+                  << " : "
+                  << std::setfill(' ') << std::setw(valueLength) << range.second
+                  << "]"
+                  << " ║ "
+                << std::setfill(' ') << std::setw(counterLength) << a_vector[i] << " ║"
+                << std::endl;
+      }
+      result << "╚═"<< _drawLine(lineNumberLength) << "═╩═"
+             << _drawLine(valueLength*2 + 5)  << "═╩═"
+             << _drawLine(counterLength)  << "═╝"
+             << std::endl;
+
+      return result.str();
+    }
+
+    template <typename TItem, typename TCounter>
+    std::string HistogramBasic<TItem, TCounter>::toTable(TItem a_min, TItem a_max, size_t a_size) const {
+      std::vector<TCounter> vector(a_size);
+      _build(_min, _max, _vector, a_min, a_max, vector);
+      return toTable(vector, a_min, a_max);
+    }
+
+    template <typename TItem, typename TCounter>
+    std::string HistogramBasic<TItem, TCounter>::toTable(size_t a_size) const {
+      return toTable(_min, _max, a_size);
+    }
+
+    template <typename TItem, typename TCounter>
+    std::string HistogramBasic<TItem, TCounter>::toTable() const {
+      return toTable(_min, _max, _vector.size());
+    }
+
+
+    template <typename TItem, typename TCounter>
+    std::string HistogramBasic<TItem, TCounter>::toBarChart(const std::vector<TCounter>& a_vector, TItem a_min, TItem a_max, size_t a_width, size_t a_height) {
+      std::stringstream result;
+      result << Friendly(true);
+
+      a_width = std::max(a_width, (size_t)1);
+      a_height = std::max(a_height, (size_t)1);
+
+      std::vector<TCounter> vector(a_width);
+      _build(a_min, a_max, a_vector, a_min, a_max, vector);
+
+      TCounter currentCounterMin = std::numeric_limits<TCounter>::max();
+      TCounter currentCounterMax = std::numeric_limits<TCounter>::min();
+      for(TCounter v : vector){
+        currentCounterMin = std::min(v, currentCounterMin);
+        currentCounterMax = std::max(v, currentCounterMax);
+      }
+      TCounter currentCounterScale = currentCounterMax - currentCounterMin;
+      if (currentCounterScale == 0) currentCounterScale = 1;
+
+      TCounter maxCount = 0;
+      for(size_t r = a_height-1; r < std::numeric_limits<size_t>::max(); --r) {
+        for(size_t c = 0; c < a_width; ++c) {
+          TCounter currentValue = vector[c] - currentCounterMin;
+          double   displayValue = (double)currentValue * (double)a_height / (double)currentCounterScale;
+          result << (displayValue > (double)r ? "|" : " ");
+          maxCount = std::max(maxCount, vector[c]);
+        }
+        result << std::endl;
+      }
+      result << _drawLine((int)a_width) << std::endl;
+
+      double stepx = (double)(a_max - a_min) / a_width;
+      double stepy = (double)maxCount / a_height;
+
+      result <<  std::fixed << std::setprecision(2);
+      result << "OX (value): [" << a_min << " : " << a_max << "]" << ";  Step: " << stepx << std::endl;
+      result << "OY (count): [" << 0 << " : " << maxCount << "]" << ";  Step: " << stepy << std::endl;
+      return result.str();
+    }
+
+    template <typename TItem, typename TCounter>
+    std::string HistogramBasic<TItem, TCounter>::toBarChart(TItem a_min, TItem a_max, size_t a_width, size_t a_height) const {
+      std::vector<TCounter> vector(a_width);
+      _build(_min, _max, _vector, a_min, a_max, vector);
+      return toBarChart(vector, a_min, a_max, a_width, a_height);
+    }
+
+    template <typename TItem, typename TCounter>
+    std::string HistogramBasic<TItem, TCounter>::toBarChart(size_t a_width, size_t a_height) const {
+      return toBarChart(_min, _max, a_width, a_height);
+    }
+
+    template <typename TItem, typename TCounter>
+    std::string HistogramBasic<TItem, TCounter>::toBarChart() const {
+      return toBarChart(_vector, _min, _max, _vector.size(), 10);
+    }
+
+    template <typename TItem, typename TCounter>
+    typename HistogramBasic<TItem, TCounter>::Heights HistogramBasic<TItem, TCounter>::_heights(const std::vector<TCounter>& a_source, size_t a_index, double a_lastHeight, bool a_enableLastHeight) {
+      Heights result;
+
+      auto smooth = [](TCounter a_left, TCounter a_right)->double{
+        if (a_right > a_left) {
+          double k = (double)a_left / a_right;
+          k *= k;
+          return (double)a_left +  k * (a_right - a_left);
+        } else {
+          double k = (double)a_right / a_left;
+          k *= k;
+          return (double)a_right +  k * (a_left - a_right);
+        }
+      };
+
+      if (a_source.size() == 1) {
+        result.left = result.right = a_source[a_index];
+      } else if (a_index+1 >= a_source.size()) {
+        result.left = result.right = a_enableLastHeight ? a_lastHeight
+                                                        : a_source[a_index];
+      } else {
+        result.left   = a_enableLastHeight            ? a_lastHeight :
+                        a_index + 1 < a_source.size() ? smooth(a_source[a_index + 1], a_source[a_index]) :
+                                                        (double)a_source[a_index];
+        result.right = a_index+1 < a_source.size() ? smooth(a_source[a_index + 1], a_source[a_index])
+                                                    : result.left;
+      }
+
+      // p = p1 + p2;
+      // p = lh*lw + (h-lh)*lw/2 + rh*rw + (h-rh)*rw/2
+      // p - lh*lw - rh*rw = (h-lh)*lw/2 + (h-rh)*rw/2
+      // 2(p - lh*lw - rh*rw) = (h-lh)*lw + (h-rh)*rw
+      // 2 * (p - lh*lw - rh*rw) + lh*lw + rw*wh = h*lw + h*rw
+      // 2*p - lh*lw - rh*rw
+      // ------------------- = h
+      //       lw + rw
+      result.center = 2.0 * a_source[a_index] - result.left/2.0 - result.right/2.0;
+      if (result.center < 0) {
+        // 2*p - lh*w*k/2 - rh*w*k/2
+        // ------------------------- = 0
+        //           w
+        //
+        // lh*w*k/2 + rh*w*k/2 = 2 * p
+        //
+        //         4*p
+        // k = -------------
+        //      lh*w + rh*w
+        //
+        result.center  = 0;
+        double k       = 4.0 * a_source[a_index] / (result.left + result.right);
+        result.left   *= k;
+        result.right  *= k;
+      }
+
+      return result;
+    }
+
+    template <typename TItem, typename TCounter>
+    void HistogramBasic<TItem, TCounter>::_build(TItem a_sourceMin, TItem a_sourceMax, const std::vector<TCounter>& a_source, TItem a_newMin, TItem a_newMax, std::vector<TCounter>& a_destination) {
+      std::fill(a_destination.begin(), a_destination.end(), 0);
+
+      TItem sourceRange = a_sourceMax - a_sourceMin + 1;
+      TItem destinationRange = a_newMax - a_newMin + 1;
+
+      double lastRight                    = 0;
+      for(size_t i = 0; i < a_source.size(); ++i) {
+        bool isLast = i + 1 == a_source.size();
+
+        double indexRatio = (double)i / a_source.size();
+        double nextIndexRatio = (double)(i+1) / a_source.size();
+
+        double leftSourceValue  = i == 0 ? (double)a_sourceMin
+                                         : (double)a_sourceMin + indexRatio * sourceRange;
+        double rightSourceValue = isLast ? (double)a_sourceMax
+                                         : (double)a_sourceMin + nextIndexRatio * sourceRange - 1;
+        rightSourceValue = std::max(rightSourceValue, leftSourceValue);
+
+        if (leftSourceValue > a_newMax || rightSourceValue < a_newMin) {
+          continue;
+        }
+
+        double leftDestinationValue                = std::min(std::max((double)leftSourceValue, (double)a_newMin), (double)a_newMax);
+        double rightDestinationValue               = std::min(std::max((double)rightSourceValue, (double)a_newMin), (double)a_newMax);
+        double leftDestinationRatio                = (double)(leftDestinationValue - a_newMin) / destinationRange;
+        double rightDestinationRatioNI             = (double)(rightDestinationValue - a_newMin) / destinationRange;
+        double leftDestinationIndexF               = leftDestinationRatio * a_destination.size();
+        double rightDestinationIndexF              = ((double)(rightDestinationValue - a_newMin+1) / destinationRange)* a_destination.size();
+        std::ptrdiff_t leftDestinationIndex        = (std::ptrdiff_t)(leftDestinationRatio * a_destination.size());
+        std::ptrdiff_t rightDestinationIndex       = (std::ptrdiff_t)(rightDestinationRatioNI * a_destination.size());
+        //std::ptrdiff_t leftDestinationIndex        = (std::ptrdiff_t)leftDestinationIndexF;
+        //std::ptrdiff_t rightDestinationIndex       = (std::ptrdiff_t)rightDestinationIndexF;
+        std::ptrdiff_t leftDestinationAccessIndex  = std::max(std::min(leftDestinationIndex, (std::ptrdiff_t)a_destination.size()-1), (std::ptrdiff_t)0);
+        std::ptrdiff_t rightDestinationAccessIndex = std::max(std::min(rightDestinationIndex, (std::ptrdiff_t)a_destination.size()-1), (std::ptrdiff_t)0);
+        double scalek                              = ((double)destinationRange / a_destination.size()) / ((double)sourceRange / a_source.size());
+
+        Heights heights = _heights(a_source, i, lastRight, !!i);
+        lastRight = heights.right;
+        heights.left *= scalek;
+        heights.center *= scalek;
+        heights.right *= scalek;
+
+        TCounter area = a_source[i];
+        for(std::ptrdiff_t destinationIndex = leftDestinationAccessIndex; destinationIndex <= rightDestinationAccessIndex; ++destinationIndex) {
+          double bitDestinationValueBegin = (double)a_newMin + (double)destinationRange * destinationIndex / a_destination.size();
+          bitDestinationValueBegin        = std::max(std::min(bitDestinationValueBegin, rightDestinationValue+1), leftDestinationValue);
+          double bitDestinationValueEnd   = (double)a_newMin + (double)destinationRange * (destinationIndex + 1) / a_destination.size();
+          bitDestinationValueEnd          = std::max(std::min(bitDestinationValueEnd, rightDestinationValue+1), leftDestinationValue);
+
+          double bitDestinationRatioBegin = (double)(bitDestinationValueBegin - leftDestinationValue) / (rightDestinationValue - leftDestinationValue + 1);
+          double bitDestinationRatioEnd   = (double)(bitDestinationValueEnd - leftDestinationValue) / (rightDestinationValue - leftDestinationValue + 1);
+
+          double dArea = 0;
+          if (bitDestinationRatioBegin <= 0.5){
+            double leftk   = bitDestinationRatioBegin*2.0;
+            double rightk  = std::min(bitDestinationRatioEnd, 0.5)*2.0;
+            double widthk  = (rightk - leftk) * (rightDestinationIndexF - leftDestinationIndexF) / 2.0;
+            double lefth   = heights.left + (heights.center - heights.left) * leftk;
+            double righth  = heights.left + (heights.center - heights.left) * rightk;
+            dArea         += std::abs(righth + lefth) / 2 * widthk;
+          }
+          if (bitDestinationRatioEnd >= 0.5){
+            double leftk   = std::max(bitDestinationRatioBegin, 0.5)*2.0 - 1;
+            double rightk  = bitDestinationRatioEnd * 2.0 - 1;
+            double widthk  = (rightk - leftk) * (rightDestinationIndexF - leftDestinationIndexF) / 2.0;
+            double lefth   = heights.center + (heights.right - heights.center) * leftk;
+            double righth  = heights.center + (heights.right - heights.center) * rightk;
+            dArea         += std::abs(righth + lefth) / 2 * widthk;
+          }
+
+          TCounter s      = std::round(dArea - 0.1);
+          s               = area > s ? s : area;
+          area           -= s;
+
+          a_destination[destinationIndex] += s;
+        }
+
+        if (!area && leftDestinationAccessIndex == 0 && !a_destination.front()) {
+          auto itEnd = a_destination.begin() + rightDestinationAccessIndex + 1;
+          auto it = std::find_if(a_destination.begin() + leftDestinationAccessIndex, itEnd, [](TCounter a_item){ return !!a_item; });
+          if (it != itEnd) {
+            ++a_destination.front();
+            --*it;
+          }
+        }
+
+        while(area) {
+          if (leftDestinationAccessIndex == 0 && !a_destination.front()) {
+            ++a_destination.front();
+            --area;
+            if (!area) {
+              break;
+            }
+          }
+
+          if (rightDestinationAccessIndex + 1 ==  (std::ptrdiff_t)a_destination.size() &&  !a_destination.back()) {
+            ++a_destination.back();
+            --area;
+            if (!area) {
+              break;
+            }
+          }
+
+          size_t tsize  = rightDestinationAccessIndex - leftDestinationAccessIndex + 1;
+          size_t size   = tsize / 2;
+          size_t offset = size;
+          if (!tsize || tsize % 2) {
+            ++a_destination[leftDestinationAccessIndex + size];
+            ++offset;
+            --area;
+          }
+          for(size_t i = 0; area && i < size; ++i) {
+            size_t leftIndex = leftDestinationAccessIndex + size - i - 1;
+            ++a_destination[leftIndex];
+            --area;
+            if (!area) {
+              break;
+            }
+            size_t rightIndex = leftDestinationAccessIndex + offset + i;
+            ++a_destination[rightIndex];
+            --area;
+            if (!area) {
+              break;
+            }
+          }
+        }
+
+      }
+    }
+
+    template <typename TItem, typename TCounter>
+    size_t HistogramBasic<TItem, TCounter>::_calcIndex(TItem a_weight, TItem a_scale, size_t a_size) const {
+      if (a_scale == 0) return 0;
+      size_t result = std::min((size_t)((long double)a_size * (long double)a_weight / (long double)a_scale), a_size-1);
+      return result;
+    }
+
+    template <typename TItem, typename TCounter>
+    std::string HistogramBasic<TItem, TCounter>::_drawLine(int length) {
+      std::string unicodeLine = "";
+      for(int i = 0; i < length; ++i) {
+        unicodeLine += "═";
+      }
+      return unicodeLine;
+    }
+
+  }
+}
+
+
+/* ========================================================== */
+/* ===                                                    === */
+/* ===                   Implementation                   === */
+/* ===                                                    === */
+/* ===                Benchmarking classes                === */
+/* ===                                                    === */
+/* ===                    DurationBasic                   === */
+/* ===                                                    === */
+/* ========================================================== */
+
+namespace fcf {
+  namespace NTest {
+
+    template <typename TClock>
+    DurationBasic<TClock>::DurationBasic()
+      : _timepoint(0)
+      , _measurements({Measurement{}})
+      , _options(1LL, 10, 1LL, 0LL)
+    {}
+
+    template <typename TClock>
+    DurationBasic<TClock>::DurationBasic(unsigned long long a_iterationCount, unsigned long long a_measurementStep, unsigned long long a_warmupCount)
+      : _timepoint(0)
+      , _measurements({Measurement{}})
+      , _options(std::max((long long)a_iterationCount, 1LL),
+                 10,
+                 std::max((long long)a_measurementStep, 1LL),
+                 (long long)a_warmupCount
+                )
+    {}
+
+    template <typename TClock>
+    DurationBasic<TClock>::DurationBasic(const Options& a_options)
+      : _timepoint(0)
+      , _measurements({Measurement{}})
+      , _options(std::max(a_options.iterationCount, 1LL),
+                 a_options.histogramSize >= 0  ? std::max(a_options.histogramSize, 2)  : 10,
+                 std::max(a_options.measurementStep, 1LL),
+                 std::max(a_options.warmupCount, 0LL)
+                )
+    {}
+
+    template <typename TClock>
+    typename DurationBasic<TClock>::Options DurationBasic<TClock>::options() const {
+      return _options;
+    }
+
+    template <typename TClock>
+    void DurationBasic<TClock>::options(const Options& a_options) {
+      if (a_options.iterationCount >= 0) {
+        _options.iterationCount = std::max(a_options.iterationCount, 1LL);
+      }
+      if (a_options.histogramSize >= 0) {
+        _options.histogramSize = std::max(a_options.histogramSize, 2LL);
+      }
+      if (a_options.measurementStep >= 0) {
+        _options.measurementStep = std::max(a_options.measurementStep, 1LL);
+      }
+      if (a_options.warmupCount >= 0) {
+        _options.warmupCount = std::max(a_options.warmupCount, 0LL);
+      }
+    }
+
+    template <typename TClock>
+    void DurationBasic<TClock>::begin(const BeginOptions& a_options, int a_beginLevel, int a_endLevel) {
+      _prepare(std::max(a_beginLevel, a_endLevel-1));
+
+      size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
+      size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
+      TimePoint timepoint = _clock();
+      for(size_t i = startLevel; i < endLevel; ++i) {
+        Measurement& m = _measurements[i];
+        if (m.pause) {
+          m.pause = false;
+          m.timepoint = timepoint;
+          m.options = a_options;
+          m.excludedTime = 0;
+        }
+      }
+    }
+
+    template <typename TClock>
+    void DurationBasic<TClock>::begin(const BeginOptions& a_options, int a_beginLevel) {
+      begin(a_options, a_beginLevel, a_beginLevel+1);
+    }
+
+    template <typename TClock>
+    void DurationBasic<TClock>::begin(int a_beginLevel) {
+      begin(_options, a_beginLevel, a_beginLevel+1);
+    }
+
+    template <typename TClock>
+    void DurationBasic<TClock>::begin(int a_beginLevel, int a_endLevel) {
+      begin(_options, a_beginLevel, a_endLevel);
+    }
+
+    template <typename TClock>
+    void DurationBasic<TClock>::end(int a_beginLevel, int a_endLevel) {
+      TimePoint timepoint = _clock();
+
+      _prepare(std::max(a_beginLevel, a_endLevel-1));
+
+      size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
+      size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
+      for(size_t i = startLevel; i < endLevel; ++i) {
+        if (!_measurements[i].pause) {
+          _measurements[i].pause = true;
+          TimeDuration rawDiff = timepoint - _measurements[i].timepoint;
+          TimeDuration diff = rawDiff > _measurements[i].excludedTime ? rawDiff - _measurements[i].excludedTime : TimeDuration();
+
+          long long iterationCount = _measurements[i].options.iterationCount < 0 ? _options.iterationCount
+                                                                                 : _measurements[i].options.iterationCount;
+          int histogramSize        = _measurements[i].options.histogramSize < 0  ?  _options.histogramSize 
+                                                                                 : std::max(_measurements[i].options.histogramSize, 2);
+
+
+          _measurements[i].duration += diff;
+          _measurements[i].iteration += std::max(iterationCount, 1LL);
+
+          if (iterationCount) {
+              TimeDuration avgDiff = diff / iterationCount;
+              if (_measurements[i].iteration == iterationCount) {
+                _measurements[i].min = avgDiff;
+                _measurements[i].max = avgDiff;
+              } else {
+                _measurements[i].min = std::min(avgDiff, _measurements[i].min);
+                _measurements[i].max = std::max(avgDiff, _measurements[i].max);
+              }
+              _appendHistogram(i, diff, iterationCount, histogramSize, startLevel, endLevel);
+          }
+        }
+      }
+    }
+
+    template <typename TClock>
+    void DurationBasic<TClock>::end(int a_beginLevel) {
+      end(a_beginLevel, a_beginLevel+1);
+    }
+
+    template <typename TClock>
+    void DurationBasic<TClock>::reset(int a_beginLevel, int a_endLevel){
+      if (a_endLevel > 0) {
+        _prepare(a_endLevel-1);
+      }
+      size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
+      size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
+      for(size_t i = startLevel; i < endLevel; ++i) {
+        _measurements[i] = Measurement();
+      }
+    }
+
+    template <typename TClock>
+    const typename DurationBasic<TClock>::HistogramType& DurationBasic<TClock>::histogram(size_t a_level) const {
+      if (a_level < _measurements.size()) {
+        return _measurements[a_level].histogram;
+      }
+      static const HistogramType empty;
+      return empty;
+    }
+
+    template <typename TClock>
+    typename DurationBasic<TClock>::HistogramType& DurationBasic<TClock>::histogram(size_t a_level) {
+      if (a_level < _measurements.size()) {
+        return _measurements[a_level].histogram;
+      }
+      _prepare(a_level);
+      return _measurements[a_level].histogram;
+    }
+
+    template <typename TClock>
+    template <typename TFunction>
+    void DurationBasic<TClock>::operator()(Options a_options, int a_beginLevel, int a_endLevel, TFunction a_function){
+      _prepare(std::max(a_beginLevel, a_endLevel-1));
+
+      size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
+      size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
+
+      long long warmupCount     = a_options.warmupCount < 0 ? _options.warmupCount : a_options.warmupCount;
+      long long iterationCount  = a_options.iterationCount < 0 ? _options.iterationCount : a_options.iterationCount;
+      long long measurementStep = a_options.measurementStep < 0 ?  _options.measurementStep : std::max(a_options.measurementStep, 1LL);
+      int histogramSize         = a_options.histogramSize < 0 ?  _options.histogramSize : std::max(a_options.histogramSize, 2);
+
+
+      for(unsigned long long i = 0; i < warmupCount; ++i) {
+        a_function();
+      }
+
+      if (!iterationCount){
+        return;
+      }
+
+      bool isFirstMeasurement = true;
+      TimeDuration min = 0;
+      TimeDuration max = 0;
+      TimePoint beginTimepoint = _clock();
+      TimePoint timepoint = beginTimepoint;
+
+      for(unsigned long long i = 0; i < iterationCount; ++i) {
+        a_function();
+        if ((i + 1) % measurementStep == 0) {
+          TimePoint currentTimestamp = _clock();
+          TimeDuration diff = (currentTimestamp - timepoint) / measurementStep;
+          if (isFirstMeasurement) {
+            min = diff;
+            max = diff;
+            isFirstMeasurement = false;
+          } else {
+            min = std::min(diff, min);
+            max = std::max(diff, max);
+          }
+          for(int level = a_beginLevel; level < a_endLevel; ++level) {
+            _appendHistogram(level, diff, measurementStep, histogramSize);
+          }
+          timepoint = currentTimestamp;
+        }
+      }
+
+      TimePoint endTimepoint = _clock();
+
+      unsigned long long remainder = iterationCount % measurementStep;
+      if (remainder){
+        TimeDuration remainderDiff = (endTimepoint - timepoint) / remainder;
+        if (isFirstMeasurement) {
+          min = remainderDiff;
+          max = remainderDiff;
+        } else {
+          min = std::min(remainderDiff, min);
+          max = std::max(remainderDiff, max);
+        }
+        for(int level = a_beginLevel; level < a_endLevel; ++level) {
+          _appendHistogram(level, remainderDiff, remainder, histogramSize);
+        }
+      }
+
+
+      TimeDuration diff = endTimepoint - beginTimepoint;
+      for(size_t i = startLevel; i < endLevel; ++i) {
+        _measurements[i].duration   += diff;
+        if (!_measurements[i].iteration) {
+          _measurements[i].min        = min;
+          _measurements[i].max        = max;
+        } else {
+          _measurements[i].min        = std::min(_measurements[i].min, min);
+          _measurements[i].max        = std::max(_measurements[i].max, max);
+        }
+        _measurements[i].iteration += iterationCount;
+      }
+    }
+
+    template <typename TClock>
+    template <typename TFunction>
+    void DurationBasic<TClock>::operator()(int a_beginLevel, int a_endLevel, TFunction a_function){
+      (*this)(_options, a_beginLevel, a_endLevel, a_function);
+    }
+
+    template <typename TClock>
+    template <typename TFunction>
+    void DurationBasic<TClock>::operator()(const Options& a_options, int a_beginLevel, TFunction a_function){
+      (*this)(a_options, a_beginLevel, a_beginLevel+1, a_function);
+    }
+
+    template <typename TClock>
+    template <typename TFunction>
+    void DurationBasic<TClock>::operator()(int a_beginLevel, TFunction a_function){
+      (*this)(_options, a_beginLevel, a_beginLevel+1, a_function);
+    }
+
+    template <typename TClock>
+    template <typename TFunction>
+    void DurationBasic<TClock>::operator()(const Options& a_options, TFunction a_function){
+      (*this)(a_options, 0, 1, a_function);
+    }
+
+    template <typename TClock>
+    template <typename TFunction>
+    void DurationBasic<TClock>::operator()(TFunction a_function){
+      (*this)(_options, 0, 1, a_function);
+    }
+
+    template <typename TClock>
+    typename DurationBasic<TClock>::TimeDuration DurationBasic<TClock>::duration(int a_level) const {
+      if ((size_t)a_level < _measurements.size()) {
+        const Measurement& m = _measurements[(size_t)a_level];
+        if (m.pause) {
+          return m.duration > m.excludedTime ? m.duration - m.excludedTime : TimeDuration();
+        } else {
+          TimeDuration current = _clock() - m.timepoint;
+          TimeDuration total = m.duration + current;
+          return total > m.excludedTime ? total - m.excludedTime : TimeDuration();
+        }
+      } else {
+        return 0;
+      }
+    }
+
+    template <typename TClock>
+    typename DurationBasic<TClock>::TimeDuration DurationBasic<TClock>::average(int a_level) const {
+      if ((size_t)a_level < _measurements.size()) {
+        const Measurement& m = _measurements[(size_t)a_level];
+        TimeDuration d = duration(a_level);
+        if (m.iteration > 0) {
+          return d / m.iteration;
+        }
+        return d;
+      } else {
+        return 0;
+      }
+    }
+
+    template <typename TClock>
+    typename DurationBasic<TClock>::TimeDuration DurationBasic<TClock>::median(int a_level) const {
+      return (size_t)a_level < _measurements.size() 
+                ? _measurements[(size_t)a_level].histogram.median()
+                : 0;
+    }
+
+    template <typename TClock>
+    typename DurationBasic<TClock>::TimeDuration DurationBasic<TClock>::min(int a_level) const {
+      if ((size_t)a_level < _measurements.size()) {
+        return _measurements[(size_t)a_level].min;
+      } else {
+        return 0;
+      }
+    }
+
+    template <typename TClock>
+    typename DurationBasic<TClock>::TimeDuration DurationBasic<TClock>::max(int a_level) const {
+      if ((size_t)a_level < _measurements.size()) {
+        return _measurements[(size_t)a_level].max;
+      } else {
+        return 0;
+      }
+    }
+
+    template <typename TClock>
+    inline void DurationBasic<TClock>::_prepare(size_t a_step){
+      while (a_step >= _measurements.size()){
+        _measurements.push_back(Measurement());
+      }
+    }
+
+    template <typename TClock>
+    void DurationBasic<TClock>::_appendHistogram(size_t a_level, TimeDuration a_value, size_t a_count, int a_histogramSize, size_t a_ignoreStart, size_t a_ignoreEnd) {
+      if (a_level >= _measurements.size()) {
+        return;
+      }
+
+      if (!_measurements[a_level].histogram.overflow(a_value)) {
+        _measurements[a_level].histogram.append(a_value, a_count);
+      } else {
+        TimePoint t1 = _clock();
+        if (a_histogramSize >= 0) {
+          _measurements[a_level].histogram.size(a_histogramSize);
+        }
+        _measurements[a_level].histogram.append(a_value, a_count);
+        TimePoint t2 = _clock();
+
+        TimeDuration diff = t2 - t1;
+
+        for(size_t i = 0; i < _measurements.size(); ++i) {
+          if (i >= a_ignoreStart && i < a_ignoreEnd) {
+            continue;
+          }
+          if (!_measurements[i].pause) {
+            _measurements[i].excludedTime += diff;
+          }
+        }
+      }
+    }
+
+  }
+}
 
 /* ========================================================== */
 /* ===                                                    === */
@@ -2488,14 +4272,15 @@ namespace fcf {
     #ifdef FCF_TEST_IMPLEMENTATION
       void State::_resumeDuration(){
         std::lock_guard<std::mutex> lock(_mutex);
-        _duration.resume();
+        _duration.reset(1);
+        _duration.begin(0, 2);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
       void State::_endDuration(){
         std::lock_guard<std::mutex> lock(_mutex);
-        _duration.end();
+        _duration.end(0, 2);
       }
     #endif
 
@@ -3205,14 +4990,14 @@ namespace fcf {
                     }
                     params = storage().params(testIt->part, testIt->group, testIt->test);
 
-                    unsigned long long currentTestDuration = state().duration().lastTotalDuration().count();
+                    unsigned long long currentTestDuration = state().duration().duration(1).count();
                     unsigned long long caseDuration = currentTestDuration - testDuration;
                     testDuration = currentTestDuration;
                     if (params.size()) {
                       fcf::NTest::log(fcf::NTest::LMC_LAUNCH_CASE_SUMMARY_MESSAGE)
                         << "    Parameter status: "
                         << (caseError ? Z__FCF_TEST_ANSI_FAILED "failed"  Z__FCF_TEST_ANSI_RESET : Z__FCF_TEST_ANSI_SUCCESS "success"  Z__FCF_TEST_ANSI_RESET )
-                        << " (duration: " << Duration::nsToStr(caseDuration, true) << " sec)" << std::endl;
+                        << " (duration: " << TimeDuration(caseDuration).str(true) << " sec)" << std::endl;
                     }
 
                     if (!a_options.noBreak && state().errors().size()) {
@@ -3228,7 +5013,7 @@ namespace fcf {
                 if (!errors.size()) {
                   ++passedCounter;
                   log(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET
-                                         << " Test completed successfully (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
+                                         << " Test completed successfully (" << state().duration().duration(1).str(true) << " sec)" << std::endl;
                   log(LMC_LAUNCH_END);
                   fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, false);
                 } else {
@@ -3240,7 +5025,7 @@ namespace fcf {
                     log(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
                   }
 
-                  log(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().lastTotalDurationStr(true) << " sec)" << std::endl;
+                  log(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().duration(1).str(true) << " sec)" << std::endl;
                   log(LMC_LAUNCH_END);
 
                   fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, false);
@@ -3266,7 +5051,7 @@ namespace fcf {
             }
 
             log(LMC_ROOT_SUMMARY)   << "Tests: " << passedCounter << " passed, " << errorCounter << " failed, " << skippedCounter << " skipped, " << tests.size() << " total" << std::endl;
-            log(LMC_ROOT_DURATION) << "Duration: " << state().duration().totalDurationStr(true) << " sec" << std::endl;
+            log(LMC_ROOT_DURATION) << "Duration: " << state().duration().duration(0).str(true) << " sec" << std::endl;
 
             log(LMC_ROOT_END);
 
@@ -4619,7 +6404,7 @@ namespace fcf {
             {
               LogJUnitFormatter* formatHandler = a_messageContext.data->cast<LogJUnitFormatter>();
               std::map<TestCase, ProcessedInfo>::iterator it = formatHandler->_processed.insert({TestCase(state().test(), state().paramIndex()), {}}).first;
-              it->second.testDuration = state().duration().lastTotalDuration().count();
+              it->second.testDuration = state().duration().duration(1).count();
               std::map<TestCase, ProcessedInfo>::iterator preventIt = formatHandler->_processed.find(TestCase(state().test(), state().paramIndex()-1));
               if (preventIt == formatHandler->_processed.end()) {
                 it->second.caseDuration = it->second.testDuration;
@@ -4677,7 +6462,7 @@ namespace fcf {
                        << "tests=\"" << totalCaseCount << "\" "
                        << "failure=\"" << totalCaseFailure << "\" "
                        << "skipped=\"" << totalCaseSkipped << "\" "
-                       << "time=\"" << state().duration().totalDurationStr(false) << "\""
+                       << "time=\"" << state().duration().duration(0).str(false) << "\""
                        << ">\n";
                 for(const std::pair< const std::string, std::set<TestCase> >& currentSuite : suites ) {
                   const std::string& currentSuiteName = currentSuite.first;
@@ -4710,7 +6495,7 @@ namespace fcf {
                          << "tests=\"" << currentTestCount << "\" "
                          << "failure=\"" << currentFailureCount <<"\" "
                          << "skipped=\"" << currentSkippedCount << "\" "
-                         << "time=\"" << Duration::nsToStr(time, false) << "\""
+                         << "time=\"" << TimeDuration(time).str(false) << "\""
                          << ">\n";
                   for(const TestCase& currentTestCase : currentTestCases) {
                     auto processedIt = formatHandler->_processed.find(currentTestCase);
@@ -4719,7 +6504,7 @@ namespace fcf {
                     if (isSkipped) {
                       output << "    <testcase classname=\"" << xmlAttribute(currentSuiteName) << "\" "
                              << "name=\"" << xmlAttribute(testCaseJUnitName) << "\" "
-                             << "time=\"" << Duration::nsToStr(0, false) << "\""
+                             << "time=\"" << TimeDuration(0).str(false) << "\""
                              << ">\n";
                       output << "      <skipped message=\"The test was skipped because the fail-on-error mode was enabled.\"/>\n";
                       output << "    </testcase>\n";
@@ -4732,7 +6517,7 @@ namespace fcf {
                       output << "    <testcase "
                              << "classname=\"" << xmlAttribute(currentSuiteName) << "\" "
                              << "name=\"" << xmlAttribute(testCaseJUnitName) << "\" "
-                             << "time=\"" << Duration::nsToStr(processedIt->second.caseDuration, false) << "\""
+                             << "time=\"" << TimeDuration(processedIt->second.caseDuration).str(false) << "\""
                              << ">\n";
                       output << "      <failure message=\"" << xmlAttribute(shortMessage) << "\" type=\"AssertionError\">\n";
                       output << xmlText(message) << "\n";
@@ -4742,7 +6527,7 @@ namespace fcf {
                       output << "    <testcase "
                              << "classname=\"" << xmlAttribute(currentSuiteName) << "\" "
                              << "name=\"" << xmlAttribute(testCaseJUnitName) << "\" "
-                             << "time=\"" << Duration::nsToStr(processedIt->second.caseDuration, false) << "\""
+                             << "time=\"" << TimeDuration(processedIt->second.caseDuration).str(false) << "\""
                              << "/>\n";
                     }
                   }

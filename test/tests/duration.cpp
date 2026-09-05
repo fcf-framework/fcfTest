@@ -1,4 +1,4 @@
-#include <fcfTest/include/duration.hpp>
+//#include <fcfTest/include/duration.hpp>
 #include <fcfTest/test.hpp>
 #include "helpers.hpp"
 
@@ -205,8 +205,8 @@ FCF_TEST_DEFINE("fcfTest", "duration", "duration operator()"){
         simulate_work(1000);
         });
     FCF_TEST(duration.histogram().size() == 30, duration.histogram().size());
-    //fcf::NTest::log() << duration.histogram(0).toBarChart()<<std::endl;
-    //fcf::NTest::log() << duration.histogram(0).toTable()<<std::endl;
+    fcf::NTest::log() << duration.histogram(0).toBarChart()<<std::endl;
+    fcf::NTest::log() << duration.histogram(0).toTable()<<std::endl;
   }
   {
     fcf::NTest::DurationBasic<TestClock> duration;
