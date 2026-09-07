@@ -16,7 +16,6 @@ struct DurationTester {
     }
     FCF_TEST(totalDuration);
 
-    /*
     unsigned long long totalDurationSum = 0;
     std::regex patternSuite("<testsuite .*time=\"\\d+\\.(\\d+)\"");
     std::sregex_iterator suiteMatchesBegin = std::sregex_iterator(a_string.begin(), a_string.end(), patternSuite);
@@ -24,9 +23,8 @@ struct DurationTester {
     for(; suiteMatchesBegin != suiteMatchesEnd; ++suiteMatchesBegin){
       totalDurationSum += std::stoull(suiteMatchesBegin->str(1));
     }
-    */
 
-    //FCF_TEST(totalDurationSum == totalDuration, totalDurationSum, totalDuration, a_string);
+    FCF_TEST(totalDurationSum == totalDuration, totalDurationSum, totalDuration, a_string);
   }
 
 };

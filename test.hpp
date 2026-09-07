@@ -2272,7 +2272,7 @@ namespace fcf {
         void                                _setParamIndex(size_t a_paramIndex);
         void                                _setActive(bool a_active);
 
-        void                                _resumeDuration();
+        void                                _resumeDuration(size_t a_level);
         void                                _endDuration();
         Test                                _test;
         std::set<Test>                      _tests;
@@ -4270,17 +4270,17 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void State::_resumeDuration(){
+      void State::_resumeDuration(size_t a_level){
         std::lock_guard<std::mutex> lock(_mutex);
-        _duration.reset(1);
-        _duration.begin(0, 2);
+        _duration.reset(a_level, 5);
+        _duration.begin(0, 5);
       }
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
       void State::_endDuration(){
         std::lock_guard<std::mutex> lock(_mutex);
-        _duration.end(0, 2);
+        _duration.end(0, 5);
       }
     #endif
 
@@ -4850,6 +4850,31 @@ namespace fcf {
 
     namespace NDetails {
       #ifdef FCF_TEST_IMPLEMENTATION
+        inline size_t recalculateDurationIndex(std::string               a_vector[3],
+                                               const std::string&        a_part,
+                                               const std::string&        a_group,
+                                               const std::string&        a_test
+                                              ) {
+          size_t result = 1;
+          if (a_vector[0] == a_part) {
+            if (a_vector[1] == a_group) {
+              ++result;
+              if (a_vector[2] == a_test) {
+                result += 2;
+              } else {
+                ++result;
+              }
+            }
+          }
+
+          a_vector[0] = a_part;
+          a_vector[1] = a_group;
+          a_vector[2] = a_test;
+          return result;
+        }
+      #endif
+
+      #ifdef FCF_TEST_IMPLEMENTATION
         FCF_TEST_API void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr) {
           static std::recursive_mutex mutex;
           static bool globalRunState = false;
@@ -4924,6 +4949,8 @@ namespace fcf {
 
               FixtureHandler::Errors startFixtureErrors = fixtureHandler.errors(*tests.begin());
 
+              std::string currentPath[3];
+
               std::set<Test>::const_iterator testIt = tests.begin();
               for(; testIt != tests.end(); ++testIt) {
                 const Test& test = *testIt;
@@ -4944,7 +4971,6 @@ namespace fcf {
                 unsigned long long testDuration = 0;
                 size_t errorSize = 0;
                 if (fixtureErrors.empty()) {
-                  state()._resumeDuration();
                   std::vector<SharedPtrAny> params = storage().params(testIt->part, testIt->group, testIt->test);
                   for(size_t paramIndex = 0; !paramIndex || paramIndex < params.size(); ++paramIndex) {
                     bool isLast = (paramIndex+1) >= params.size();
@@ -4957,11 +4983,13 @@ namespace fcf {
                         printCaseMessage();
                       }
 
+                      size_t durationLevel = recalculateDurationIndex(currentPath, test.part, test.group, test.test);
+                      state()._resumeDuration(durationLevel);
+
                       test.testFunction();
 
-                      if (isLast){
-                        state()._endDuration();
-                      }
+                      state()._endDuration();
+
 
                       std::vector<std::string> errors = state().errors();
                       for(size_t i = errorSize; i < errors.size(); ++i) {
@@ -4973,9 +5001,7 @@ namespace fcf {
                       errorSize = errors.size();
                       log(LMC_LAUNCH_CASE_END);
                     } catch(const std::exception& e){
-                      if (isLast){
-                        state()._endDuration();
-                      }
+                      state()._endDuration();
                       std::vector<std::string> errors = state().errors();
                       for(size_t i = errorSize; i < errors.size(); ++i) {
                         std::string errorMesssage = errors[i];
@@ -4990,7 +5016,7 @@ namespace fcf {
                     }
                     params = storage().params(testIt->part, testIt->group, testIt->test);
 
-                    unsigned long long currentTestDuration = state().duration().duration(1).count();
+                    unsigned long long currentTestDuration = state().duration().duration(3).count();
                     unsigned long long caseDuration = currentTestDuration - testDuration;
                     testDuration = currentTestDuration;
                     if (params.size()) {
@@ -5013,7 +5039,7 @@ namespace fcf {
                 if (!errors.size()) {
                   ++passedCounter;
                   log(LMC_TEST_COMPLETE) << Z__FCF_TEST_ANSI_SUCCESS << "[SUCCESS]" << Z__FCF_TEST_ANSI_RESET
-                                         << " Test completed successfully (" << state().duration().duration(1).str(true) << " sec)" << std::endl;
+                                         << " Test completed successfully (" << state().duration().duration(3).str(true) << " sec)" << std::endl;
                   log(LMC_LAUNCH_END);
                   fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, false);
                 } else {
@@ -5025,7 +5051,7 @@ namespace fcf {
                     log(LMC_TEST_ERROR_MESSAGE) << errorMesssage << std::endl;
                   }
 
-                  log(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().duration(1).str(true) << " sec)" << std::endl;
+                  log(LMC_TEST_ERROR) << Z__FCF_TEST_ANSI_FAILED << "[FAILED]" << Z__FCF_TEST_ANSI_RESET << " Test failed (" << state().duration().duration(3).str(true) << " sec)" << std::endl;
                   log(LMC_LAUNCH_END);
 
                   fixtureHandler.call(tests.begin(), testIt, tests.end(), test.part, test.group, test.test, false);
@@ -6404,13 +6430,8 @@ namespace fcf {
             {
               LogJUnitFormatter* formatHandler = a_messageContext.data->cast<LogJUnitFormatter>();
               std::map<TestCase, ProcessedInfo>::iterator it = formatHandler->_processed.insert({TestCase(state().test(), state().paramIndex()), {}}).first;
-              it->second.testDuration = state().duration().duration(1).count();
-              std::map<TestCase, ProcessedInfo>::iterator preventIt = formatHandler->_processed.find(TestCase(state().test(), state().paramIndex()-1));
-              if (preventIt == formatHandler->_processed.end()) {
-                it->second.caseDuration = it->second.testDuration;
-              } else {
-                it->second.caseDuration = it->second.testDuration - preventIt->second.testDuration;
-              }
+              it->second.testDuration = state().duration().duration(3).count();
+              it->second.caseDuration = state().duration().duration(4).count();
             }
             break;
           case LMC_TEST_ERROR_MESSAGE:
@@ -6484,7 +6505,7 @@ namespace fcf {
                                                             return it == formatHandler->_processed.end();
                                                           });
                   unsigned long long time = 0;
-                  for(const Test& test : currentTestCases) {
+                  for(const TestCase& test : currentTestCases) {
                     auto it = formatHandler->_processed.find(test);
                     if (it != formatHandler->_processed.end()) {
                       time += it->second.caseDuration;
