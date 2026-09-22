@@ -1780,19 +1780,19 @@ namespace fcf {
          */
         struct BeginOptions {
           /** @brief Total number of iterations to perform. */
-          long long iterationCount;
+          long long iterations;
           /** @brief The number of bins for the histogram. If negative, the histogram size is determined automatically. */
-          int       histogramSize;
+          int       histogramBins;
 
-          /** @brief Default constructor. Initializes iterationCount to 1. */
+          /** @brief Default constructor. Initializes iterations to 1. */
           BeginOptions()
-            : iterationCount(-1)
-            , histogramSize(-1)
+            : iterations(-1)
+            , histogramBins(-1)
           {}
-          /** @brief Constructor with specified iteration count. @param a_iterationCount Number of iterations. */
-          BeginOptions(long long a_iterationCount, int a_histogramSize = -1)
-            : iterationCount(a_iterationCount)
-            , histogramSize(a_histogramSize)
+          /** @brief Constructor with specified iteration count. @param a_iterations Number of iterations. */
+          BeginOptions(long long a_iterations, int a_histogramBins = -1)
+            : iterations(a_iterations)
+            , histogramBins(a_histogramBins)
           {}
         };
 
@@ -1803,24 +1803,24 @@ namespace fcf {
           /** @brief Number of iterations per measurement step. */
           long long measurementStep;
           /** @brief Number of warmup iterations before actual measurement. */
-          long long warmupCount;
+          long long warmup;
 
           /** @brief Default constructor. */
           Options()
             : measurementStep(-1)
-            , warmupCount(-1)
+            , warmup(-1)
           {}
           /**
            * @brief Constructor with specified parameters.
-           * @param a_iterationCount Total iterations.
-           * @param a_histogramSize The number of bins for the histogram
+           * @param a_iterations Total iterations.
+           * @param a_histogramBins The number of bins for the histogram
            * @param a_measurementStep Step size for measurements.
-           * @param a_warmupCount Number of warmup iterations.
+           * @param a_warmup Number of warmup iterations.
            */
-          Options(unsigned long long a_iterationCount, int a_histogramSize = -1, unsigned long long a_measurementStep = -1, unsigned long long a_warmupCount = -1)
-            : BeginOptions(a_iterationCount, a_histogramSize)
+          Options(unsigned long long a_iterations, int a_histogramBins = -1, unsigned long long a_measurementStep = -1, unsigned long long a_warmup = -1)
+            : BeginOptions(a_iterations, a_histogramBins)
             , measurementStep(a_measurementStep)
-            , warmupCount(a_warmupCount)
+            , warmup(a_warmup)
           {}
         };
 
@@ -1852,11 +1852,11 @@ namespace fcf {
         DurationBasic();
         /**
          * @brief Constructor with specified iteration parameters.
-         * @param a_iterationCount Total iterations.
+         * @param a_iterations Total iterations.
          * @param a_measurementStep Step size.
-         * @param a_warmupCount Warmup iterations.
+         * @param a_warmup Warmup iterations.
          */
-        DurationBasic(unsigned long long a_iterationCount, unsigned long long a_measurementStep = 1, unsigned long long a_warmupCount = 0);
+        DurationBasic(unsigned long long a_iterations, unsigned long long a_measurementStep = 1, unsigned long long a_warmup = 0);
         /** @brief Constructor with specified Options. @param a_options Measurement options. */
         DurationBasic(const Options& a_options);
 
@@ -1970,7 +1970,7 @@ namespace fcf {
 
       private:
         inline void _prepare(size_t a_step);
-        void _appendHistogram(size_t a_level, TimeDuration a_value, size_t a_count, int a_histogramSize, size_t a_ignoreStart = 0, size_t a_ignoreEnd = 0);
+        void _appendHistogram(size_t a_level, TimeDuration a_value, size_t a_count, int a_histogramBins, size_t a_ignoreStart = 0, size_t a_ignoreEnd = 0);
 
         TimePoint                 _timepoint;
         std::vector<Measurement>  _measurements;
@@ -3633,13 +3633,13 @@ namespace fcf {
     {}
 
     template <typename TClock>
-    DurationBasic<TClock>::DurationBasic(unsigned long long a_iterationCount, unsigned long long a_measurementStep, unsigned long long a_warmupCount)
+    DurationBasic<TClock>::DurationBasic(unsigned long long a_iterations, unsigned long long a_measurementStep, unsigned long long a_warmup)
       : _timepoint(0)
       , _measurements({Measurement{}})
-      , _options(std::max((long long)a_iterationCount, 1LL),
+      , _options(std::max((long long)a_iterations, 1LL),
                  10,
                  std::max((long long)a_measurementStep, 1LL),
-                 (long long)a_warmupCount
+                 (long long)a_warmup
                 )
     {}
 
@@ -3647,10 +3647,10 @@ namespace fcf {
     DurationBasic<TClock>::DurationBasic(const Options& a_options)
       : _timepoint(0)
       , _measurements({Measurement{}})
-      , _options(std::max(a_options.iterationCount, 1LL),
-                 a_options.histogramSize >= 0  ? std::max(a_options.histogramSize, 2)  : 10,
+      , _options(std::max(a_options.iterations, 1LL),
+                 a_options.histogramBins >= 0  ? std::max(a_options.histogramBins, 2)  : 10,
                  std::max(a_options.measurementStep, 1LL),
-                 std::max(a_options.warmupCount, 0LL)
+                 std::max(a_options.warmup, 0LL)
                 )
     {}
 
@@ -3661,17 +3661,17 @@ namespace fcf {
 
     template <typename TClock>
     void DurationBasic<TClock>::options(const Options& a_options) {
-      if (a_options.iterationCount >= 0) {
-        _options.iterationCount = std::max(a_options.iterationCount, 1LL);
+      if (a_options.iterations >= 0) {
+        _options.iterations = std::max(a_options.iterations, 1LL);
       }
-      if (a_options.histogramSize >= 0) {
-        _options.histogramSize = std::max(a_options.histogramSize, 2LL);
+      if (a_options.histogramBins >= 0) {
+        _options.histogramBins = std::max(a_options.histogramBins, 2LL);
       }
       if (a_options.measurementStep >= 0) {
         _options.measurementStep = std::max(a_options.measurementStep, 1LL);
       }
-      if (a_options.warmupCount >= 0) {
-        _options.warmupCount = std::max(a_options.warmupCount, 0LL);
+      if (a_options.warmup >= 0) {
+        _options.warmup = std::max(a_options.warmup, 0LL);
       }
     }
 
@@ -3722,25 +3722,25 @@ namespace fcf {
           TimeDuration rawDiff = timepoint - _measurements[i].timepoint;
           TimeDuration diff = rawDiff > _measurements[i].excludedTime ? rawDiff - _measurements[i].excludedTime : TimeDuration();
 
-          long long iterationCount = _measurements[i].options.iterationCount < 0 ? _options.iterationCount
-                                                                                 : _measurements[i].options.iterationCount;
-          int histogramSize        = _measurements[i].options.histogramSize < 0  ?  _options.histogramSize 
-                                                                                 : std::max(_measurements[i].options.histogramSize, 2);
+          long long iterations = _measurements[i].options.iterations < 0 ? _options.iterations
+                                                                                 : _measurements[i].options.iterations;
+          int histogramBins        = _measurements[i].options.histogramBins < 0  ?  _options.histogramBins 
+                                                                                 : std::max(_measurements[i].options.histogramBins, 2);
 
 
           _measurements[i].duration += diff;
-          _measurements[i].iteration += std::max(iterationCount, 1LL);
+          _measurements[i].iteration += std::max(iterations, 1LL);
 
-          if (iterationCount) {
-              TimeDuration avgDiff = diff / iterationCount;
-              if ((long long)_measurements[i].iteration == iterationCount) {
+          if (iterations) {
+              TimeDuration avgDiff = diff / iterations;
+              if ((long long)_measurements[i].iteration == iterations) {
                 _measurements[i].min = avgDiff;
                 _measurements[i].max = avgDiff;
               } else {
                 _measurements[i].min = std::min(avgDiff, _measurements[i].min);
                 _measurements[i].max = std::max(avgDiff, _measurements[i].max);
               }
-              _appendHistogram(i, diff, iterationCount, histogramSize, startLevel, endLevel);
+              _appendHistogram(i, diff, iterations, histogramBins, startLevel, endLevel);
           }
         }
       }
@@ -3789,17 +3789,17 @@ namespace fcf {
       size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
       size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
 
-      long long warmupCount     = a_options.warmupCount < 0 ? _options.warmupCount : a_options.warmupCount;
-      long long iterationCount  = a_options.iterationCount < 0 ? _options.iterationCount : a_options.iterationCount;
+      long long warmup          = a_options.warmup < 0 ? _options.warmup : a_options.warmup;
+      long long iterations      = a_options.iterations < 0 ? _options.iterations : a_options.iterations;
       long long measurementStep = a_options.measurementStep < 0 ?  _options.measurementStep : std::max(a_options.measurementStep, 1LL);
-      int histogramSize         = a_options.histogramSize < 0 ?  _options.histogramSize : std::max(a_options.histogramSize, 2);
+      int histogramBins         = a_options.histogramBins < 0 ?  _options.histogramBins : std::max(a_options.histogramBins, 2);
 
 
-      for(long long i = 0; i < warmupCount; ++i) {
+      for(long long i = 0; i < warmup; ++i) {
         a_function();
       }
 
-      if (!iterationCount){
+      if (!iterations){
         return;
       }
 
@@ -3809,7 +3809,7 @@ namespace fcf {
       TimePoint beginTimepoint = _clock();
       TimePoint timepoint = beginTimepoint;
 
-      for(long long i = 0; i < iterationCount; ++i) {
+      for(long long i = 0; i < iterations; ++i) {
         a_function();
         if ((i + 1) % measurementStep == 0) {
           TimePoint currentTimestamp = _clock();
@@ -3823,7 +3823,7 @@ namespace fcf {
             max = std::max(diff, max);
           }
           for(int level = a_beginLevel; level < a_endLevel; ++level) {
-            _appendHistogram(level, diff, measurementStep, histogramSize);
+            _appendHistogram(level, diff, measurementStep, histogramBins);
           }
           timepoint = currentTimestamp;
         }
@@ -3831,7 +3831,7 @@ namespace fcf {
 
       TimePoint endTimepoint = _clock();
 
-      unsigned long long remainder = iterationCount % measurementStep;
+      unsigned long long remainder = iterations % measurementStep;
       if (remainder){
         TimeDuration remainderDiff = (endTimepoint - timepoint) / remainder;
         if (isFirstMeasurement) {
@@ -3842,7 +3842,7 @@ namespace fcf {
           max = std::max(remainderDiff, max);
         }
         for(int level = a_beginLevel; level < a_endLevel; ++level) {
-          _appendHistogram(level, remainderDiff, remainder, histogramSize);
+          _appendHistogram(level, remainderDiff, remainder, histogramBins);
         }
       }
 
@@ -3857,7 +3857,7 @@ namespace fcf {
           _measurements[i].min        = std::min(_measurements[i].min, min);
           _measurements[i].max        = std::max(_measurements[i].max, max);
         }
-        _measurements[i].iteration += iterationCount;
+        _measurements[i].iteration += iterations;
       }
     }
 
@@ -3954,7 +3954,7 @@ namespace fcf {
     }
 
     template <typename TClock>
-    void DurationBasic<TClock>::_appendHistogram(size_t a_level, TimeDuration a_value, size_t a_count, int a_histogramSize, size_t a_ignoreStart, size_t a_ignoreEnd) {
+    void DurationBasic<TClock>::_appendHistogram(size_t a_level, TimeDuration a_value, size_t a_count, int a_histogramBins, size_t a_ignoreStart, size_t a_ignoreEnd) {
       if (a_level >= _measurements.size()) {
         return;
       }
@@ -3963,8 +3963,8 @@ namespace fcf {
         _measurements[a_level].histogram.append(a_value, a_count);
       } else {
         TimePoint t1 = _clock();
-        if (a_histogramSize >= 0) {
-          _measurements[a_level].histogram.size(a_histogramSize);
+        if (a_histogramBins >= 0) {
+          _measurements[a_level].histogram.size(a_histogramBins);
         }
         _measurements[a_level].histogram.append(a_value, a_count);
         TimePoint t2 = _clock();

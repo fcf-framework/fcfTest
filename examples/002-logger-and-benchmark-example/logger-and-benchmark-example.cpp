@@ -50,7 +50,7 @@ FCF_TEST_DEFINE("Benchmark", "Sorting", "VectorSortBenchmark") {
 
     // Output benchmark results
     fcf::NTest::inf() << "Benchmark completed." << std::endl;
-    fcf::NTest::inf() << "  Iterations: " << bench.options().iterationCount << std::endl;
+    fcf::NTest::inf() << "  Iterations: " << bench.options().iterations << std::endl;
     fcf::NTest::inf() << "  Total time: " << bench.duration().count() << " ns" << std::endl;
     fcf::NTest::inf() << "  Avg time:   " << bench.average().count() << " ns" << std::endl;
 
@@ -65,7 +65,7 @@ FCF_TEST_DEFINE("Benchmark", "Manual", "ManualLoopBenchmark") {
 
     // Manual control using begin() and end()
     bench.begin();
-    for (long long i = 0; i < bench.options().iterationCount; ++i) {
+    for (long long i = 0; i < bench.options().iterations; ++i) {
         // Perform some dummy work
         long long a = i;
         long long b = i * 2;
@@ -75,7 +75,7 @@ FCF_TEST_DEFINE("Benchmark", "Manual", "ManualLoopBenchmark") {
     bench.end();
 
     fcf::NTest::inf() << "Manual loop benchmark completed." << std::endl;
-    fcf::NTest::inf() << "  Iterations: " << bench.options().iterationCount << std::endl;
+    fcf::NTest::inf() << "  Iterations: " << bench.options().iterations << std::endl;
     fcf::NTest::inf() << "  Total time: " << bench.duration().count() << " ns" << std::endl;
     fcf::NTest::inf() << "  Avg time:   " << bench.average().count() << " ns" << std::endl;
 }
