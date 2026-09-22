@@ -1098,6 +1098,9 @@ namespace fcf {
          */
         TimeDuration(unsigned long long a_duration = 0) : _duration(a_duration) {}
 
+        TimeDuration(const TimeDuration& a_source) : _duration(a_source._duration) {}
+
+
         /**
          * @brief Gets the raw duration value.
          * @return The duration in nanoseconds.
@@ -2996,7 +2999,9 @@ namespace fcf {
 
     template <typename TItem, typename TCounter>
     void HistogramBasic<TItem, TCounter>::append(TItem a_item, size_t a_count) {
-      a_count = std::max(a_count, (size_t)1);
+      if (!a_count) {
+        return;
+      }
       if (_init) {
         if (_initMinMax) {
           _init = false;
@@ -3357,26 +3362,26 @@ namespace fcf {
         currentCounterMax = std::max(v, currentCounterMax);
       }
       TCounter currentCounterScale = currentCounterMax - currentCounterMin;
-      if (currentCounterScale == 0) currentCounterScale = 1;
+      if (currentCounterScale == 0) {
+        currentCounterScale = 1;
+      }
 
-      TCounter maxCount = 0;
       for(size_t r = a_height-1; r < std::numeric_limits<size_t>::max(); --r) {
         for(size_t c = 0; c < a_width; ++c) {
           TCounter currentValue = vector[c] - currentCounterMin;
           double   displayValue = (double)currentValue * (double)a_height / (double)currentCounterScale;
           result << (displayValue > (double)r ? "|" : " ");
-          maxCount = std::max(maxCount, vector[c]);
         }
         result << std::endl;
       }
       result << _drawLine((int)a_width) << std::endl;
 
       double stepx = (double)(a_max - a_min) / a_width;
-      double stepy = (double)maxCount / a_height;
+      double stepy = (double)currentCounterScale / a_height;
 
       result <<  std::fixed << std::setprecision(2);
       result << "OX (value): [" << a_min << " : " << a_max << "]" << ";  Step: " << stepx << std::endl;
-      result << "OY (count): [" << 0 << " : " << maxCount << "]" << ";  Step: " << stepy << std::endl;
+      result << "OY (count): [" << currentCounterMin << " : " << currentCounterMax << "]" << ";  Step: " << stepy << std::endl;
       return result.str();
     }
 
@@ -3728,7 +3733,7 @@ namespace fcf {
 
           if (iterationCount) {
               TimeDuration avgDiff = diff / iterationCount;
-              if (_measurements[i].iteration == iterationCount) {
+              if ((long long)_measurements[i].iteration == iterationCount) {
                 _measurements[i].min = avgDiff;
                 _measurements[i].max = avgDiff;
               } else {
@@ -3790,7 +3795,7 @@ namespace fcf {
       int histogramSize         = a_options.histogramSize < 0 ?  _options.histogramSize : std::max(a_options.histogramSize, 2);
 
 
-      for(unsigned long long i = 0; i < warmupCount; ++i) {
+      for(long long i = 0; i < warmupCount; ++i) {
         a_function();
       }
 
@@ -3804,7 +3809,7 @@ namespace fcf {
       TimePoint beginTimepoint = _clock();
       TimePoint timepoint = beginTimepoint;
 
-      for(unsigned long long i = 0; i < iterationCount; ++i) {
+      for(long long i = 0; i < iterationCount; ++i) {
         a_function();
         if ((i + 1) % measurementStep == 0) {
           TimePoint currentTimestamp = _clock();
@@ -4973,7 +4978,6 @@ namespace fcf {
                 if (fixtureErrors.empty()) {
                   std::vector<SharedPtrAny> params = storage().params(testIt->part, testIt->group, testIt->test);
                   for(size_t paramIndex = 0; !paramIndex || paramIndex < params.size(); ++paramIndex) {
-                    bool isLast = (paramIndex+1) >= params.size();
                     bool caseError = false;
                     try {
                       state()._setParamIndex(paramIndex);
@@ -5570,7 +5574,7 @@ namespace fcf {
       _appendParam(a_partName, a_groupName, a_testName, a_parameterPack...);
     }
 
-    inline void Storage::_appendParam(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName){
+    inline void Storage::_appendParam(const std::string&, const std::string&, const std::string&){
     }
 
     template <typename ...TValuePack>
@@ -5597,7 +5601,7 @@ namespace fcf {
       _appendParamValue(a_partName, a_groupName, a_testName, a_parameterPack...);
     }
 
-    inline void Storage::_appendParamValue(const std::string& a_partName, const std::string& a_groupName, const std::string& a_testName){
+    inline void Storage::_appendParamValue(const std::string&, const std::string&, const std::string&){
     }
 
 
