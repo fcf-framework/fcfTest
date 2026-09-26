@@ -3086,7 +3086,8 @@ namespace fcf {
 
     template <typename TItem, typename TCounter>
     bool HistogramBasic<TItem, TCounter>::overflow(TItem a_value) const {
-      return !_init && (a_value > _max || a_value < _min);
+      return !_init || _initMinMax ? (a_value > _max || a_value < _min)
+                                   : false;
     }
 
     template <typename TItem, typename TCounter>
@@ -3670,7 +3671,7 @@ namespace fcf {
         _options.iterations = std::max(a_options.iterations, 1LL);
       }
       if (a_options.histogramBins >= 0) {
-        _options.histogramBins = std::max(a_options.histogramBins, 2LL);
+        _options.histogramBins = std::max(a_options.histogramBins, 2);
       }
       if (a_options.measurementStep >= 0) {
         _options.measurementStep = std::max(a_options.measurementStep, 1LL);
