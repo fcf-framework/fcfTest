@@ -64,7 +64,7 @@ FCF_TEST_DEFINE("fcfTest", "duration", "duration single measurement (graph as te
     FCF_TEST(duration.duration(1) == 2, duration.duration(1));
     FCF_TEST(duration.duration(2) == 1, duration.duration(2));
 
-    duration.reset(1);
+    duration.reset(1, -1);
     FCF_TEST(duration.duration() == 2, duration.duration());
     FCF_TEST(duration.duration(1) == 0, duration.duration(1));
     FCF_TEST(duration.duration(2) == 0, duration.duration(2));

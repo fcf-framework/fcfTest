@@ -1889,11 +1889,16 @@ namespace fcf {
         void end(int a_beginLevel=0);
 
         /**
+         * @brief Resets measurements for a specific one level.
+         * @param a_beginLevel Starting level.
+         */
+        void reset(int a_beginLevel = 0);
+        /**
          * @brief Resets measurements for a specific range of levels.
          * @param a_beginLevel Starting level.
          * @param a_endLevel Ending level (-1 for all).
-         */
-        void reset(int a_beginLevel = 0, int a_endLevel = -1);
+         */ 
+        void reset(int a_beginLevel, int a_endLevel);
 
         /** @brief Gets the histogram for a specific level. @param a_level Level index. @return Reference to the histogram. */
         const HistogramType& histogram(size_t a_level = 0) const;
@@ -1909,7 +1914,7 @@ namespace fcf {
          * @param a_function The function to execute.
          */
         template <typename TFunction>
-        void operator()(Options a_options, int a_beginLevel, int a_endLevel, TFunction a_function);
+        void operator()(const Options& a_options, int a_beginLevel, int a_endLevel, TFunction a_function);
 
         /**
          * @brief Executes a function and measures its duration.
@@ -3752,6 +3757,11 @@ namespace fcf {
     }
 
     template <typename TClock>
+    void DurationBasic<TClock>::reset(int a_beginLevel){
+      reset(a_beginLevel, a_beginLevel + 1);
+    }
+
+    template <typename TClock>
     void DurationBasic<TClock>::reset(int a_beginLevel, int a_endLevel){
       if (a_endLevel > 0) {
         _prepare(a_endLevel-1);
@@ -3783,7 +3793,7 @@ namespace fcf {
 
     template <typename TClock>
     template <typename TFunction>
-    void DurationBasic<TClock>::operator()(Options a_options, int a_beginLevel, int a_endLevel, TFunction a_function){
+    void DurationBasic<TClock>::operator()(const Options& a_options, int a_beginLevel, int a_endLevel, TFunction a_function){
       _prepare(std::max(a_beginLevel, a_endLevel-1));
 
       size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
@@ -3834,6 +3844,7 @@ namespace fcf {
       unsigned long long remainder = iterations % measurementStep;
       if (remainder){
         TimeDuration remainderDiff = (endTimepoint - timepoint) / remainder;
+        std::cout << remainderDiff << std::endl;
         if (isFirstMeasurement) {
           min = remainderDiff;
           max = remainderDiff;
@@ -3848,6 +3859,7 @@ namespace fcf {
 
 
       TimeDuration diff = endTimepoint - beginTimepoint;
+
       for(size_t i = startLevel; i < endLevel; ++i) {
         _measurements[i].duration   += diff;
         if (!_measurements[i].iteration) {
