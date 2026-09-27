@@ -3972,7 +3972,7 @@ namespace fcf {
         return;
       }
 
-      if (!_measurements[a_level].histogram.overflow(a_value)) {
+      if (!_measurements[a_level].histogram.overflow(a_value) && (_measurements[a_level].histogram.size() == a_histogramBins || a_histogramBins < 0)) {
         _measurements[a_level].histogram.append(a_value, a_count);
       } else {
         TimePoint t1 = _clock();
