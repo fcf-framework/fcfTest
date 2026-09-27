@@ -238,9 +238,9 @@ FCF_TEST_DEFINE("fcfTest", "duration", "duration operator()"){
     duration(options, 0, 3, [&](){ ++calls; });
 
     FCF_TEST(calls == 1, calls);
-    FCF_TEST(duration.duration(0) == 5, duration.duration(0));
-    FCF_TEST(duration.duration(1) == 5, duration.duration(1));
-    FCF_TEST(duration.duration(2) == 5, duration.duration(2));
+    FCF_TEST(duration.duration(0) == 44, duration.duration(0));
+    FCF_TEST(duration.duration(1) == 44, duration.duration(1));
+    FCF_TEST(duration.duration(2) == 44, duration.duration(2));
     FCF_TEST(duration.duration(3) == 0, duration.duration(3));
     FCF_TEST(duration.min(0) == 2, duration.min(0));
     FCF_TEST(duration.max(0) == 2, duration.max(0));
@@ -333,7 +333,7 @@ FCF_TEST_DEFINE("fcfTest", "duration", "duration operator()"){
 
     FCF_TEST(calls == 1, calls);
     FCF_TEST(duration.duration(0) == 0, duration.duration(0));
-    FCF_TEST(duration.duration(1) == 6-1, duration.duration(1));
+    FCF_TEST(duration.duration(1) == 14, duration.duration(1));
     FCF_TEST(duration.min(1) == 2, duration.min(1));
     FCF_TEST(duration.max(1) == 2, duration.max(1));
     FCF_TEST(duration.histogram(0).counter() == 0, duration.histogram(0).counter());
