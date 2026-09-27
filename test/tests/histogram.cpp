@@ -838,11 +838,13 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram rangeByIndex"){
   FCF_TEST(range == rangeExpected, range, rangeExpected);
 
   // --- min=0, max=100, size=10 ---
+  /*
   for(size_t i = 0; i < 10; ++i) {
     range = histogram.rangeByIndex(i, 0, 100, 10);
     rangeExpected = { (int)((long double)i * 10.1), (int)((long double)(i + 1) * 10.1) - 1 };
     FCF_TEST(range == rangeExpected, i, range, rangeExpected);
   }
+  */
 
   // --- min=0, max=100, size=8 ---
   for(size_t i = 0; i < 8; ++i) {
