@@ -840,7 +840,8 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram rangeByIndex"){
   // --- min=0, max=100, size=10 ---
   for(size_t i = 0; i < 10; ++i) {
     range = histogram.rangeByIndex(i, 0, 100, 10);
-    rangeExpected = { (int)(i * 10.1), (int)((i + 1) * 10.1) - 1 };
+    rangeExpected = { (int)((double)i * 10.1), (int)((double)(i + 1) * 10.1) - 1 };
+    std::cout << rangeExpected.first << "-" << rangeExpected.second << std::endl;
     FCF_TEST(range == rangeExpected, i, range, rangeExpected);
   }
 
