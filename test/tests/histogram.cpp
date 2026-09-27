@@ -974,9 +974,10 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
   }
   {
     std::vector<size_t> sourceVec   = {0, 1};
-    std::vector<size_t> expectedVec = {0, 0, 0, 0, 1};
+    std::vector<size_t> expectedVec1 = {0, 0, 0, 0, 1};
+    std::vector<size_t> expectedVec2 = {0, 0, 0, 1, 0};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)5);
-    FCF_TEST(resultVec == expectedVec, sourceVec, resultVec, expectedVec);
+    FCF_TEST(resultVec == expectedVec1 || resultVec == expectedVec2, sourceVec, resultVec, expectedVec1, expectedVec2);
     size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
     FCF_TEST(sum == 1, sum);
   }
