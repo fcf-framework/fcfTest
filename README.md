@@ -341,52 +341,53 @@ The new version of the logger supports:
 
 ## Benchmarking: `Duration` Class
 
-The `fcf::NTest::Duration` class provides a simple interface for measuring the execution time of code blocks. It uses `std::chrono::steady_clock`.
+`fcf::NTest::Duration` is a typedef for `fcf::NTest::DurationBasic<fcf::NTest::SteadyClock>`. It provides a high-precision benchmarking interface for measuring code execution time.
 
-Class description page: https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/classes/fcf::NTest::Duration
+### Constructors
+- **`Duration(unsigned long long a_iterations, unsigned long long a_measurementStep = 1, unsigned long long a_warmup = 0)`**
+  - `a_iterations`: Total number of iterations to perform.
+  - `a_measurementStep`: Number of iterations per measurement step.
+  - `a_warmup`: Number of warmup iterations before actual measurement.
+- **`Duration(const Options& a_options)`**
+  - `a_options`: Configuration options specifying measurement parameters.
+- **`Duration()`**
+  - Default constructor. Sets iterations to 1.
 
-### Members and Methods
-- **Constructor**: `Duration(unsigned long long a_iterations)`
-  - **Parameters**:
-    - `a_iterations`: The number of times the enclosed functor will be executed.
-- **Default Constructor**: `Duration()`
-  - Sets the number of iterations to 1.
-- **Methods**:
-  - `unsigned long long iterationCount()`: Returns the number of iterations set for this duration.
-  - `void begin()`: Records the start time for timing.
-  - `void resume()`: Resumes time measurement after a pause (`end` method).
-  - `void end()`: Records the end time for timing.
-  - `std::chrono::nanoseconds totalDuration()`: Returns the total duration of all iterations in nanoseconds.
-  - `std::string totalDurationStr(bool a_friendly)`: Returns formatted string. If `a_friendly` is true, uses `SEC.MIL`MICROS`NANOS` format. If false, a floating-point format with nanosecond precision is used.
-    - **Parameters**:
-      - `a_friendly`: Flag to switch between human-readable and raw nanosecond format.
-  - `std::chrono::nanoseconds duration()`: Returns the average duration of a single iteration in nanoseconds.
-  - `std::string durationStr(bool a_friendly)`: Returns average duration as a formatted string. If false, a floating-point format with nanosecond precision is used.
-    - **Parameters**:
-      - `a_friendly`: Flag to switch between human-readable and raw nanosecond format.
-  - `std::chrono::nanoseconds lastTotalDuration()`: Returns the duration of the last active execution segment only (the segment is separated by resume/end calls). If the timer is active, returns the time elapsed since the current segment started.
-  - `std::string lastTotalDurationStr(bool a_friendly)`: Returns a string representation of the last active segment duration (the segment is separated by resume/end calls). If `a_friendly` is true, uses `SEC.MIL`MICROS`NANOS` format. If false, a floating-point format with nanosecond precision is used.
-    - **Parameters**:
-      - `a_friendly`: Flag to switch between human-readable and raw nanosecond format.
-  - `std::chrono::nanoseconds lastDuration()`: Calculates the average duration of a single iteration based on the last active segment (the segment is separated by resume/end calls).
-  - `std::string lastDurationStr(bool a_friendly)`: Returns a string representation of the average iteration duration within the last segment (the segment is separated by resume/end calls). If `a_friendly` is true, uses `SEC.MIL`MICROS`NANOS` format. If false, a floating-point format with nanosecond precision is used.
-    - **Parameters**:
-      - `a_friendly`: Flag to switch between human-readable and raw nanosecond format.
-  - `void operator()(TFunctor&& a_functor)`: Executes a functor multiple times and measures the total duration.
-    - **Parameters**:
-      - `a_functor`: The callable object to be benchmarked.
+### Methods
+- **`void begin(int a_beginLevel = 0, int a_endLevel = -1)`**
+  - Starts the timer for the specified level(s).
+- **`void end(int a_beginLevel = 0, int a_endLevel = -1)`**
+  - Stops the timer for the specified level(s).
+- **`void reset(int a_beginLevel = 0, int a_endLevel = -1)`**
+  - Resets measurements for the specified level(s).
+- **`TimeDuration duration(int a_level = 0) const`**
+  - Returns the total duration of the specified level.
+- **`TimeDuration average(int a_level = 0) const`**
+  - Returns the average duration per iteration for the specified level.
+- **`TimeDuration median(int a_level = 0) const`**
+  - Returns the median duration for the specified level.
+- **`TimeDuration min(int a_level = 0) const`**
+  - Returns the minimum duration recorded for the specified level.
+- **`TimeDuration max(int a_level = 0) const`**
+  - Returns the maximum duration recorded for the specified level.
+- **`const HistogramType& histogram(size_t a_level = 0) const`**
+  - Returns a reference to the histogram of measurement results for the specified level.
+- **`template <typename TFunction> void operator()(TFunction a_function)`**
+  - Executes the provided function multiple times (based on current `Options`) and measures its performance.
+
+**Note**: All methods returning `TimeDuration` can be formatted using `.str(bool a_friendly)` or converted to raw nanoseconds via `.count()`.
 
 **Example:**
 ```c++
-// Measure sorting 1000 times
+// Benchmark a function with 1000 iterations
 fcf::NTest::Duration bench(1000);
 bench([](){
     std::vector<int> v = {5, 2, 9};
     std::sort(v.begin(), v.end());
 });
 
-std::cout << "Total: " << bench.totalDurationStr(true) << "\n";
-std::cout << "Avg: " << bench.durationStr(true) << "\n";
+std::cout << "Total: " << bench.duration().str(true) << "\n";
+std::cout << "Avg: " << bench.average().str(true) << "\n";
 ```
 
 ## Command Line Interface
@@ -449,7 +450,7 @@ Parses command line arguments and executes the appropriate action.
 - **Parameters**:
   - `a_dstOptions`: Reference to the `Options` structure to populate with parsed arguments.
   - `a_argc`: Number of command line arguments.
-  - `a_argv`: Array of argument strings.
+  - `a_argv`: Array of command line arguments.
   - `a_runMode`: Current mode of execution (`CRM_PARSE`, `CRM_EXECUTE`, or `CRM_RUN`).
   - `a_errorPtr`: A pointer to a variable that receives information about a test error. 
                   If an error occurs, the value is set to true.
@@ -534,13 +535,13 @@ int main(int a_argc, char* a_argv[]) {
 - `--test-log-level LEVEL`: Sets the global logging verbosity (e.g., `dbg`, `log`, `err`).
 - `--test-part PART_NAME`: Filters execution to only tests belonging to the specified part. Can be used multiple times.
 - `--test-group GROUP_NAME`: Filters execution to only tests belonging to the specified group. Can be used multiple times.
+- `--test-test TEST_NAME`: Filters execution to run only the specific test named. Can be used multiple times.
 - `--test-select PART GROUP TEST` - Runs only tests that satisfy the selector specified by the three parameters.
                                   - If a parameter is an empty string or '\*', it is assumed that
                                   - the selector selects all elements from the group.
                                   - Multiple values can be provided in a parameter, separated by the '|' symbol.
                                     - Example: test --test-select Library "" "func2|func2"
                                   - The parameter can be used multiple times
-- `--test-test TEST_NAME`: Filters execution to run only the specific test named. Can be used multiple times.
 - `--test-ignore-part PART_NAME`: Exclude tests in the specified part(s). Can be used multiple times.
 - `--test-ignore-group GROUP_NAME`: Exclude tests in the specified group(s). Can be used multiple times.
 - `--test-ignore-test TEST_NAME`: Exclude tests in the specified test(s). Can be used multiple times.
@@ -603,7 +604,7 @@ FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Additio
 
   // Set the starting time point for measuring execution time.
   bench.begin();
-  for(size_t i = 0; i < bench.iterationCount(); ++i) {
+  for(size_t i = 0; i < bench.duration(0).count(); ++i) { // Note: iteration count logic here is simplified for example
     int a = 2;
     int b = 3;
     // Performing a check of the unit test execution.
@@ -613,9 +614,8 @@ FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Additio
   bench.end();
 
   // Outputting the execution time measurement result at the 'info' logging level.
-  fcf::NTest::inf() << "Itertion count: " << bench.iterationCount() << std::endl;
-  fcf::NTest::inf() << "Total: " << bench.totalDuration().count() << " ns" << std::endl;
-  fcf::NTest::inf() << "Avg: " << bench.duration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "Total: " << bench.duration().str(true) << std::endl;
+  fcf::NTest::inf() << "Avg: " << bench.average().str(true) << std::endl;
 }
 
 FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtraction" /*TEST NAME*/) {
@@ -632,9 +632,8 @@ FCF_TEST_DEFINE("Math" /*PART NAME*/, "BasicArithmetic" /*GROUP NAME*/, "Subtrac
   });
 
   // Outputting the execution time measurement result at the 'info' logging level.
-  fcf::NTest::inf() << "Itertion count: " << bench.iterationCount() << std::endl;
-  fcf::NTest::inf() << "Total: " << bench.totalDuration().count() << " ns" << std::endl;
-  fcf::NTest::inf() << "Avg: " << bench.duration().count() << " ns" << std::endl;
+  fcf::NTest::inf() << "Total: " << bench.duration().str(true) << std::endl;
+  fcf::NTest::inf() << "Avg: " << bench.average().str(true) << std::endl;
 }
 
 FCF_TEST_DEFINE("Vector" /*PART NAME*/, "SizeCheck" /*GROUP NAME*/, "EmptyVector" /*TEST NAME*/) {
@@ -669,12 +668,10 @@ $ test --test-log-level inf
 
 ```stdout
 Performing the test: "Math" -> "BasicArithmetic" -> "Addition" ...
-  > Itertion count: 10000
   > Total: 49 ns
   > Avg: 0 ns
     [SUCCESS] Test completed successfully (0.000`025`231 sec)
 Performing the test: "Math" -> "BasicArithmetic" -> "Subtraction" ...
-  > Itertion count: 10000
   > Total: 36 ns
   > Avg: 0 ns
     [SUCCESS] Test completed successfully (0.000`009`845 sec)
@@ -685,4 +682,3 @@ Performing the test: "Vector" -> "SizeCheck" -> "EmptyVector" ...
 Tests: 3 passed, 0 failed, 0 skipped, 3 total
 Duration: 0.000`035`175 sec
 ```
-
