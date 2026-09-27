@@ -745,7 +745,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram range"){
       size_t l = ((i-1) / 10)*10 + 1;
       size_t r = l + 10 - 1;
       range = histogram.rangeByValue(i, 1, 100, 10);
-      rangeExpected = {l, r};
+      rangeExpected = {(int)l, (int)r};
       FCF_TEST(range == rangeExpected, i, range, rangeExpected);
     }
 
@@ -897,7 +897,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec = {20, 20, 20, 20, 20, 20, 20, 20, 20, 20};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)10);
     FCF_TEST(resultVec == expectedVec, "size:10; source:[100,100]", resultVec, expectedVec);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 200, sum);
   }
   {
@@ -905,7 +905,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec = {8, 24, 36, 24, 8, 0, 0, 0, 0, 0};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)10);
     FCF_TEST(resultVec == expectedVec, "size:10; source:[100:0]", resultVec, expectedVec);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 100, sum);
   }
   {
@@ -913,7 +913,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec = {0, 0, 0, 0, 0, 8, 24, 36, 24, 8};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)10);
     FCF_TEST(resultVec == expectedVec, "size:10; source:[0:100]", resultVec, expectedVec);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 100, sum);
   }
   {
@@ -921,7 +921,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec = {25, 25, 25, 25, 25, 25, 25, 25};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)8);
     FCF_TEST(resultVec == expectedVec, "size:8; source:[100,100]", resultVec, expectedVec);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 200, sum);
   }
   {
@@ -929,7 +929,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec = {12, 38, 38, 12, 0, 0, 0, 0};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)8);
     FCF_TEST(resultVec == expectedVec, "size:8; source:[100,0]", resultVec, expectedVec);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 100, sum);
   }
   {
@@ -937,7 +937,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec = {0, 0, 0, 0, 12, 38, 38, 12};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)8);
     FCF_TEST(resultVec == expectedVec, "size:8; source:[100,0]", resultVec, expectedVec);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 100, sum);
   }
   {
@@ -945,7 +945,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec = {66, 66, 66};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 99, 0, 99, (size_t)3);
     FCF_TEST(resultVec == expectedVec, sourceVec, resultVec, expectedVec);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 198, sum);
   }
   {
@@ -953,7 +953,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec = {67, 66, 67};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)3);
     FCF_TEST(resultVec == expectedVec, sourceVec, resultVec, expectedVec);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 200, sum);
   }
   {
@@ -961,7 +961,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec = {78, 22, 0};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)3);
     FCF_TEST(resultVec == expectedVec, sourceVec, resultVec, expectedVec);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 100, sum);
   }
   {
@@ -969,7 +969,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec = {0, 22, 78};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)3);
     FCF_TEST(resultVec == expectedVec, sourceVec, resultVec, expectedVec);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 100, sum);
   }
   {
@@ -978,7 +978,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec2 = {0, 0, 0, 1, 0};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)5);
     FCF_TEST(resultVec == expectedVec1 || resultVec == expectedVec2, sourceVec, resultVec, expectedVec1, expectedVec2);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 1, sum);
   }
   {
@@ -986,7 +986,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram countVector") {
     std::vector<size_t> expectedVec = {1, 0, 0, 0, 0};
     std::vector<size_t> resultVec   = histogram.countVector(sourceVec, 0, 100, 0, 100, (size_t)5);
     FCF_TEST(resultVec == expectedVec, sourceVec, resultVec, expectedVec);
-    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), 0);
+    size_t sum                      = std::accumulate(resultVec.begin(), resultVec.end(), (size_t)0);
     FCF_TEST(sum == 1, sum);
   }
 }
@@ -1017,7 +1017,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram"){
 
     std::vector<size_t> expectedCounters = {3, 1, 0, 0, 101, 0, 0, 0, 0, 81};
     std::vector<size_t> counters = histogram.countVector();
-    size_t counterSum = std::accumulate(counters.begin(), counters.end(), 0);
+    size_t counterSum = std::accumulate(counters.begin(), counters.end(), (size_t)0);
     FCF_TEST(counterSum == histogram.counter(), counterSum, histogram.counter());
     FCF_TEST(counters == expectedCounters, histogram.toTable(histogram.size()), expectedCounters);
     std::vector< std::pair<int, int> > expectedValues = {{1, 21}, {22, 42}, {43, 63}, {64, 84}, {85, 105}, {106, 126}, {127, 147}, {148, 168}, {169, 189}, {190, 210}};
@@ -1063,7 +1063,7 @@ FCF_TEST_DEFINE("fcfTest", "histogram", "histogram"){
 
     std::vector<size_t> expectedCounters = {3, 1, 0, 101, 0, 0, 81, 0, 0, 0};
     std::vector<size_t> counters = histogram.countVector(0, 300);
-    size_t counterSum = std::accumulate(counters.begin(), counters.end(), 0);
+    size_t counterSum = std::accumulate(counters.begin(), counters.end(), (size_t)0);
     FCF_TEST(counterSum == histogram.counter(), counterSum, histogram.counter());
     FCF_TEST(counters == expectedCounters, counters, expectedCounters);
 

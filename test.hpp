@@ -3101,8 +3101,8 @@ namespace fcf {
       a_size              = std::max(a_size, (size_t)1);
       TItem    range      = a_max - a_min + 1;
       size_t   index      = ((double)a_size / range) * (a_value - a_min);
-      TCounter leftValue  = a_min + ((double)index / a_size) * range;
-      TCounter rightValue = a_min + std::max((TItem)((double)(index+1) / a_size * range), (TItem)1) - 1;
+      TItem leftValue     = a_min + ((double)index / a_size) * range;
+      TItem rightValue    = a_min + std::max((TItem)((double)(index+1) / a_size * range), (TItem)1) - 1;
       return { leftValue, rightValue };
     }
 
@@ -3159,7 +3159,7 @@ namespace fcf {
       if (a_min > a_max){
         std::swap(a_min, a_max);
       }
-      TCounter totalSum = std::accumulate(a_vector.begin(), a_vector.end(), 0);
+      TCounter totalSum = std::accumulate(a_vector.begin(), a_vector.end(), (TCounter)0);
       if (totalSum == 0) {
         return a_min;
       }
