@@ -1606,7 +1606,7 @@ namespace fcf {
         /** @brief Returns the total number of items appended to the histogram. */
         size_t counter() const;
 
-        bool  overflow(TItem a_value) const;
+        bool  overflow(TItem a_value, bool a_onlyForRebuild = false) const;
 
         /**
          * @brief Calculates the range (min, max) for a specific value within a given range and size.
@@ -3085,9 +3085,10 @@ namespace fcf {
     }
 
     template <typename TItem, typename TCounter>
-    bool HistogramBasic<TItem, TCounter>::overflow(TItem a_value) const {
-      return !_init || _initMinMax ? (a_value > _max || a_value < _min)
-                                   : false;
+    bool HistogramBasic<TItem, TCounter>::overflow(TItem a_value, bool a_onlyForRebuild /* = false*/) const {
+      return !_init || _initMinMax ? (a_value > _max || a_value < _min) :
+             a_onlyForRebuild      ? false :
+                                     true;
     }
 
     template <typename TItem, typename TCounter>
@@ -3972,7 +3973,7 @@ namespace fcf {
         return;
       }
 
-      if (!_measurements[a_level].histogram.overflow(a_value) && (_measurements[a_level].histogram.size() == a_histogramBins || a_histogramBins < 0)) {
+      if (!_measurements[a_level].histogram.overflow(a_value, true) && (_measurements[a_level].histogram.size() == a_histogramBins || a_histogramBins < 0)) {
         _measurements[a_level].histogram.append(a_value, a_count);
       } else {
         TimePoint t1 = _clock();
