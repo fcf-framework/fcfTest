@@ -9,28 +9,34 @@ if(NOT TARGET fcf::fcfTest)
 
   foreach(_path IN LISTS _all_paths)
     if(IS_DIRECTORY "${_path}")
+      message("001 path")
       get_filename_component(_dir_name "${_path}" NAME)
 
       if(EXISTS "${_path}/test.hpp" AND NOT "${_dir_name}" STREQUAL "fcfTest")
+        message("001 path - 001")
         set(_proxy_root "${CMAKE_CURRENT_BINARY_DIR}/fcf_include_proxy")
         set(_target_dir "${_proxy_root}/fcfTest")
 
         if(NOT IS_DIRECTORY "${_target_dir}")
           file(MAKE_DIRECTORY "${_target_dir}")
+          message("001 path - 001 - make dir: ${_target_dir}")
         endif()
 
         if(NOT EXISTS "${_target_dir}/test.hpp")
           file(WRITE "${_target_dir}/test.hpp" "#include \"${_path}/test.hpp\"\n")
+          message("001 path - 001 - make proxy hpp: ${_target_dir}/test.hpp")
         endif()
 
         list(APPEND _valid_paths "${_proxy_root}")
       else()
+        message("001 path - 002")
         get_filename_component(_parent_path "${_path}/.." ABSOLUTE)
         list(APPEND _valid_paths "${_parent_path}")
       endif()
     endif()
   endforeach()
 
+  message("002 path : ${_valid_paths}")
   set_target_properties(fcf::fcfTest PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${_valid_paths}"
   )
