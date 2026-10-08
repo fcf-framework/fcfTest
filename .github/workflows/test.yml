@@ -58,7 +58,7 @@ jobs:
           CMAKE_FLAGS+=("-DCMAKE_CXX_FLAGS=-m32" "-DCMAKE_C_FLAGS=-m32")
         fi
 
-        cmake "${CMAKE_FLAGS[@]}"
+        cmake "${CMAKE_FLAGS[@]}" "${{github.workspace}}/test"
 
     - name: Build Project
       run: cmake --build ${{github.workspace}}/build --config Release
@@ -68,9 +68,9 @@ jobs:
       shell: bash
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
-          ./test/Release/fcf-test-test.exe --test-file-junit junit-report.xml
+          ./Release/fcf-test-test.exe --test-file-junit junit-report.xml
         else
-          ./test/fcf-test-test --test-file-junit junit-report.xml
+          ./fcf-test-test --test-file-junit junit-report.xml
         fi
 
     - name: Publish Test Results
