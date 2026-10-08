@@ -11,7 +11,7 @@ if(NOT TARGET fcf::fcfTest)
     if(IS_DIRECTORY "${_path}")
       get_filename_component(_dir_name "${_path}" NAME)
 
-      if(EXISTS "${_path}/test.hpp" AND NOT IS_DIRECTORY "${_path}/fcfTest")
+      if(EXISTS "${_path}/test.hpp" AND NOT "${_dir_name}" STREQUAL "fcfTest")
         set(_proxy_root "${CMAKE_CURRENT_BINARY_DIR}/fcf_include_proxy")
         set(_target_dir "${_proxy_root}/fcfTest")
 
