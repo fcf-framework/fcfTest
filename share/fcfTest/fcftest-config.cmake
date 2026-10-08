@@ -6,10 +6,12 @@ if(NOT TARGET fcf::fcfTest)
 
   set(_all_paths "${_local_path}" "${_vcpkg_path}")
   set(_valid_paths "")
+  
+  message("CMAKE_CURRENT_LIST_DIR: ${CMAKE_CURRENT_LIST_DIR}")
 
   foreach(_path IN LISTS _all_paths)
     if(IS_DIRECTORY "${_path}")
-      message("001 path")
+      message("path: ${_path}")
       get_filename_component(_dir_name "${_path}" NAME)
 
       if(EXISTS "${_path}/test.hpp" AND NOT "${_dir_name}" STREQUAL "fcfTest")
