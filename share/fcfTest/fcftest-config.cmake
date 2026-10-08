@@ -38,5 +38,5 @@ if(NOT TARGET fcf::fcfTest)
   unset(_valid_paths)
   unset(_proxy_root)
   unset(_target_dir)
-  
+
 endif()
