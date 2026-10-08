@@ -1,5 +1,5 @@
 if(NOT TARGET fcf::fcfTest)
-  add_library(fcf::fcfTest INTERFACE IMPORTED)
+  add_library(fcf::fcfTest INTERFACE IMPORTED GLOBAL)
 
   get_filename_component(_current_path "${CMAKE_CURRENT_LIST_DIR}/../../" ABSOLUTE)
   get_filename_component(_local_path "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE)
