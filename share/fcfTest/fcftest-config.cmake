@@ -21,7 +21,8 @@ if(NOT TARGET fcf::fcfTest)
       file(MAKE_DIRECTORY "${_target_dir}")
     endif()
 
-    file(COPY "${_current_path}/" "${_target_dir}")
+    file(COPY "${_current_path}/"
+         DESTINATION "${_target_dir}")
 
     list(APPEND _valid_paths "${_proxy_root}")
   endif()
