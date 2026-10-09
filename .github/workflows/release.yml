@@ -28,19 +28,20 @@ jobs:
           else
             TAG_NAME="${{ github.event.workflow_run.head_branch }}"
           fi
-
           if [ -z "$TAG_NAME" ]; then
             TAG_NAME="latest"
           fi
-
           VERSION=${TAG_NAME#v}
           echo "Tag name: $TAG_NAME"
           echo "Version to use: $VERSION"
-
+          
           mkdir -p fcfTest
-          rsync -rrv --exclude='fcfTest' --exclude='.git' --exclude='.github' ./ fcfTest/
-          zip -r "fcfTest-${VERSION}.zip" fcfTest/
-
+          
+          cp -R [A-Za-z0-9]* fcfTest/ 2>/dev/null || true
+          rm -rf fcfTest/fcfTest fcfTest/.git fcfTest/.github
+          
+          7z a -tzip "fcfTest-${VERSION}.zip" fcfTest/
+          
           echo "ARCHIVE_NAME=fcfTest-${VERSION}.zip" >> $GITHUB_ENV
           echo "CLEAN_TAG=$TAG_NAME" >> $GITHUB_ENV
 
