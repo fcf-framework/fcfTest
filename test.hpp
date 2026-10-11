@@ -2516,7 +2516,7 @@ namespace fcf {
          * @brief Adds a new prefix to the current list.
          * @param a_prefix The prefix to append.
          */
-        void appendPrefix(const Prefix& a_prefix);
+        void appendPrefix(const Prefix& a_prefix, bool a_appendToFront = false);
 
         /**
          * @brief Gets the current list of formats.
@@ -6069,11 +6069,13 @@ namespace fcf {
     #endif
 
     #ifdef FCF_TEST_IMPLEMENTATION
-      void Logger::appendPrefix(const Prefix& a_prefix) {
+      void Logger::appendPrefix(const Prefix& a_prefix, bool a_appendToFront) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         auto existIt = std::find_if(_prefixes.begin(), _prefixes.end(), [&a_prefix](const Prefix& a_item) { return a_prefix.name == a_item.name; });
         if (existIt != _prefixes.end()) {
           *existIt = a_prefix;
+        } else if (a_appendToFront) {
+          _prefixes.insert(_prefixes.begin(), a_prefix);
         } else {
           _prefixes.push_back(a_prefix);
         }
