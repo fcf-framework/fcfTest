@@ -31,7 +31,8 @@ Official page with documentation: https://fcf-framework.is-a-fullstack.dev/cpp-l
   - [Mastering Test Fixtures and Data Sharing](https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/pages/introduction/fixtures) - A comprehensive guide on how to use test fixtures to manage setup/teardown logic and share data between tests.
   - [Parameterized Testing: Running the Same Logic with Different Data](https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/pages/introduction/params) - Learn how to implement parameterized tests in fcfTest to run multiple iterations of a test with varying input data.
   - [Logging System: Monitoring and Debugging](https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/pages/introduction/log) - A detailed guide on how to use the built-in logging system to monitor test execution and debug complex scenarios.
-
+  - [Logging System: Customizing Logger Prefixes](https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/pages/introduction/log-prefix) - A comprehensive guide on how to create static and dynamic prefixes for the fcfTest logger, including a deep dive into the bitmask-based message category system.
+  - [Logging System: Mastering Custom Log Formats](https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/pages/introduction/log-format) - Learn how to implement custom log formatting logic and use message categories to create intelligent, context-aware log outputs.
 
 ### Friendly:
 If something doesn't work for you, please report it quickly in Issues and we'll fix it!
