@@ -6106,6 +6106,11 @@ namespace fcf {
         _formats.clear();
         if (a_defaultState){
           Format format;
+
+          format.name = "default";
+          format.handler = nullptr;
+          appendFormat(format);
+
           format.name = "junit";
           format.handler = LogJUnitFormatter::format;
           appendFormat(format);
