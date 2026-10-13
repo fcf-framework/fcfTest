@@ -4023,7 +4023,7 @@ namespace fcf {
         std::cout << "  --test-group GROUP_NAME - Run only tests from the group. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-test  TEST_NAME - Run only this test. The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-select PART GROUP TEST - Runs only tests that satisfy the selector specified by the three parameters." << std::endl
-                  << "                                  If a parameter is an empty string or '*', it is assumed that " << std::endl
+                  << "                                  If a parameter is an empty string or '*', it is assumed that" << std::endl
                   << "                                  the selector selects all elements from the group." << std::endl
                   << "                                  Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl
                   << "                                    Example: test --test-select Library \"\" \"func2|func2\"" << std::endl
@@ -4032,7 +4032,7 @@ namespace fcf {
         std::cout << "  --test-ignore-group GROUP_NAME - Exclude tests in the specified group(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-test TEST_NAME - Exclude the specified test(s). The parameter can be used multiple times" << std::endl;
         std::cout << "  --test-ignore-select PART GROUP TEST - Exclude tests that satisfy the selector specified by the three parameters." << std::endl
-                  << "                                  If a parameter is an empty string or '*', it is assumed that " << std::endl
+                  << "                                  If a parameter is an empty string or '*', it is assumed that" << std::endl
                   << "                                  the selector selects all elements from the group." << std::endl
                   << "                                  Multiple values can be provided in a parameter, separated by the '|' symbol." << std::endl
                   << "                                  The parameter can be used multiple times" << std::endl;
@@ -4040,14 +4040,13 @@ namespace fcf {
         std::cout << "  --test-no-break - In case of an error, testing does not stop" << std::endl;
         std::string formats;
         for(auto format : logger().formats()) {
-          formats += ", ";
+          formats += formats.empty() ? "" : ", ";
           formats += format.name;
         }
-        std::cout << "  --test-format FORMAT - Output format (default" + formats + ")." << std::endl;
+        std::cout << "  --test-format FORMAT - Output format (" + formats + ")." << std::endl;
 
         std::cout << "  --test-file FILE_PATH - Log file" << std::endl
                   << "                          Use the default format or specify the --test-format parameter" << std::endl;
-        std::cout << "  --test-file-default FILE_PATH - Log file (format: default)." << std::endl;
         for(auto format : logger().formats()) {
           std::cout << "  --test-file-" << format.name << " FILE_PATH - Log file (format: " << format.name << ")." << std::endl;
         }
