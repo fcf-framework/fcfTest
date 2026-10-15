@@ -2719,6 +2719,7 @@ namespace fcf {
           std::string     name;
           std::ostream*   stream;
           std::string     format;
+          ELogLevel       level;
           HandlerDataMap  prefixData;
           HandlerDataMap  formatData;
 
@@ -2727,6 +2728,7 @@ namespace fcf {
            */
           OutputTarget()
             : stream(nullptr)
+            , level(LL_DEF)
           {}
 
           /**
@@ -2737,14 +2739,16 @@ namespace fcf {
            * @param a_prefixData Data map for prefixes.
            * @param a_formatData Data map for formats.
            */
-          OutputTarget(const std::string& a_name,
-                       std::ostream* a_stream,
-                       const std::string& a_format,
+          OutputTarget(const std::string&     a_name,
+                       std::ostream*          a_stream,
+                       const std::string&     a_format,
+                       ELogLevel              a_level,
                        const HandlerDataMap&  a_prefixData,
                        const HandlerDataMap&  a_formatData)
             : name(a_name)
             , stream(a_stream)
             , format(a_format)
+            , level(a_level)
             , prefixData(a_prefixData)
             , formatData(a_formatData)
           {
@@ -4928,7 +4932,7 @@ namespace fcf {
             std::string streamName = file.format.length() ? (std::string() + "file-" + file.format)
                                                           : std::string("file");
             ofstreams.push_back(std::ofstream(file.file, std::ios::binary));
-            Logger::_appendTarget({streamName, &ofstreams.back(), file.format, {}, {}}, newEnv);
+            Logger::_appendTarget({streamName, &ofstreams.back(), file.format, LL_DEF, {}, {}}, newEnv);
           }
 
           std::set<Test>           lastTests = state().tests();
@@ -6152,7 +6156,7 @@ namespace fcf {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         _environment.targets.clear();
         if (a_defaultState) {
-          _environment.targets.push_back({"default", &std::cout, "", {}, {}});
+          _environment.targets.push_back({"default", &std::cout, "", LL_DEF, {}, {}});
         }
       }
     #endif
@@ -6298,7 +6302,10 @@ namespace fcf {
               format.handler(*this, lms);
             }
           }
-          if (lms.message.length() && !lms.system) {
+
+          ELogLevel selfLevel = stream.level != LL_DEF ? stream.level : _environment.level;
+
+          if (lms.message.length() && !lms.system && selfLevel >= lms.level) {
             (*lms.stream) << lms.message;
           }
 
@@ -6311,11 +6318,7 @@ namespace fcf {
 
     #ifdef FCF_TEST_IMPLEMENTATION
       Logger::Writer Logger::_log(ELogLevel a_level, unsigned int a_messageCategory) {
-        if (_environment.level >= a_level || a_messageCategory != LMC_USER_GROUP) {
-          return Logger::Writer(*this, a_level, a_messageCategory);
-        } else {
-          return Logger::Writer();
-        }
+        return Logger::Writer(*this, a_level, a_messageCategory);
       }
     #endif
 
