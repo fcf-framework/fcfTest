@@ -1128,6 +1128,10 @@ namespace fcf {
           return ss.str();
         }
 
+        explicit operator bool() const {
+          return _duration;
+        }
+
         /** @brief Explicit conversion to double. @return The duration as a double. */
         explicit operator double() const {
           return (double)_duration;
@@ -1185,6 +1189,18 @@ namespace fcf {
         inline typename std::enable_if<std::is_arithmetic<Ty>::value, TimeDuration>::type
         operator-(const Ty& a_value) const {
           return TimeDuration(_duration - static_cast<unsigned long long>(a_value));
+        }
+
+        TimeDuration operator*(long double a_value) const {
+          return TimeDuration(((unsigned long long)(long double)_duration * a_value));
+        }
+
+        TimeDuration operator*(double a_value) const {
+          return TimeDuration(((unsigned long long)(long double)_duration * a_value));
+        }
+
+        TimeDuration operator*(float a_value) const {
+          return TimeDuration(((unsigned long long)(long double)_duration * a_value));
         }
 
         /**
@@ -1783,16 +1799,20 @@ namespace fcf {
           long long iterations;
           /** @brief The number of bins for the histogram. If negative, the histogram size is determined automatically. */
           int       histogramBins;
+          /** @brief If this field is set to one, a correction to the measured time is applied (excluding the time taken by internal operations). */
+          int correction;
 
           /** @brief Default constructor. Initializes iterations to 1. */
           BeginOptions()
             : iterations(-1)
             , histogramBins(-1)
+            , correction(-1)
           {}
           /** @brief Constructor with specified iteration count. @param a_iterations Number of iterations. */
-          BeginOptions(long long a_iterations, int a_histogramBins = -1)
+          BeginOptions(long long a_iterations, int a_histogramBins = -1, int a_correction = -1)
             : iterations(a_iterations)
             , histogramBins(a_histogramBins)
+            , correction(a_correction)
           {}
         };
 
@@ -1817,8 +1837,8 @@ namespace fcf {
            * @param a_measurementStep Step size for measurements.
            * @param a_warmup Number of warmup iterations.
            */
-          Options(unsigned long long a_iterations, int a_histogramBins = -1, unsigned long long a_measurementStep = -1, unsigned long long a_warmup = -1)
-            : BeginOptions(a_iterations, a_histogramBins)
+          Options(unsigned long long a_iterations, int a_histogramBins = -1, int a_correction = -1, unsigned long long a_measurementStep = -1, unsigned long long a_warmup = -1)
+            : BeginOptions(a_iterations, a_histogramBins, a_correction)
             , measurementStep(a_measurementStep)
             , warmup(a_warmup)
           {}
@@ -1828,22 +1848,22 @@ namespace fcf {
         struct Measurement {
           TimeDuration        duration;
           TimePoint           timepoint;
+          TimePoint           correctTimepoint;
           unsigned long long  iteration;
           TimeDuration        min;
           TimeDuration        max;
           bool                pause;
           BeginOptions        options;
-          TimeDuration        excludedTime;
           HistogramType       histogram;
 
           Measurement()
             : duration(0)
             , timepoint(0)
+            , correctTimepoint(0)
             , iteration(0)
             , min(0)
             , max(0)
             , pause(true)
-            , excludedTime(0)
           {}
         };
 
@@ -1856,7 +1876,7 @@ namespace fcf {
          * @param a_measurementStep Step size.
          * @param a_warmup Warmup iterations.
          */
-        DurationBasic(unsigned long long a_iterations, unsigned long long a_measurementStep = 1, unsigned long long a_warmup = 0);
+        DurationBasic(unsigned long long a_iterations);
         /** @brief Constructor with specified Options. @param a_options Measurement options. */
         DurationBasic(const Options& a_options);
 
@@ -3635,22 +3655,72 @@ namespace fcf {
 
 namespace fcf {
   namespace NTest {
+    namespace NDetails {
+
+      struct ClockDelay {
+        unsigned long long iteration;
+        unsigned long long iterationMin;
+        unsigned long long clock;
+      };
+
+      FCF_TEST_API ClockDelay clockDelay();
+
+      #ifdef FCF_TEST_IMPLEMENTATION
+        FCF_TEST_API ClockDelay clockDelay() {
+          static ClockDelay delay = {0, 0, 0};
+          static std::once_flag flag;
+
+          std::call_once(flag, [&]() {
+              volatile size_t dummy=0;
+              size_t size = 1000000;
+              Duration::Options options;
+              options.iterations = size;
+              options.correction = 0;
+              Duration d(options);
+              d([&](){
+                ++dummy;
+              });
+              delay.iteration = d.average().count();
+              delay.iterationMin = d.min().count();
+
+              unsigned long long sum   = 0;
+              unsigned long long begin = SteadyClock()();
+              for(volatile size_t i = 0; i < size; ++i){
+                ++dummy;
+                unsigned long long t1 = SteadyClock()();
+                unsigned long long t2 = SteadyClock()();
+                sum = t2 - t1;
+              }
+              unsigned long long end = SteadyClock()();
+              delay.clock = ((end - begin)-sum) / size/2;
+          });
+
+          return delay;
+        }
+      #endif
+    }
+  }
+}
+ 
+namespace fcf {
+  namespace NTest {
 
     template <typename TClock>
     DurationBasic<TClock>::DurationBasic()
       : _timepoint(0)
       , _measurements({Measurement{}})
-      , _options(1LL, 10, 1LL, 0LL)
+      , _options(1LL, 10L, 1, 1LL, 0LL)
     {}
 
     template <typename TClock>
-    DurationBasic<TClock>::DurationBasic(unsigned long long a_iterations, unsigned long long a_measurementStep, unsigned long long a_warmup)
+    DurationBasic<TClock>::DurationBasic(unsigned long long a_iterations)
       : _timepoint(0)
       , _measurements({Measurement{}})
       , _options(std::max((long long)a_iterations, 1LL),
                  10,
-                 std::max((long long)a_measurementStep, 1LL),
-                 (long long)a_warmup
+                 1,
+                 1LL,
+                 0LL
                 )
     {}
 
@@ -3660,6 +3730,7 @@ namespace fcf {
       , _measurements({Measurement{}})
       , _options(std::max(a_options.iterations, 1LL),
                  a_options.histogramBins >= 0  ? std::max(a_options.histogramBins, 2)  : 10,
+                 a_options.correction == 0 ? 0 : 1,
                  std::max(a_options.measurementStep, 1LL),
                  std::max(a_options.warmup, 0LL)
                 )
@@ -3678,6 +3749,9 @@ namespace fcf {
       if (a_options.histogramBins >= 0) {
         _options.histogramBins = std::max(a_options.histogramBins, 2);
       }
+      if (a_options.correction >= 0) {
+        _options.correction = a_options.correction ? 1 : 0;
+      }
       if (a_options.measurementStep >= 0) {
         _options.measurementStep = std::max(a_options.measurementStep, 1LL);
       }
@@ -3688,7 +3762,14 @@ namespace fcf {
 
     template <typename TClock>
     void DurationBasic<TClock>::begin(const BeginOptions& a_options, int a_beginLevel, int a_endLevel) {
-      _prepare(std::max(a_beginLevel, a_endLevel-1));
+      int correction = a_options.correction != -1 ? a_options.correction : _options.correction;
+      if(correction) { 
+        NDetails::clockDelay();
+      }
+
+      TimePoint correctTimepoint = _clock();
+
+      _prepare(std::max(a_beginLevel, std::max(a_endLevel, 1)-1));
 
       size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
       size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
@@ -3698,10 +3779,11 @@ namespace fcf {
         if (m.pause) {
           m.pause = false;
           m.timepoint = timepoint;
+          m.correctTimepoint = correctTimepoint;
           m.options = a_options;
-          m.excludedTime = 0;
         }
       }
+
     }
 
     template <typename TClock>
@@ -3723,24 +3805,38 @@ namespace fcf {
     void DurationBasic<TClock>::end(int a_beginLevel, int a_endLevel) {
       TimePoint timepoint = _clock();
 
-      _prepare(std::max(a_beginLevel, a_endLevel-1));
+      _prepare(std::max(a_beginLevel, std::max(a_endLevel, 1) - 1));
 
-      size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
-      size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
+      size_t endLevel    = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
+      size_t startLevel  = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
+      unsigned long long calcBeginTime     = 0;
+      unsigned long long calcDuration      = 0;
+      unsigned long long correctionDelay   = 0;
       for(size_t i = startLevel; i < endLevel; ++i) {
         if (!_measurements[i].pause) {
           _measurements[i].pause = true;
-          TimeDuration rawDiff = timepoint - _measurements[i].timepoint;
-          TimeDuration diff = rawDiff > _measurements[i].excludedTime ? rawDiff - _measurements[i].excludedTime : TimeDuration();
+          int correction = _measurements[i].options.correction == -1 ? _measurements[i].options.correction : _options.correction;
+          TimeDuration exclude;
+          if (correction) {
+            correctionDelay = NDetails::clockDelay().clock;
+            exclude = correctionDelay;
+          } else {
+            exclude = 0;
+          }
+          TimeDuration diff    = timepoint > _measurements[i].timepoint ? timepoint - _measurements[i].timepoint : TimePoint{0};
+          diff                 = diff > exclude ? diff - exclude : TimeDuration();
 
           long long iterations = _measurements[i].options.iterations < 0 ? _options.iterations
-                                                                                 : _measurements[i].options.iterations;
-          int histogramBins        = _measurements[i].options.histogramBins < 0  ?  _options.histogramBins 
-                                                                                 : std::max(_measurements[i].options.histogramBins, 2);
+                                                                         : _measurements[i].options.iterations;
+          int histogramBins    = _measurements[i].options.histogramBins < 0  ?  _options.histogramBins 
+                                                                             : std::max(_measurements[i].options.histogramBins, 2);
 
 
           _measurements[i].duration += diff;
           _measurements[i].iteration += std::max(iterations, 1LL);
+
+          calcBeginTime = _measurements[i].correctTimepoint;
+          calcDuration  = diff.count();
 
           if (iterations) {
               TimeDuration avgDiff = diff / iterations;
@@ -3755,6 +3851,25 @@ namespace fcf {
           }
         }
       }
+
+      if (calcBeginTime && correctionDelay) {
+        TimePoint currentTimepoint  = _clock() + correctionDelay*2;
+        unsigned long long totalDuration = currentTimepoint - calcBeginTime;
+        unsigned long long excludedDiff  = totalDuration > calcDuration ? totalDuration - calcDuration : 0;
+        for(size_t i = 0; i < _measurements.size(); ++i) {
+          if (i >= a_beginLevel && i < a_endLevel) {
+            continue;
+          }
+          if (!_measurements[i].pause) {
+            TimePoint newTimepoint = _measurements[i].timepoint + excludedDiff;
+            if (newTimepoint > currentTimepoint){
+              newTimepoint = currentTimepoint;
+            }
+            _measurements[i].timepoint = newTimepoint;
+          }
+        }
+      }
+
     }
 
     template <typename TClock>
@@ -3805,13 +3920,15 @@ namespace fcf {
       size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
       size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
 
-      long long warmup          = a_options.warmup < 0 ? _options.warmup : a_options.warmup;
-      long long iterations      = a_options.iterations < 0 ? _options.iterations : a_options.iterations;
-      long long measurementStep = a_options.measurementStep < 0 ?  _options.measurementStep : std::max(a_options.measurementStep, 1LL);
-      int histogramBins         = a_options.histogramBins < 0 ?  _options.histogramBins : std::max(a_options.histogramBins, 2);
+      int correction                  = a_options.correction != -1    ? a_options.correction : _options.correction;
+      NDetails::ClockDelay clockDelay =  correction                   ? NDetails::clockDelay() : NDetails::ClockDelay{0, 0, 0};
+      long long warmup                = a_options.warmup < 0          ? _options.warmup : a_options.warmup;
+      long long iterations            = a_options.iterations < 0      ? _options.iterations : a_options.iterations;
+      long long measurementStep       = a_options.measurementStep < 0 ? _options.measurementStep : std::max(a_options.measurementStep, 1LL);
+      int histogramBins               = a_options.histogramBins < 0   ? _options.histogramBins : std::max(a_options.histogramBins, 2);
 
 
-      for(long long i = 0; i < warmup; ++i) {
+      for(volatile long long i = 0; i < warmup; ++i) {
         a_function();
       }
 
@@ -3822,26 +3939,35 @@ namespace fcf {
       bool isFirstMeasurement = true;
       TimeDuration min = 0;
       TimeDuration max = 0;
+      TimeDuration sum = 0;
       TimePoint beginTimepoint = _clock();
       TimePoint timepoint = beginTimepoint;
+      long long icount = 0;
 
-      for(long long i = 0; i < iterations; ++i) {
+      for(volatile long long i = 0; i < iterations; ++i) {
         a_function();
         if ((i + 1) % measurementStep == 0) {
           TimePoint currentTimestamp = _clock();
-          TimeDuration diff = (currentTimestamp - timepoint) / measurementStep;
+          ++icount;
+          TimeDuration tdiff  = currentTimestamp - timepoint;
+          TimeDuration delay  = clockDelay.clock*2;
+          TimeDuration tcdiff = correction ? (tdiff > delay ? tdiff - delay : 0) : tdiff;
+          TimeDuration diff  = tdiff / measurementStep;
+          TimeDuration cdiff = tcdiff / measurementStep;
           if (isFirstMeasurement) {
-            min = diff;
-            max = diff;
+            min = correction ? (diff > clockDelay.iterationMin ? diff - clockDelay.iterationMin : 0) : diff;
+            max = cdiff;
             isFirstMeasurement = false;
           } else {
-            min = std::min(diff, min);
-            max = std::max(diff, max);
+            TimeDuration cmin = correction ? (diff > clockDelay.iterationMin ? diff - clockDelay.iterationMin : 0) : diff;
+            min = std::min(cmin, min);
+            max = std::max(cdiff, max);
           }
+          sum += std::max(tcdiff, min * measurementStep);
           for(int level = a_beginLevel; level < a_endLevel; ++level) {
             _appendHistogram(level, diff, measurementStep, histogramBins);
           }
-          timepoint = currentTimestamp;
+          timepoint = _clock();
         }
       }
 
@@ -3850,7 +3976,7 @@ namespace fcf {
       unsigned long long remainder = iterations % measurementStep;
       if (remainder){
         TimeDuration remainderDiff = (endTimepoint - timepoint) / remainder;
-        std::cout << remainderDiff << std::endl;
+        remainderDiff = correction ? ( remainderDiff > clockDelay.iteration ?  remainderDiff - clockDelay.iteration : 0) : remainderDiff;
         if (isFirstMeasurement) {
           min = remainderDiff;
           max = remainderDiff;
@@ -3858,16 +3984,15 @@ namespace fcf {
           min = std::min(remainderDiff, min);
           max = std::max(remainderDiff, max);
         }
+        remainderDiff = std::max(remainderDiff, min);
+        sum += remainderDiff;
         for(int level = a_beginLevel; level < a_endLevel; ++level) {
           _appendHistogram(level, remainderDiff, remainder, histogramBins);
         }
       }
 
-
-      TimeDuration diff = endTimepoint - beginTimepoint;
-
       for(size_t i = startLevel; i < endLevel; ++i) {
-        _measurements[i].duration   += diff;
+        _measurements[i].duration   += sum;
         if (!_measurements[i].iteration) {
           _measurements[i].min        = min;
           _measurements[i].max        = max;
@@ -3876,6 +4001,22 @@ namespace fcf {
           _measurements[i].max        = std::max(_measurements[i].max, max);
         }
         _measurements[i].iteration += iterations;
+      }
+
+      endTimepoint = _clock();
+      unsigned long long excludedDiff = endTimepoint - beginTimepoint;
+      excludedDiff                    = excludedDiff > sum ? excludedDiff - sum : 0;
+      for(size_t i = 0; i < _measurements.size(); ++i) {
+        if (i >= a_beginLevel && i < a_endLevel){
+          continue;
+        }
+        if (!_measurements[i].pause) {
+          TimePoint newTimepoint = _measurements[i].timepoint + excludedDiff;
+          if (newTimepoint > endTimepoint) {
+            newTimepoint = endTimepoint;
+          }
+          _measurements[i].timepoint = newTimepoint;
+        }
       }
     }
 
@@ -3914,11 +4055,11 @@ namespace fcf {
       if ((size_t)a_level < _measurements.size()) {
         const Measurement& m = _measurements[(size_t)a_level];
         if (m.pause) {
-          return m.duration > m.excludedTime ? m.duration - m.excludedTime : TimeDuration();
+          return m.duration;
         } else {
           TimeDuration current = _clock() - m.timepoint;
           TimeDuration total = m.duration + current;
-          return total > m.excludedTime ? total - m.excludedTime : TimeDuration();
+          return total;
         }
       } else {
         return 0;
@@ -3966,8 +4107,8 @@ namespace fcf {
 
     template <typename TClock>
     inline void DurationBasic<TClock>::_prepare(size_t a_step){
-      while (a_step >= _measurements.size()){
-        _measurements.push_back(Measurement());
+      if (a_step >= _measurements.size()){
+        _measurements.resize(a_step+1);
       }
     }
 
@@ -3980,23 +4121,10 @@ namespace fcf {
       if (!_measurements[a_level].histogram.overflow(a_value, true) && (_measurements[a_level].histogram.size() == a_histogramBins || a_histogramBins < 0)) {
         _measurements[a_level].histogram.append(a_value, a_count);
       } else {
-        TimePoint t1 = _clock();
         if (a_histogramBins >= 0) {
           _measurements[a_level].histogram.size(a_histogramBins);
         }
         _measurements[a_level].histogram.append(a_value, a_count);
-        TimePoint t2 = _clock();
-
-        TimeDuration diff = t2 - t1;
-
-        for(size_t i = 0; i < _measurements.size(); ++i) {
-          if (i >= a_ignoreStart && i < a_ignoreEnd) {
-            continue;
-          }
-          if (!_measurements[i].pause) {
-            _measurements[i].excludedTime += diff;
-          }
-        }
       }
     }
 
@@ -4900,6 +5028,8 @@ namespace fcf {
         FCF_TEST_API void runImpl(const Options& a_options, bool a_enableThrow, bool* a_errorPtr) {
           static std::recursive_mutex mutex;
           static bool globalRunState = false;
+
+          NDetails::clockDelay();
 
           {
             std::lock_guard<std::recursive_mutex> lock(mutex);
