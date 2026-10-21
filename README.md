@@ -353,7 +353,7 @@ The new version of the logger supports:
 `fcf::NTest::Duration` is a typedef for `fcf::NTest::DurationBasic<fcf::NTest::SteadyClock>`. It provides a high-precision benchmarking interface for measuring code execution time.
 
 ### Constructors
-- **`Duration(unsigned long long a_iterations, unsigned long long a_measurementStep = 1, unsigned long long a_warmup = 0)`**
+- **`Duration(unsigned long long a_iterations)`**
   - `a_iterations`: Total number of iterations to perform.
   - `a_measurementStep`: Number of iterations per measurement step.
   - `a_warmup`: Number of warmup iterations before actual measurement.
