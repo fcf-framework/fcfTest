@@ -7,8 +7,30 @@ FCF_TEST_GROUP_ORDER("cmd",     FCF_TEST_ORDER_DEFAULT + 1);
 FCF_TEST_GROUP_ORDER("cmdRun",  FCF_TEST_ORDER_DEFAULT + 2);
 
 int main(int a_argc, char* a_argv[]) {
+  bool help = false;
+  bool all  = false;
+
+  for(int i = 1; i < a_argc; ++i){
+    if (std::strcmp("--test-help", a_argv[i]) == 0){
+      help = true;
+    } else if (std::strcmp("--all", a_argv[i]) == 0){
+      all = true;
+    }
+  }
+
+  if (help) {
+    std::cout << "Application options: " << std::endl;
+    std::cout << "  --all - Run all tests (with measurement tests)" << std::endl;
+    std::cout << std::endl;
+  }
+
   bool error = false;
   fcf::NTest::Options options;
+
+  if (!all) {
+    options.ignoreSelectors.push_back( fcf::NTest::Options::Selector{{}, {"duration-measurement"}, {} } );
+  }
+
   options.ignoreSelectors.push_back(
     fcf::NTest::Options::Selector{
       {

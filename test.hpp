@@ -1799,21 +1799,28 @@ namespace fcf {
           long long iterations;
           /** @brief The number of bins for the histogram. If negative, the histogram size is determined automatically. */
           int       histogramBins;
-          /** @brief If this field is set to one, a correction to the measured time is applied (excluding the time taken by internal operations). */
+
+          double outlierThreshold;
+
           int correction;
+
 
           /** @brief Default constructor. Initializes iterations to 1. */
           BeginOptions()
             : iterations(-1)
             , histogramBins(-1)
+            , outlierThreshold(-1)
             , correction(-1)
           {}
+
           /** @brief Constructor with specified iteration count. @param a_iterations Number of iterations. */
-          BeginOptions(long long a_iterations, int a_histogramBins = -1, int a_correction = -1)
+          BeginOptions(long long a_iterations, int a_histogramBins = -1, double a_outlierThreshold = -1, int a_correction = -1)
             : iterations(a_iterations)
             , histogramBins(a_histogramBins)
+            , outlierThreshold(a_outlierThreshold)
             , correction(a_correction)
-          {}
+          {
+          }
         };
 
         /**
@@ -1837,8 +1844,9 @@ namespace fcf {
            * @param a_measurementStep Step size for measurements.
            * @param a_warmup Number of warmup iterations.
            */
-          Options(unsigned long long a_iterations, int a_histogramBins = -1, int a_correction = -1, unsigned long long a_measurementStep = -1, unsigned long long a_warmup = -1)
-            : BeginOptions(a_iterations, a_histogramBins, a_correction)
+          Options(unsigned long long a_iterations, int a_histogramBins = -1, double a_outlierThreshold = -1,
+                  int a_correction = -1, unsigned long long a_measurementStep = -1, unsigned long long a_warmup = -1)
+            : BeginOptions(a_iterations, a_histogramBins, a_outlierThreshold, a_correction)
             , measurementStep(a_measurementStep)
             , warmup(a_warmup)
           {}
@@ -1850,6 +1858,7 @@ namespace fcf {
           TimePoint           timepoint;
           TimePoint           correctTimepoint;
           unsigned long long  iteration;
+          unsigned long long  outlierCounter;
           TimeDuration        min;
           TimeDuration        max;
           bool                pause;
@@ -1861,6 +1870,7 @@ namespace fcf {
             , timepoint(0)
             , correctTimepoint(0)
             , iteration(0)
+            , outlierCounter(0)
             , min(0)
             , max(0)
             , pause(true)
@@ -3156,7 +3166,8 @@ namespace fcf {
       }
       TItem range = a_max - a_min + 1;
       TItem leftValue  = a_min + (TItem)(((double)a_index / a_size) * range);
-      TItem rightValue = a_min + (TItem)(((double)(a_index + 1) / a_size) * range) - 1;
+      TItem rightValue = (TItem)(((double)(a_index + 1) / a_size) * range);
+      rightValue       = rightValue ? a_min + rightValue - 1 : a_min + rightValue;
 
       if (leftValue < a_min) leftValue = a_min;
       if (rightValue > a_max) rightValue = a_max;
@@ -3672,7 +3683,7 @@ namespace fcf {
 
           std::call_once(flag, [&]() {
               volatile size_t dummy=0;
-              size_t size = 1000000;
+              size_t size = 10000;
               Duration::Options options;
               options.iterations = size;
               options.correction = 0;
@@ -3709,7 +3720,7 @@ namespace fcf {
     DurationBasic<TClock>::DurationBasic()
       : _timepoint(0)
       , _measurements({Measurement{}})
-      , _options(1LL, 10L, 1, 1LL, 0LL)
+      , _options(1LL, 10L, 0, 1, 1LL, 0LL)
     {}
 
     template <typename TClock>
@@ -3718,6 +3729,7 @@ namespace fcf {
       , _measurements({Measurement{}})
       , _options(std::max((long long)a_iterations, 1LL),
                  10,
+                 0,
                  1,
                  1LL,
                  0LL
@@ -3730,11 +3742,13 @@ namespace fcf {
       , _measurements({Measurement{}})
       , _options(std::max(a_options.iterations, 1LL),
                  a_options.histogramBins >= 0  ? std::max(a_options.histogramBins, 2)  : 10,
+                 a_options.outlierThreshold >= 0 ? a_options.outlierThreshold : 0,
                  a_options.correction == 0 ? 0 : 1,
                  std::max(a_options.measurementStep, 1LL),
                  std::max(a_options.warmup, 0LL)
                 )
-    {}
+    {
+    }
 
     template <typename TClock>
     typename DurationBasic<TClock>::Options DurationBasic<TClock>::options() const {
@@ -3748,6 +3762,9 @@ namespace fcf {
       }
       if (a_options.histogramBins >= 0) {
         _options.histogramBins = std::max(a_options.histogramBins, 2);
+      }
+      if (a_options.outlierThreshold >= 0) {
+        _options.outlierThreshold = a_options.outlierThreshold;
       }
       if (a_options.correction >= 0) {
         _options.correction = a_options.correction ? 1 : 0;
@@ -3826,17 +3843,31 @@ namespace fcf {
           TimeDuration diff    = timepoint > _measurements[i].timepoint ? timepoint - _measurements[i].timepoint : TimePoint{0};
           diff                 = diff > exclude ? diff - exclude : TimeDuration();
 
-          long long iterations = _measurements[i].options.iterations < 0 ? _options.iterations
-                                                                         : _measurements[i].options.iterations;
-          int histogramBins    = _measurements[i].options.histogramBins < 0  ?  _options.histogramBins 
-                                                                             : std::max(_measurements[i].options.histogramBins, 2);
-
-
-          _measurements[i].duration += diff;
-          _measurements[i].iteration += std::max(iterations, 1LL);
+          long long iterations = _measurements[i].options.iterations < 0          ? _options.iterations
+                                                                                  : _measurements[i].options.iterations;
+          int histogramBins    = _measurements[i].options.histogramBins < 0       ?  _options.histogramBins 
+                                                                                  : std::max(_measurements[i].options.histogramBins, 2);
+          double outlierThreshold = _measurements[i].options.outlierThreshold < 0 ? _options.outlierThreshold
+                                                                                  : _measurements[i].options.outlierThreshold;
 
           calcBeginTime = _measurements[i].correctTimepoint;
           calcDuration  = diff.count();
+
+          if (_measurements[i].min != _measurements[i].max) {
+            if (diff < _measurements[i].min || diff > _measurements[i].max) {
+              if (((double)_measurements[i].outlierCounter / (double)_measurements[i].iteration) >= outlierThreshold) {
+                _measurements[i].outlierCounter = 0;
+              } else {
+                _measurements[i].outlierCounter += iterations;
+                continue;
+              }
+            }
+          }
+
+          _measurements[i].iteration += iterations;
+
+          _measurements[i].duration += diff;
+          _measurements[i].iteration += std::max(iterations, 1LL);
 
           if (iterations) {
               TimeDuration avgDiff = diff / iterations;
@@ -3927,6 +3958,8 @@ namespace fcf {
       long long measurementStep       = a_options.measurementStep < 0 ? _options.measurementStep : std::max(a_options.measurementStep, 1LL);
       int histogramBins               = a_options.histogramBins < 0   ? _options.histogramBins : std::max(a_options.histogramBins, 2);
 
+      double outlierThreshold = a_options.outlierThreshold < 0 ? _options.outlierThreshold
+                                                               : a_options.outlierThreshold;
 
       for(volatile long long i = 0; i < warmup; ++i) {
         a_function();
@@ -3942,39 +3975,58 @@ namespace fcf {
       TimeDuration sum = 0;
       TimePoint beginTimepoint = _clock();
       TimePoint timepoint = beginTimepoint;
-      long long icount = 0;
+      long long counter = 0;
+      long long outlierCounter = 0;
+
+      TimeDuration delay = clockDelay.clock*2;
 
       for(volatile long long i = 0; i < iterations; ++i) {
         a_function();
         if ((i + 1) % measurementStep == 0) {
           TimePoint currentTimestamp = _clock();
-          ++icount;
           TimeDuration tdiff  = currentTimestamp - timepoint;
-          TimeDuration delay  = clockDelay.clock*2;
+          delay  = std::min(delay, tdiff);
           TimeDuration tcdiff = correction ? (tdiff > delay ? tdiff - delay : 0) : tdiff;
           TimeDuration diff  = tdiff / measurementStep;
           TimeDuration cdiff = tcdiff / measurementStep;
+
+          ++counter;
+
+          if (min != max) {
+            if (cdiff < min || cdiff > max) {
+              if (((double)outlierCounter / (double)counter) >= outlierThreshold) {
+                outlierCounter = 0;
+              } else {
+                ++outlierCounter;
+                i -= measurementStep;
+                timepoint = _clock();
+                continue;
+              }
+            }
+          }
+
           if (isFirstMeasurement) {
-            min = correction ? (diff > clockDelay.iterationMin ? diff - clockDelay.iterationMin : 0) : diff;
+            min = cdiff;
             max = cdiff;
             isFirstMeasurement = false;
           } else {
-            TimeDuration cmin = correction ? (diff > clockDelay.iterationMin ? diff - clockDelay.iterationMin : 0) : diff;
-            min = std::min(cmin, min);
+            min = std::min(cdiff, min);
             max = std::max(cdiff, max);
           }
-          sum += std::max(tcdiff, min * measurementStep);
+
+          sum += cdiff * measurementStep;
           for(int level = a_beginLevel; level < a_endLevel; ++level) {
-            _appendHistogram(level, diff, measurementStep, histogramBins);
+            _appendHistogram(level, cdiff, measurementStep, histogramBins);
           }
+
           timepoint = _clock();
         }
       }
 
-      TimePoint endTimepoint = _clock();
-
+      TimePoint endTimepoint;
       unsigned long long remainder = iterations % measurementStep;
       if (remainder){
+        endTimepoint = _clock();
         TimeDuration remainderDiff = (endTimepoint - timepoint) / remainder;
         remainderDiff = correction ? ( remainderDiff > clockDelay.iteration ?  remainderDiff - clockDelay.iteration : 0) : remainderDiff;
         if (isFirstMeasurement) {
@@ -3984,7 +4036,9 @@ namespace fcf {
           min = std::min(remainderDiff, min);
           max = std::max(remainderDiff, max);
         }
+
         remainderDiff = std::max(remainderDiff, min);
+
         sum += remainderDiff;
         for(int level = a_beginLevel; level < a_endLevel; ++level) {
           _appendHistogram(level, remainderDiff, remainder, histogramBins);
@@ -4458,6 +4512,10 @@ namespace fcf {
 
         FCF_TEST_API ECmdMode cmdRunImpl(Options& a_dstOptions, int a_argc, const char* const* a_argv, ECmdRunMode a_runMode, bool a_enableThrow, bool* a_errorPtr) {
           ECmdMode mode = CM_NONE;
+
+          if (a_errorPtr) {
+            *a_errorPtr = false;
+          }
 
           try {
             std::vector<std::string> args = NDetails::parseArgs(a_argc, (const char* const*)a_argv);

@@ -32,6 +32,7 @@ add_executable(fcf-test-test
                   tests/duration.cpp
                   tests/durationNested.cpp
                   tests/duration-measurement.cpp
+                  tests/duration-outlier.cpp
                   tests/export.cpp
                   tests/fixture.cpp
                   tests/fixture-error.cpp

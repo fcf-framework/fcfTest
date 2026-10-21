@@ -324,14 +324,14 @@ FCF_TEST_DEFINE("fcfTest", "duration", "duration operator()"){
 
     FCF_TEST(calls == 2, calls);
     // duration 1: 2
-    // duration 2: (1+2+3+4+5 + 6 (start) + 7(iteratrion)) - (1+2+3+4+5+6) = 7
-    FCF_TEST(duration.duration() == 9, duration.duration());
+    // duration 2: (1+2+3+4 + 5 (start) + 6(iteratrion)) - (1+2+3+4+5) = 6
+    FCF_TEST(duration.duration() == 8, duration.duration());
     FCF_TEST(duration.average() == 4, duration.average());
     FCF_TEST(duration.min() == 2, duration.min());
-    FCF_TEST(duration.max() == 7, duration.max());
+    FCF_TEST(duration.max() == 6, duration.max());
     FCF_TEST(duration.histogram(0).counter() == 2, duration.histogram(0).counter());
     FCF_TEST(duration.histogram(0).min() == 2, duration.histogram(0).min());
-    FCF_TEST(duration.histogram(0).max() == 7, duration.histogram(0).max());
+    FCF_TEST(duration.histogram(0).max() == 6, duration.histogram(0).max());
   }
 
   {
