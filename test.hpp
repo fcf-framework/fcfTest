@@ -4067,7 +4067,7 @@ namespace fcf {
           if (min != max && outlierThreshold != 0) {
             if (cdiff < min || cdiff > max) {
               Outlier& outlier = cdiff <= min ? _loutlier : _routlier;
-              double ocounter = std::max((double)counter, 20.);
+              double ocounter = std::max((double)counter, std::min(20., (double)iterations/2));
               double doverflow = (double)outlier.counter() / ocounter;
               if (doverflow >= outlierThreshold) {
                 Outlier& outlier = cdiff <= min ? _loutlier : _routlier;
