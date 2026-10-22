@@ -76,7 +76,7 @@ FCF_TEST_DEFINE("fcfTest", "duration-measurement", "duration-measurement-release
   {
     //(unsigned long long a_iterations, unsigned long long a_measurementStep, unsigned long long a_warmup, bool a_ignoreCorrection)
     size_t size = 10;
-    size_t iterations = 100000;
+    size_t iterations = 10000;
     size_t innerLoopIterations = 150;
     fcf::NTest::TimeDuration td;
     fcf::NTest::TimeDuration tdCorrection;
@@ -84,6 +84,7 @@ FCF_TEST_DEFINE("fcfTest", "duration-measurement", "duration-measurement-release
     fcf::NTest::TimeDuration tdClear;
 
     volatile size_t j = 0;
+    volatile size_t k = 0;
     for(size_t i = 0; i < size; ++i){
       fcf::NTest::Duration::Options options;
       options.correction = 0;
@@ -92,7 +93,7 @@ FCF_TEST_DEFINE("fcfTest", "duration-measurement", "duration-measurement-release
       duration([&](){
         for(j = 0; j < innerLoopIterations; ++j){ ++dummy; }
       });
-      td = duration.duration();
+      td += duration.duration();
     }
     for(size_t i = 0; i < size; ++i){
       fcf::NTest::Duration::Options options;
@@ -101,19 +102,20 @@ FCF_TEST_DEFINE("fcfTest", "duration-measurement", "duration-measurement-release
       duration([&](){
         for(j = 0; j < innerLoopIterations; ++j){ ++dummy; }
       });
-      tdCorrection = duration.duration();
+      tdCorrection += duration.duration();
     }
     for(volatile size_t i = 0; i < size; ++i){
       fcf::NTest::Duration::Options options;
       options.correction = 0;
+      options.measurementStep = 1000;
       options.iterations = iterations;
       fcf::NTest::Duration duration(options);
       duration([&](){
-        for(volatile size_t j = 0; j < innerLoopIterations; ++j){
+        for(j = 0; j < innerLoopIterations; ++j){
           ++dummy;
         }
       });
-      tdAvgCorrection = duration.duration();
+      tdAvgCorrection += duration.duration();
     }
 
     for(volatile size_t i = 0; i < size; ++i){
@@ -121,14 +123,14 @@ FCF_TEST_DEFINE("fcfTest", "duration-measurement", "duration-measurement-release
       options.correction = 0;
       fcf::NTest::Duration duration(options);
       duration.begin();
-      for(volatile size_t k = 0; k < iterations; ++k){
-        for(volatile size_t j = 0; j < innerLoopIterations; ++j){
+      for(k = 0; k < iterations; ++k){
+        for(j = 0; j < innerLoopIterations; ++j){
           ++dummy;
         }
       }
       duration.end();
 
-      tdClear = duration.duration();
+      tdClear += duration.duration();
     }
 
 

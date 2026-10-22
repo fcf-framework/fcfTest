@@ -1853,6 +1853,69 @@ namespace fcf {
         };
 
       private:
+        class Outlier {
+            struct Section {
+              TimeDuration value;
+              size_t       count;
+              Section() 
+                : value(0)
+                , count(0) 
+              {}
+              Section(TimeDuration a_value, size_t a_count) 
+                : value(a_value)
+                , count(a_count)
+              {}
+            };
+          public:
+            Outlier(bool a_isLeft) 
+              : _left(a_isLeft)
+              , _counter (0) 
+            { }
+
+            long long counter() {
+              return _counter;
+            }
+
+            void append(TimeDuration a_duration) {
+              ++_counter;
+              if (!_mem[0].count){
+                _mem[0] = Section{a_duration, 1};
+                _mem[1] = Section{a_duration, 1};
+                _mem[2] = Section{a_duration, 1};
+              } else {
+                TimeDuration c = (_mem[0].value * _mem[0].count + _mem[2].value * _mem[2].count) / (_mem[0].count + _mem[2].count);
+                size_t leftIndex  = a_duration < c ? 0 : 1;
+                size_t rightIndex = a_duration < c ? 1 : 2;
+                size_t index      = _mem[leftIndex].count < _mem[rightIndex].count ? leftIndex : rightIndex;
+                ++_mem[index].count;
+                if (_mem[0].value == _mem[1].value && _mem[1].value == _mem[2].value) {
+                  _mem[leftIndex].value = a_duration;
+                  _mem[rightIndex].value = a_duration;
+                }
+                if (index == 0) {
+                   _mem[index].value = std::min(a_duration, _mem[index].value);
+                } else if (index == 2){
+                  _mem[index].value = std::max(a_duration, _mem[index].value);
+                } else {
+                  if (_left) {
+                    _mem[index].value =  std::max(_mem[index].value, a_duration);
+                  } else {
+                    _mem[index].value =  std::min(_mem[index].value, a_duration);
+                  }
+                }
+              }
+            }
+
+            TimeDuration get(){
+              return _mem[1].value;
+            }
+
+          private:
+            Section    _mem[3];
+            bool       _left;
+            long long  _counter;
+        };
+
         struct Measurement {
           TimeDuration        duration;
           TimePoint           timepoint;
@@ -2011,6 +2074,8 @@ namespace fcf {
         std::vector<Measurement>  _measurements;
         mutable TClock            _clock;
         Options                   _options;
+        Outlier                   _loutlier;
+        Outlier                   _routlier;
     };
 
     /**
@@ -3721,6 +3786,8 @@ namespace fcf {
       : _timepoint(0)
       , _measurements({Measurement{}})
       , _options(1LL, 10L, 0, 1, 1LL, 0LL)
+      , _loutlier(true)
+      , _routlier(false)
     {}
 
     template <typename TClock>
@@ -3734,6 +3801,8 @@ namespace fcf {
                  1LL,
                  0LL
                 )
+      , _loutlier(true)
+      , _routlier(false)
     {}
 
     template <typename TClock>
@@ -3747,6 +3816,8 @@ namespace fcf {
                  std::max(a_options.measurementStep, 1LL),
                  std::max(a_options.warmup, 0LL)
                 )
+      , _loutlier(true)
+      , _routlier(false)
     {
     }
 
@@ -3923,6 +3994,8 @@ namespace fcf {
       for(size_t i = startLevel; i < endLevel; ++i) {
         _measurements[i] = Measurement();
       }
+      _loutlier = Outlier(true);
+      _routlier = Outlier(false);
     }
 
     template <typename TClock>
@@ -3976,7 +4049,6 @@ namespace fcf {
       TimePoint beginTimepoint = _clock();
       TimePoint timepoint = beginTimepoint;
       long long counter = 0;
-      long long outlierCounter = 0;
 
       TimeDuration delay = clockDelay.clock*2;
 
@@ -3994,11 +4066,17 @@ namespace fcf {
 
           if (min != max) {
             if (cdiff < min || cdiff > max) {
-              if (((double)outlierCounter / (double)counter) >= outlierThreshold) {
-                outlierCounter = 0;
+              Outlier& outlier = cdiff <= min ? _loutlier : _routlier;
+              double ocounter = std::max((double)counter, 20.);
+              double doverflow = (double)outlier.counter() / ocounter;
+              if (doverflow >= outlierThreshold) {
+                Outlier& outlier = cdiff <= min ? _loutlier : _routlier;
+                cdiff = outlier.get();
+                outlier = Outlier(cdiff <= min);
               } else {
-                ++outlierCounter;
                 i -= measurementStep;
+                Outlier& outlier = cdiff <= min ? _loutlier : _routlier;
+                outlier.append(cdiff);
                 timepoint = _clock();
                 continue;
               }
