@@ -33,6 +33,8 @@ Official page with documentation: https://fcf-framework.is-a-fullstack.dev/cpp-l
   - [Logging System: Monitoring and Debugging](https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/pages/introduction/log) - A detailed guide on how to use the built-in logging system to monitor test execution and debug complex scenarios.
   - [Logging System: Customizing Logger Prefixes](https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/pages/introduction/log-prefix) - A comprehensive guide on how to create static and dynamic prefixes for the fcfTest logger, including a deep dive into the bitmask-based message category system.
   - [Logging System: Mastering Custom Log Formats](https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/pages/introduction/log-format) - Learn how to implement custom log formatting logic and use message categories to create intelligent, context-aware log outputs.
+  - [Logging System: Custom Targets and Multi-Stream Output](https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/pages/introduction/log-target) - Learn how to extend the fcfTest logging system by creating custom output targets, managing multiple simultaneous streams with different formats, and controlling default formatting.
+  - [Benchmarking: High-Precision Performance Measurement](https://fcf-framework.is-a-fullstack.dev/cpp-libraries/fcfTest/pages/introduction/duration) - A detailed guide on performing high-precision micro-benchmarking, using multi-level measurements, warmup cycles, and statistical analysis with histograms.
 
 ### Friendly:
 If something doesn't work for you, please report it quickly in Issues and we'll fix it!
