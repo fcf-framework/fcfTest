@@ -3785,7 +3785,7 @@ namespace fcf {
     DurationBasic<TClock>::DurationBasic()
       : _timepoint(0)
       , _measurements({Measurement{}})
-      , _options(1LL, 10L, 0, 1, 1LL, 0LL)
+      , _options(1LL, 10L, 0, 0, 1LL, 0LL)
       , _loutlier(true)
       , _routlier(false)
     {}
@@ -3797,7 +3797,7 @@ namespace fcf {
       , _options(std::max((long long)a_iterations, 1LL),
                  10,
                  0,
-                 1,
+                 0,
                  1LL,
                  0LL
                 )
@@ -3812,7 +3812,7 @@ namespace fcf {
       , _options(std::max(a_options.iterations, 1LL),
                  a_options.histogramBins >= 0  ? std::max(a_options.histogramBins, 2)  : 10,
                  a_options.outlierThreshold >= 0 ? a_options.outlierThreshold : 0,
-                 a_options.correction == 0 ? 0 : 1,
+                 a_options.correction > 0 ? 1 : 0,
                  std::max(a_options.measurementStep, 1LL),
                  std::max(a_options.warmup, 0LL)
                 )

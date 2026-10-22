@@ -30,7 +30,7 @@ FCF_TEST_DEFINE("fcfTest", "duration-measurement", "duration-outlier"){
     FCF_TEST(bench.max() < 1000*1000, bench.max());
 
   }
-  
+
   {
     fcf::NTest::Duration::Options options;
     options.iterations = 10000;
@@ -43,6 +43,6 @@ FCF_TEST_DEFINE("fcfTest", "duration-measurement", "duration-outlier"){
     //fcf::NTest::log() << duration.histogram().toBarChart() << std::endl;
     //fcf::NTest::log() << duration.histogram().toTable() << std::endl;
   }
-  
+
 }
 
