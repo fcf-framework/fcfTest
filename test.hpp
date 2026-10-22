@@ -4025,7 +4025,7 @@ namespace fcf {
       size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
 
       int correction                  = a_options.correction != -1    ? a_options.correction : _options.correction;
-      NDetails::ClockDelay clockDelay =  correction                   ? NDetails::clockDelay() : NDetails::ClockDelay{0, 0, 0};
+      NDetails::ClockDelay clockDelay = correction                   ? NDetails::clockDelay() : NDetails::ClockDelay{0, 0, 0};
       long long warmup                = a_options.warmup < 0          ? _options.warmup : a_options.warmup;
       long long iterations            = a_options.iterations < 0      ? _options.iterations : a_options.iterations;
       long long measurementStep       = a_options.measurementStep < 0 ? _options.measurementStep : std::max(a_options.measurementStep, 1LL);
@@ -4064,7 +4064,7 @@ namespace fcf {
 
           ++counter;
 
-          if (min != max) {
+          if (min != max && outlierThreshold != 0) {
             if (cdiff < min || cdiff > max) {
               Outlier& outlier = cdiff <= min ? _loutlier : _routlier;
               double ocounter = std::max((double)counter, 20.);

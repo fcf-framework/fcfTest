@@ -97,6 +97,7 @@ FCF_TEST_DEFINE("fcfTest", "duration-measurement", "duration-measurement-release
     }
     for(size_t i = 0; i < size; ++i){
       fcf::NTest::Duration::Options options;
+      options.correction = 1;
       options.iterations = iterations;
       fcf::NTest::Duration duration(options);
       duration([&](){
