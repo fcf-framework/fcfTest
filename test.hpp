@@ -3918,22 +3918,9 @@ namespace fcf {
                                                                                   : _measurements[i].options.iterations;
           int histogramBins    = _measurements[i].options.histogramBins < 0       ?  _options.histogramBins 
                                                                                   : std::max(_measurements[i].options.histogramBins, 2);
-          double outlierThreshold = _measurements[i].options.outlierThreshold < 0 ? _options.outlierThreshold
-                                                                                  : _measurements[i].options.outlierThreshold;
 
           calcBeginTime = _measurements[i].correctTimepoint;
           calcDuration  = diff.count();
-
-          if (_measurements[i].min != _measurements[i].max) {
-            if (diff < _measurements[i].min || diff > _measurements[i].max) {
-              if (((double)_measurements[i].outlierCounter / (double)_measurements[i].iteration) >= outlierThreshold) {
-                _measurements[i].outlierCounter = 0;
-              } else {
-                _measurements[i].outlierCounter += iterations;
-                continue;
-              }
-            }
-          }
 
           _measurements[i].iteration += iterations;
 
