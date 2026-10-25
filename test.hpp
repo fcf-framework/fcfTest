@@ -66,6 +66,7 @@
 #include <list>
 #include <map>
 #include <vector>
+#include <queue>
 #include <set>
 #include <mutex>
 
@@ -1853,67 +1854,45 @@ namespace fcf {
         };
 
       private:
-        class Outlier {
-            struct Section {
-              TimeDuration value;
-              size_t       count;
-              Section() 
-                : value(0)
-                , count(0) 
-              {}
-              Section(TimeDuration a_value, size_t a_count) 
-                : value(a_value)
-                , count(a_count)
-              {}
-            };
-          public:
-            Outlier(bool a_isLeft) 
-              : _left(a_isLeft)
-              , _counter (0) 
-            { }
 
-            long long counter() {
-              return _counter;
-            }
+        class Outlier {
+        public:
+            Outlier(bool a_isLeft) : _left(a_isLeft) {}
 
             void append(TimeDuration a_duration) {
-              ++_counter;
-              if (!_mem[0].count){
-                _mem[0] = Section{a_duration, 1};
-                _mem[1] = Section{a_duration, 1};
-                _mem[2] = Section{a_duration, 1};
-              } else {
-                TimeDuration c = (_mem[0].value * _mem[0].count + _mem[2].value * _mem[2].count) / (_mem[0].count + _mem[2].count);
-                size_t leftIndex  = a_duration < c ? 0 : 1;
-                size_t rightIndex = a_duration < c ? 1 : 2;
-                size_t index      = _mem[leftIndex].count < _mem[rightIndex].count ? leftIndex : rightIndex;
-                ++_mem[index].count;
-                if (_mem[0].value == _mem[1].value && _mem[1].value == _mem[2].value) {
-                  _mem[leftIndex].value = a_duration;
-                  _mem[rightIndex].value = a_duration;
-                }
-                if (index == 0) {
-                   _mem[index].value = std::min(a_duration, _mem[index].value);
-                } else if (index == 2){
-                  _mem[index].value = std::max(a_duration, _mem[index].value);
+                if (_left_heap.empty() || a_duration <= _left_heap.top()) {
+                    _left_heap.push(a_duration);
                 } else {
-                  if (_left) {
-                    _mem[index].value =  std::max(_mem[index].value, a_duration);
-                  } else {
-                    _mem[index].value =  std::min(_mem[index].value, a_duration);
-                  }
+                    _right_heap.push(a_duration);
                 }
-              }
+
+                if (_left_heap.size() > _right_heap.size() + 1) {
+                    _right_heap.push(_left_heap.top());
+                    _left_heap.pop();
+                } else if (_right_heap.size() > _left_heap.size()) {
+                    _left_heap.push(_right_heap.top());
+                    _right_heap.pop();
+                }
             }
 
-            TimeDuration get(){
-              return _mem[1].value;
+            long long counter() const { 
+                return _left_heap.size() + _right_heap.size(); 
             }
 
-          private:
-            Section    _mem[3];
-            bool       _left;
-            long long  _counter;
+            TimeDuration get() const {
+                if (_left_heap.empty()) {
+                  return TimeDuration(0);
+                }
+                if (_left_heap.size() == _right_heap.size()) {
+                    return _left ? _left_heap.top() : (_left_heap.top() + _right_heap.top()) / 2;
+                }
+                return _left_heap.top();
+            }
+
+        private:
+            bool _left;
+            std::priority_queue<TimeDuration> _left_heap;
+            std::priority_queue<TimeDuration, std::vector<TimeDuration>, std::greater<TimeDuration>> _right_heap;
         };
 
         struct Measurement {
@@ -4012,7 +3991,7 @@ namespace fcf {
       size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
 
       int correction                  = a_options.correction != -1    ? a_options.correction : _options.correction;
-      NDetails::ClockDelay clockDelay = correction                   ? NDetails::clockDelay() : NDetails::ClockDelay{0, 0, 0};
+      NDetails::ClockDelay clockDelay = correction                    ? NDetails::clockDelay() : NDetails::ClockDelay{0, 0, 0};
       long long warmup                = a_options.warmup < 0          ? _options.warmup : a_options.warmup;
       long long iterations            = a_options.iterations < 0      ? _options.iterations : a_options.iterations;
       long long measurementStep       = a_options.measurementStep < 0 ? _options.measurementStep : std::max(a_options.measurementStep, 1LL);
@@ -4058,8 +4037,8 @@ namespace fcf {
               double doverflow = (double)outlier.counter() / ocounter;
               if (doverflow >= outlierThreshold) {
                 Outlier& outlier = cdiff <= min ? _loutlier : _routlier;
-                cdiff = outlier.get();
-                outlier = Outlier(cdiff <= min);
+                cdiff            = outlier.get();
+                outlier          = Outlier(cdiff <= min);
               } else {
                 i -= measurementStep;
                 Outlier& outlier = cdiff <= min ? _loutlier : _routlier;
