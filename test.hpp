@@ -3882,7 +3882,7 @@ namespace fcf {
       for(size_t i = startLevel; i < endLevel; ++i) {
         if (!_measurements[i].pause) {
           _measurements[i].pause = true;
-          int correction = _measurements[i].options.correction == -1 ? _measurements[i].options.correction : _options.correction;
+          int correction = _measurements[i].options.correction != -1 ? _measurements[i].options.correction : _options.correction;
           TimeDuration exclude;
           if (correction) {
             correctionDelay = NDetails::clockDelay().clock;
