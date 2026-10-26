@@ -1801,7 +1801,7 @@ namespace fcf {
           /** @brief The number of bins for the histogram. If negative, the histogram size is determined automatically. */
           int       histogramBins;
 
-          double outlierThreshold;
+          double outlier;
 
           int correction;
 
@@ -1810,15 +1810,15 @@ namespace fcf {
           BeginOptions()
             : iterations(-1)
             , histogramBins(-1)
-            , outlierThreshold(-1)
+            , outlier(-1)
             , correction(-1)
           {}
 
           /** @brief Constructor with specified iteration count. @param a_iterations Number of iterations. */
-          BeginOptions(long long a_iterations, int a_histogramBins = -1, double a_outlierThreshold = -1, int a_correction = -1)
+          BeginOptions(long long a_iterations, int a_histogramBins = -1, double a_outlier = -1, int a_correction = -1)
             : iterations(a_iterations)
             , histogramBins(a_histogramBins)
-            , outlierThreshold(a_outlierThreshold)
+            , outlier(a_outlier)
             , correction(a_correction)
           {
           }
@@ -1845,9 +1845,9 @@ namespace fcf {
            * @param a_measurementStep Step size for measurements.
            * @param a_warmup Number of warmup iterations.
            */
-          Options(unsigned long long a_iterations, int a_histogramBins = -1, double a_outlierThreshold = -1,
+          Options(unsigned long long a_iterations, int a_histogramBins = -1, double a_outlier = -1,
                   int a_correction = -1, unsigned long long a_measurementStep = -1, unsigned long long a_warmup = -1)
-            : BeginOptions(a_iterations, a_histogramBins, a_outlierThreshold, a_correction)
+            : BeginOptions(a_iterations, a_histogramBins, a_outlier, a_correction)
             , measurementStep(a_measurementStep)
             , warmup(a_warmup)
           {}
@@ -3788,7 +3788,7 @@ namespace fcf {
       , _measurements({Measurement{}})
       , _options(std::max(a_options.iterations, 1LL),
                  a_options.histogramBins >= 0  ? std::max(a_options.histogramBins, 2)  : 10,
-                 a_options.outlierThreshold >= 0 ? a_options.outlierThreshold : 0,
+                 a_options.outlier >= 0 ? a_options.outlier : 0,
                  a_options.correction > 0 ? 1 : 0,
                  std::max(a_options.measurementStep, 1LL),
                  std::max(a_options.warmup, 0LL)
@@ -3809,8 +3809,8 @@ namespace fcf {
       if (a_options.histogramBins >= 0) {
         _options.histogramBins = std::max(a_options.histogramBins, 2);
       }
-      if (a_options.outlierThreshold >= 0) {
-        _options.outlierThreshold = a_options.outlierThreshold;
+      if (a_options.outlier >= 0) {
+        _options.outlier = a_options.outlier;
       }
       if (a_options.correction >= 0) {
         _options.correction = a_options.correction ? 1 : 0;
@@ -3893,8 +3893,8 @@ namespace fcf {
                                                                                   : _measurements[i].options.iterations;
           int histogramBins    = _measurements[i].options.histogramBins < 0       ?  _options.histogramBins
                                                                                   : std::max(_measurements[i].options.histogramBins, 2);
-          double outlierThreshold = _measurements[i].options.outlierThreshold < 0 ? _options.outlierThreshold
-                                                                                  : _measurements[i].options.outlierThreshold;
+          double outlierThreshold = _measurements[i].options.outlier < 0 ? _options.outlier
+                                                                                  : _measurements[i].options.outlier;
 
           calcBeginTime = _measurements[i].correctTimepoint;
           calcDuration  = diff.count();
@@ -4019,8 +4019,8 @@ namespace fcf {
       long long measurementStep       = a_options.measurementStep < 0 ? _options.measurementStep : std::max(a_options.measurementStep, 1LL);
       int histogramBins               = a_options.histogramBins < 0   ? _options.histogramBins : std::max(a_options.histogramBins, 2);
 
-      double outlierThreshold = a_options.outlierThreshold < 0 ? _options.outlierThreshold
-                                                               : a_options.outlierThreshold;
+      double outlierThreshold = a_options.outlier < 0 ? _options.outlier
+                                                               : a_options.outlier;
 
       for(volatile long long i = 0; i < warmup; ++i) {
         a_function();

@@ -6,7 +6,7 @@ FCF_TEST_DEFINE("fcfTest", "duration-measurement", "duration-outlier"){
     fcf::NTest::Duration::Options options;
     options.iterations = 1000;
 
-    options.outlierThreshold = 0.2;
+    options.outlier = 0.2;
 
     fcf::NTest::Duration bench(options);
 
@@ -35,7 +35,7 @@ FCF_TEST_DEFINE("fcfTest", "duration-measurement", "duration-outlier"){
     fcf::NTest::Duration::Options options;
     options.iterations = 10000;
     options.histogramBins = 30;
-    options.outlierThreshold = 0.01;
+    options.outlier = 0.01;
     fcf::NTest::Duration duration(options);
 
     duration([](){});
