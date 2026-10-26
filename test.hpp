@@ -1904,6 +1904,8 @@ namespace fcf {
           TimeDuration        min;
           TimeDuration        max;
           bool                pause;
+          Outlier             leftOutlier;
+          Outlier             rightOutlier;
           BeginOptions        options;
           HistogramType       histogram;
 
@@ -1916,6 +1918,8 @@ namespace fcf {
             , min(0)
             , max(0)
             , pause(true)
+            , leftOutlier(true)
+            , rightOutlier(false)
           {}
         };
 
@@ -2053,8 +2057,6 @@ namespace fcf {
         std::vector<Measurement>  _measurements;
         mutable TClock            _clock;
         Options                   _options;
-        Outlier                   _loutlier;
-        Outlier                   _routlier;
     };
 
     /**
@@ -3765,8 +3767,6 @@ namespace fcf {
       : _timepoint(0)
       , _measurements({Measurement{}})
       , _options(1LL, 10L, 0, 0, 1LL, 0LL)
-      , _loutlier(true)
-      , _routlier(false)
     {}
 
     template <typename TClock>
@@ -3780,8 +3780,6 @@ namespace fcf {
                  1LL,
                  0LL
                 )
-      , _loutlier(true)
-      , _routlier(false)
     {}
 
     template <typename TClock>
@@ -3795,8 +3793,6 @@ namespace fcf {
                  std::max(a_options.measurementStep, 1LL),
                  std::max(a_options.warmup, 0LL)
                 )
-      , _loutlier(true)
-      , _routlier(false)
     {
     }
 
@@ -3895,27 +3891,51 @@ namespace fcf {
 
           long long iterations = _measurements[i].options.iterations < 0          ? _options.iterations
                                                                                   : _measurements[i].options.iterations;
-          int histogramBins    = _measurements[i].options.histogramBins < 0       ?  _options.histogramBins 
+          int histogramBins    = _measurements[i].options.histogramBins < 0       ?  _options.histogramBins
                                                                                   : std::max(_measurements[i].options.histogramBins, 2);
+          double outlierThreshold = _measurements[i].options.outlierThreshold < 0 ? _options.outlierThreshold
+                                                                                  : _measurements[i].options.outlierThreshold;
 
           calcBeginTime = _measurements[i].correctTimepoint;
           calcDuration  = diff.count();
 
-          _measurements[i].iteration += iterations;
+          Measurement& m = _measurements[i];
 
-          _measurements[i].duration += diff;
-          _measurements[i].iteration += std::max(iterations, 1LL);
-
-          if (iterations) {
-              TimeDuration avgDiff = diff / iterations;
-              if ((long long)_measurements[i].iteration == iterations) {
-                _measurements[i].min = avgDiff;
-                _measurements[i].max = avgDiff;
+          bool isOutlier = false;
+          if (outlierThreshold != 0 && m.min != m.max && m.iteration > 0) {
+            if (diff < m.min || diff > m.max) {
+              bool isLeft = diff <= m.min;
+              Outlier& outlier = isLeft ? m.leftOutlier : m.rightOutlier;
+              double ocounter = std::max((double)m.outlierCounter + 1.0, std::min(20., (double)iterations / 2));
+              double doverflow = (double)(outlier.counter() + 1) / ocounter;
+              if (doverflow >= outlierThreshold) {
+                diff = outlier.get();
+                outlier = Outlier(isLeft);
               } else {
-                _measurements[i].min = std::min(avgDiff, _measurements[i].min);
-                _measurements[i].max = std::max(avgDiff, _measurements[i].max);
+                outlier.append(diff);
+                ++m.outlierCounter;
+                isOutlier = true;
               }
-              _appendHistogram(i, diff, iterations, histogramBins, startLevel, endLevel);
+            }
+          }
+
+          if (!isOutlier) {
+            m.iteration += iterations;
+
+            m.duration += diff;
+            m.iteration += std::max(iterations, 1LL);
+
+            if (iterations) {
+                TimeDuration avgDiff = diff / iterations;
+                if ((long long)m.iteration == iterations) {
+                  m.min = avgDiff;
+                  m.max = avgDiff;
+                } else {
+                  m.min = std::min(avgDiff, m.min);
+                  m.max = std::max(avgDiff, m.max);
+                }
+                _appendHistogram(i, diff, iterations, histogramBins, startLevel, endLevel);
+            }
           }
         }
       }
@@ -3960,8 +3980,6 @@ namespace fcf {
       for(size_t i = startLevel; i < endLevel; ++i) {
         _measurements[i] = Measurement();
       }
-      _loutlier = Outlier(true);
-      _routlier = Outlier(false);
     }
 
     template <typename TClock>
@@ -3985,7 +4003,11 @@ namespace fcf {
     template <typename TClock>
     template <typename TFunction>
     void DurationBasic<TClock>::operator()(const Options& a_options, int a_beginLevel, int a_endLevel, TFunction a_function){
-      _prepare(std::max(a_beginLevel, a_endLevel-1));
+      long long maxLevel = std::max((long long)a_beginLevel, (long long)a_endLevel - 1);
+      if (maxLevel < 0) {
+        maxLevel = 0;
+      }
+      _prepare((size_t)maxLevel);
 
       size_t endLevel   = a_endLevel < 0 ? _measurements.size() : (size_t)a_endLevel;
       size_t startLevel = std::min((size_t)std::max(a_beginLevel, 0), endLevel);
@@ -4004,14 +4026,11 @@ namespace fcf {
         a_function();
       }
 
-      if (!iterations){
+      if (iterations <= 0){
         return;
       }
 
-      bool isFirstMeasurement = true;
-      TimeDuration min = 0;
-      TimeDuration max = 0;
-      TimeDuration sum = 0;
+      TimeDuration measuredSum = 0;
       TimePoint beginTimepoint = _clock();
       TimePoint timepoint = beginTimepoint;
       long long counter = 0;
@@ -4025,87 +4044,87 @@ namespace fcf {
           TimeDuration tdiff  = currentTimestamp - timepoint;
           delay  = std::min(delay, tdiff);
           TimeDuration tcdiff = correction ? (tdiff > delay ? tdiff - delay : 0) : tdiff;
-          TimeDuration diff  = tdiff / measurementStep;
           TimeDuration cdiff = tcdiff / measurementStep;
 
           ++counter;
 
-          if (min != max && outlierThreshold != 0) {
-            if (cdiff < min || cdiff > max) {
-              Outlier& outlier = cdiff <= min ? _loutlier : _routlier;
-              double ocounter = std::max((double)counter, std::min(20., (double)iterations/2));
-              double doverflow = (double)outlier.counter() / ocounter;
-              if (doverflow >= outlierThreshold) {
-                Outlier& outlier = cdiff <= min ? _loutlier : _routlier;
-                cdiff            = outlier.get();
-                outlier          = Outlier(cdiff <= min);
-              } else {
-                i -= measurementStep;
-                Outlier& outlier = cdiff <= min ? _loutlier : _routlier;
-                outlier.append(cdiff);
-                timepoint = _clock();
-                continue;
+          bool stepIncluded = false;
+
+          for(size_t level = startLevel; level < endLevel; ++level) {
+            Measurement& m = _measurements[level];
+            TimeDuration levelCdiff = cdiff;
+
+            if (outlierThreshold != 0 && m.min != m.max) {
+              if (levelCdiff < m.min || levelCdiff > m.max) {
+                ++m.outlierCounter;
+                bool isLeft = levelCdiff <= m.min;
+                Outlier& outlier = isLeft ? m.leftOutlier : m.rightOutlier;
+                double ocounter = std::max((double)counter, std::min(20., (double)iterations/2));
+                double doverflow = (double)outlier.counter() / ocounter;
+                if (doverflow >= outlierThreshold) {
+                  levelCdiff = outlier.get();
+                  outlier = Outlier(isLeft);
+                } else {
+                  outlier.append(levelCdiff);
+                  continue;
+                }
               }
             }
+
+            if (!m.iteration) {
+              m.min = levelCdiff;
+              m.max = levelCdiff;
+            } else {
+              m.min = std::min(levelCdiff, m.min);
+              m.max = std::max(levelCdiff, m.max);
+            }
+
+            m.duration += levelCdiff * measurementStep;
+            m.iteration += measurementStep;
+            _appendHistogram(level, levelCdiff, measurementStep, histogramBins);
+            stepIncluded = true;
           }
 
-          if (isFirstMeasurement) {
-            min = cdiff;
-            max = cdiff;
-            isFirstMeasurement = false;
-          } else {
-            min = std::min(cdiff, min);
-            max = std::max(cdiff, max);
-          }
-
-          sum += cdiff * measurementStep;
-          for(int level = a_beginLevel; level < a_endLevel; ++level) {
-            _appendHistogram(level, cdiff, measurementStep, histogramBins);
+          if (stepIncluded) {
+            measuredSum += cdiff * measurementStep;
           }
 
           timepoint = _clock();
         }
       }
 
-      TimePoint endTimepoint;
       unsigned long long remainder = iterations % measurementStep;
       if (remainder){
-        endTimepoint = _clock();
+        TimePoint endTimepoint = _clock();
         TimeDuration remainderDiff = (endTimepoint - timepoint) / remainder;
         remainderDiff = correction ? ( remainderDiff > clockDelay.iteration ?  remainderDiff - clockDelay.iteration : 0) : remainderDiff;
-        if (isFirstMeasurement) {
-          min = remainderDiff;
-          max = remainderDiff;
-        } else {
-          min = std::min(remainderDiff, min);
-          max = std::max(remainderDiff, max);
+
+        if (startLevel < endLevel) {
+          measuredSum += remainderDiff * remainder;
         }
 
-        remainderDiff = std::max(remainderDiff, min);
+        for(size_t level = startLevel; level < endLevel; ++level) {
+          Measurement& m = _measurements[level];
 
-        sum += remainderDiff;
-        for(int level = a_beginLevel; level < a_endLevel; ++level) {
+          if (!m.iteration) {
+            m.min = remainderDiff;
+            m.max = remainderDiff;
+          } else {
+            m.min = std::min(remainderDiff, m.min);
+            m.max = std::max(remainderDiff, m.max);
+          }
+
+          m.duration += remainderDiff * remainder;
+          m.iteration += remainder;
           _appendHistogram(level, remainderDiff, remainder, histogramBins);
         }
       }
 
-      for(size_t i = startLevel; i < endLevel; ++i) {
-        _measurements[i].duration   += sum;
-        if (!_measurements[i].iteration) {
-          _measurements[i].min        = min;
-          _measurements[i].max        = max;
-        } else {
-          _measurements[i].min        = std::min(_measurements[i].min, min);
-          _measurements[i].max        = std::max(_measurements[i].max, max);
-        }
-        _measurements[i].iteration += iterations;
-      }
-
-      endTimepoint = _clock();
+      TimePoint endTimepoint = _clock();
       unsigned long long excludedDiff = endTimepoint - beginTimepoint;
-      excludedDiff                    = excludedDiff > sum ? excludedDiff - sum : 0;
+      excludedDiff                    = excludedDiff > measuredSum ? excludedDiff - measuredSum : 0;
       for(size_t i = 0; i < _measurements.size(); ++i) {
-        if (i >= a_beginLevel && i < a_endLevel){
+        if (i >= startLevel && i < endLevel){
           continue;
         }
         if (!_measurements[i].pause) {
