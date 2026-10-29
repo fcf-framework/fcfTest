@@ -3735,15 +3735,15 @@ namespace fcf {
               options.correction = 0;
               Duration d(options);
               d([&](){
-                ++dummy;
+                dummy = dummy + 1;
               });
               delay.iteration = d.average().count();
               delay.iterationMin = d.min().count();
 
               unsigned long long sum   = 0;
               unsigned long long begin = SteadyClock()();
-              for(volatile size_t i = 0; i < size; ++i){
-                ++dummy;
+              for(volatile size_t i = 0; i < size; i = i + 1){
+                dummy = dummy + 1;
                 unsigned long long t1 = SteadyClock()();
                 unsigned long long t2 = SteadyClock()();
                 sum = t2 - t1;
@@ -4022,7 +4022,7 @@ namespace fcf {
       double outlierThreshold = a_options.outlier < 0 ? _options.outlier
                                                                : a_options.outlier;
 
-      for(volatile long long i = 0; i < warmup; ++i) {
+      for(volatile long long i = 0; i < warmup; i = i + 1) {
         a_function();
       }
 
@@ -4037,7 +4037,7 @@ namespace fcf {
 
       TimeDuration delay = clockDelay.clock*2;
 
-      for(volatile long long i = 0; i < iterations; ++i) {
+      for(volatile long long i = 0; i < iterations; i = i + 1) {
         a_function();
         if ((i + 1) % measurementStep == 0) {
           TimePoint currentTimestamp = _clock();
